@@ -1,0 +1,17 @@
+[
+  {"name": "Missa de Angelis", "composer": "Plainsong", "voicing": "Unison", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Graduale Romanum"},
+  {"name": "Communion Service in F", "composer": "Harold Darke", "voicing": "SATB", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Darke in F"},
+  {"name": "Communion Service in C", "composer": "John Ireland", "voicing": "SATB", "movements": ["Kyrie", "Sanctus", "Benedictus", "Agnus Dei", "Gloria"], "source": "Ireland in C"},
+  {"name": "Communion Service in F", "composer": "Herbert Sumsion", "voicing": "SATB", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Sumsion in F"},
+  {"name": "Communion Service in C", "composer": "William Mathias", "voicing": "SATB + organ", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Mathias Communion Service"},
+  {"name": "Communion Service (Missa Brevis)", "composer": "Kenneth Leighton", "voicing": "SATB + organ", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Leighton Communion Service"},
+  {"name": "Mass of the Children", "composer": "John Rutter", "voicing": "SATB + children's choir + orchestra", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Mass of the Children"},
+  {"name": "Communion Service", "composer": "William Lloyd Webber", "voicing": "Unison/SATB", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Lloyd Webber Communion Service"},
+  {"name": "A Mass of Glory", "composer": "Edward Thorne", "voicing": "SATB + organ", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Thorne Mass of Glory"},
+  {"name": "The Communion Service", "composer": "John Merbecke", "voicing": "Unison", "movements": ["Kyrie", "Gloria", "Creed", "Sanctus", "Benedictus", "Agnus Dei"], "source": "The Booke of Common Praier Noted 1550"},
+  {"name": "Anglican Folk Mass", "composer": "Martin Shaw", "voicing": "Unison", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Martin Shaw Anglican Folk Mass"},
+  {"name": "Communion Service in G", "composer": "Malcolm Archer", "voicing": "SATB + organ", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Archer in G"},
+  {"name": "Mass of St Thomas", "composer": "David Thorne", "voicing": "Unison/SATB", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Thorne Mass of St Thomas"},
+  {"name": "Mass of Christ the Redeemer", "composer": "Paul Nardone", "voicing": "Unison/SATB", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Nardone Mass of Christ the Redeemer"},
+  {"name": "Mass for Five Voices", "composer": "Patrick Appleford", "voicing": "SATB + congregation", "movements": ["Kyrie", "Gloria", "Sanctus", "Benedictus", "Agnus Dei"], "source": "Appleford Mass for Five Voices"}
+]

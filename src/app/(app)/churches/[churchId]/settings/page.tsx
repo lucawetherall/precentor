@@ -1,0 +1,32 @@
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { churches } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { ChurchSettingsForm } from "./settings-form";
+
+interface Props {
+  params: Promise<{ churchId: string }>;
+}
+
+export default async function ChurchSettingsPage({ params }: Props) {
+  const { churchId } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  let church: any = null;
+  try {
+    const result = await db.select().from(churches).where(eq(churches.id, churchId)).limit(1);
+    church = result[0] || null;
+  } catch { /* DB not available */ }
+
+  if (!church) redirect("/churches");
+
+  return (
+    <div className="p-8 max-w-lg">
+      <h1 className="text-3xl font-heading font-semibold mb-6">Church Settings</h1>
+      <ChurchSettingsForm church={church} />
+    </div>
+  );
+}
