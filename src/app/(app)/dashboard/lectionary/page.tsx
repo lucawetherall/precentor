@@ -4,15 +4,15 @@ import { desc } from "drizzle-orm";
 import { LectionarySync } from "./sync-form";
 
 export default async function LectionaryPage() {
-  let days: any[] = [];
+  let days: (typeof liturgicalDays.$inferSelect)[] = [];
   try {
     days = await db
       .select()
       .from(liturgicalDays)
       .orderBy(desc(liturgicalDays.date))
-      .limit(60);
-  } catch {
-    // DB not available yet
+      .limit(60); // ~1 church year of Sundays + feasts
+  } catch (err) {
+    console.warn("Failed to load liturgical days:", err);
   }
 
   return (
@@ -47,7 +47,7 @@ export default async function LectionaryPage() {
                 </tr>
               </thead>
               <tbody>
-                {days.map((day: any, i: number) => (
+                {days.map((day, i) => (
                   <tr
                     key={day.id}
                     className={i % 2 === 0 ? "bg-white" : "bg-background"}

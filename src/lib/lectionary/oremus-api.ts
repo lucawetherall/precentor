@@ -14,7 +14,7 @@
 
 import * as cheerio from "cheerio";
 
-const OREMUS_API = "http://bible.oremus.org/";
+const OREMUS_API = "https://bible.oremus.org/";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -33,7 +33,7 @@ export async function fetchReadingText(
 
   try {
     const url = `${OREMUS_API}?version=${encodeURIComponent(ver)}&passage=${encodeURIComponent(reference)}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
 
     if (!res.ok) {
       console.warn(`Oremus API error ${res.status} for "${reference}"`);

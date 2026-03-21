@@ -9,8 +9,13 @@
  */
 
 import { db } from "@/lib/db";
-import { liturgicalDays, readings } from "@/lib/db/schema";
+import { liturgicalDays, readings, liturgicalSeasonEnum, liturgicalColourEnum, lectionaryEnum, readingPositionEnum } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+
+const VALID_SEASONS = new Set(liturgicalSeasonEnum.enumValues);
+const VALID_COLOURS = new Set(liturgicalColourEnum.enumValues);
+const VALID_LECTIONARIES = new Set(lectionaryEnum.enumValues);
+const VALID_POSITIONS = new Set(readingPositionEnum.enumValues);
 import {
   computeLiturgicalCalendar,
   getChurchYear,
@@ -74,15 +79,28 @@ export async function syncLectionaryForYear(
         continue;
       }
 
+      // Validate enum values before inserting
+      if (!VALID_SEASONS.has(entry.season as any)) {
+        console.warn(`Invalid season "${entry.season}" for ${entry.date}, skipping`);
+        continue;
+      }
+      if (!VALID_COLOURS.has(entry.colour as any)) {
+        console.warn(`Invalid colour "${entry.colour}" for ${entry.date}, skipping`);
+        continue;
+      }
+
+      const season = entry.season as (typeof liturgicalSeasonEnum.enumValues)[number];
+      const colour = entry.colour as (typeof liturgicalColourEnum.enumValues)[number];
+
       // Upsert the liturgical day
       const [day] = await db
         .insert(liturgicalDays)
         .values({
           date: entry.date,
-          season: entry.season as any,
-          colour: entry.colour as any,
+          season,
+          colour,
           cwName: sundayData.name || entry.name,
-          icalUid: entry.sundayKey, // Repurposed: stores the JSON key
+          icalUid: entry.sundayKey,
           lectionaryYear: year,
           collect: sundayData.collect ?? null,
           postCommunion: sundayData.postCommunion ?? null,
@@ -91,8 +109,8 @@ export async function syncLectionaryForYear(
           target: liturgicalDays.date,
           set: {
             cwName: sundayData.name || entry.name,
-            season: entry.season as any,
-            colour: entry.colour as any,
+            season,
+            colour,
             icalUid: entry.sundayKey,
             lectionaryYear: year,
             collect: sundayData.collect ?? null,
@@ -101,25 +119,26 @@ export async function syncLectionaryForYear(
         })
         .returning();
 
-      // Delete existing readings and re-insert
-      await db.delete(readings).where(eq(readings.liturgicalDayId, day.id));
-
       // Build reading rows from all three services
       const readingRows = buildReadingRows(yearReadings, day.id, fetchText, bibleVersion);
 
-      if (readingRows.length > 0) {
-        // If fetching text, do it now
-        if (fetchText) {
-          for (let i = 0; i < readingRows.length; i++) {
-            if (i > 0) await sleep(200); // Rate limit Oremus API
-            const text = await fetchReadingText(readingRows[i].reference, bibleVersion);
-            readingRows[i].readingText = text || null;
-            readingRows[i].bibleVersion = bibleVersion;
-          }
+      // If fetching text, do it before the transaction to avoid holding it open
+      if (fetchText && readingRows.length > 0) {
+        for (let i = 0; i < readingRows.length; i++) {
+          if (i > 0) await sleep(200); // Rate limit Oremus API
+          const text = await fetchReadingText(readingRows[i].reference, bibleVersion);
+          readingRows[i].readingText = text || null;
+          readingRows[i].bibleVersion = bibleVersion;
         }
-
-        await db.insert(readings).values(readingRows);
       }
+
+      // Delete and re-insert readings in a transaction to avoid data loss on partial failure
+      await db.transaction(async (tx) => {
+        await tx.delete(readings).where(eq(readings.liturgicalDayId, day.id));
+        if (readingRows.length > 0) {
+          await tx.insert(readings).values(readingRows);
+        }
+      });
 
       imported++;
     } catch (error) {
@@ -140,6 +159,9 @@ export async function syncLectionaryForYear(
 /**
  * Build reading rows from a ServiceReadings object.
  */
+type LectionaryValue = (typeof lectionaryEnum.enumValues)[number];
+type PositionValue = (typeof readingPositionEnum.enumValues)[number];
+
 function buildReadingRows(
   yearReadings: ServiceReadings,
   liturgicalDayId: string,
@@ -148,15 +170,15 @@ function buildReadingRows(
 ) {
   const rows: Array<{
     liturgicalDayId: string;
-    lectionary: "PRINCIPAL" | "SECOND" | "THIRD";
-    position: any;
+    lectionary: LectionaryValue;
+    position: PositionValue;
     reference: string;
     bookName: string | null;
     readingText: string | null;
     bibleVersion: string | null;
   }> = [];
 
-  const services: Array<[string, typeof yearReadings.principal]> = [
+  const services: Array<[LectionaryValue, typeof yearReadings.principal]> = [
     ["PRINCIPAL", yearReadings.principal],
     ["SECOND", yearReadings.second],
     ["THIRD", yearReadings.third],
@@ -164,10 +186,15 @@ function buildReadingRows(
 
   for (const [lectionary, serviceReadings] of services) {
     for (const reading of serviceReadings) {
+      const position = reading.position as string;
+      if (!VALID_POSITIONS.has(position as any)) {
+        console.warn(`Invalid reading position "${position}" for "${reading.reference}", skipping`);
+        continue;
+      }
       rows.push({
         liturgicalDayId,
-        lectionary: lectionary as any,
-        position: reading.position as any,
+        lectionary,
+        position: position as PositionValue,
         reference: reading.reference,
         bookName: parseBookName(reading.reference),
         readingText: null,

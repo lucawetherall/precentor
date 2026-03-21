@@ -11,7 +11,7 @@
  */
 
 import * as cheerio from "cheerio";
-import { writeFileSync } from "fs";
+import { writeFileSync, renameSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { classifyReading } from "../src/lib/lectionary/bible-books";
@@ -231,12 +231,23 @@ async function main() {
     flushParagraphReadings(state, section, sundays);
   });
 
-  // ─── 3. Write output ───
+  // ─── 3. Validate and write output ───
   const data: LectionaryData = { yearMap, sundays };
-  const outPath = resolve(__dirname, "../src/data/lectionary-coe.json");
-  writeFileSync(outPath, JSON.stringify(data, null, 2));
 
-  console.log(`\nWrote ${Object.keys(sundays).length} entries to ${outPath}`);
+  const sundayCount = Object.keys(sundays).length;
+  if (sundayCount < 50) {
+    throw new Error(`Validation failed: only ${sundayCount} entries scraped (expected 50+). Aborting to preserve existing data.`);
+  }
+  if (Object.keys(yearMap).length < 10) {
+    throw new Error(`Validation failed: only ${Object.keys(yearMap).length} year mappings (expected 10+). Aborting.`);
+  }
+
+  const outPath = resolve(__dirname, "../src/data/lectionary-coe.json");
+  const tmpPath = `${outPath}.tmp`;
+  writeFileSync(tmpPath, JSON.stringify(data, null, 2));
+  renameSync(tmpPath, outPath);
+
+  console.log(`\nWrote ${sundayCount} entries to ${outPath}`);
   let totalReadings = 0;
   for (const s of Object.values(sundays)) {
     for (const y of Object.values(s.years)) {
