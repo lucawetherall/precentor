@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { parseICalFeed } from "@/lib/ical/parser";
-import { importICalFeed } from "@/lib/ical/mapper";
+import { syncCurrentYear, syncLectionaryForYear } from "@/lib/lectionary/mapper";
+import { getChurchYear } from "@/lib/lectionary/calendar";
 
 export async function GET(request: Request) {
   // Verify cron secret in production
@@ -10,22 +10,23 @@ export async function GET(request: Request) {
   }
 
   try {
-    const icalUrl = process.env.OREMUS_ICAL_URL;
-    if (!icalUrl) {
-      return NextResponse.json({ error: "OREMUS_ICAL_URL not configured" }, { status: 500 });
-    }
+    const url = new URL(request.url);
+    const fetchText = url.searchParams.get("fetchText") === "true";
+    const bibleVersion = url.searchParams.get("version") ?? undefined;
 
-    const response = await fetch(icalUrl);
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: `Failed to fetch iCal feed: ${response.statusText}` },
-        { status: 502 }
+    // Optional: sync a specific year (e.g., ?year=2026)
+    const yearParam = url.searchParams.get("year");
+    let result;
+
+    if (yearParam) {
+      const startYear = parseInt(yearParam, 10);
+      result = await syncLectionaryForYear(
+        { startYear, endYear: startYear + 1 },
+        { fetchText, bibleVersion },
       );
+    } else {
+      result = await syncCurrentYear({ fetchText, bibleVersion });
     }
-
-    const icsContent = await response.text();
-    const parsedDays = parseICalFeed(icsContent);
-    const result = await importICalFeed(parsedDays);
 
     return NextResponse.json({
       success: true,
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
     console.error("Lectionary sync failed:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

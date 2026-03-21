@@ -76,10 +76,11 @@ export const liturgicalDays = pgTable("liturgical_days", {
   colour: liturgicalColourEnum("colour").notNull(),
   cwName: text("cw_name").notNull(),
   transferredFrom: text("transferred_from"),
-  icalUid: text("ical_uid").unique(),
+  icalUid: text("ical_uid").unique(), // Repurposed: stores the sundayKey from lectionary JSON
   rawDescription: text("raw_description"),
   collect: text("collect"),
   postCommunion: text("post_communion"),
+  lectionaryYear: text("lectionary_year"), // "A", "B", or "C"
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -90,6 +91,8 @@ export const readings = pgTable("readings", {
   position: readingPositionEnum("position").notNull(),
   reference: text("reference").notNull(),
   bookName: text("book_name"),
+  readingText: text("reading_text"), // Actual scripture text from Oremus Bible API
+  bibleVersion: text("bible_version"), // e.g., "NRSVAE"
 });
 
 // ─── Services & Music Planning ───────────────────────────────

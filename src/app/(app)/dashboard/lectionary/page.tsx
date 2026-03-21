@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
-import { liturgicalDays, readings } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
-import { LectionaryUpload } from "./upload-form";
+import { liturgicalDays } from "@/lib/db/schema";
+import { desc } from "drizzle-orm";
+import { LectionarySync } from "./sync-form";
 
 export default async function LectionaryPage() {
   let days: any[] = [];
@@ -10,7 +10,7 @@ export default async function LectionaryPage() {
       .select()
       .from(liturgicalDays)
       .orderBy(desc(liturgicalDays.date))
-      .limit(50);
+      .limit(60);
   } catch {
     // DB not available yet
   }
@@ -19,10 +19,11 @@ export default async function LectionaryPage() {
     <main className="p-8 max-w-4xl">
       <h1 className="text-3xl font-heading font-semibold mb-2">Lectionary Calendar</h1>
       <p className="text-sm text-muted-foreground mb-6">
-        Import the Oremus Almanac iCal feed to populate the liturgical calendar.
+        Syncs the Church of England Common Worship Lectionary. Readings are sourced
+        from the C of E website with scripture text from the Oremus Bible Browser.
       </p>
 
-      <LectionaryUpload />
+      <LectionarySync />
 
       <div className="mt-8">
         <h2 className="text-xl font-heading font-semibold mb-4">
@@ -31,7 +32,7 @@ export default async function LectionaryPage() {
 
         {days.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No data imported yet. Upload an .ics file above or trigger the cron sync.
+            No data imported yet. Use the sync button above to populate the lectionary.
           </p>
         ) : (
           <div className="border border-border">
@@ -41,6 +42,7 @@ export default async function LectionaryPage() {
                   <th className="px-3 py-2 text-left font-body font-normal">Date</th>
                   <th className="px-3 py-2 text-left font-body font-normal">Name</th>
                   <th className="px-3 py-2 text-left font-body font-normal">Season</th>
+                  <th className="px-3 py-2 text-left font-body font-normal">Year</th>
                   <th className="px-3 py-2 text-left font-body font-normal">Colour</th>
                 </tr>
               </thead>
@@ -53,6 +55,7 @@ export default async function LectionaryPage() {
                     <td className="px-3 py-2 font-mono text-xs">{day.date}</td>
                     <td className="px-3 py-2">{day.cwName}</td>
                     <td className="px-3 py-2 text-xs">{day.season}</td>
+                    <td className="px-3 py-2 text-xs font-mono">{day.lectionaryYear || "—"}</td>
                     <td className="px-3 py-2">
                       <span
                         className="inline-block w-2 h-2 rounded-full"
