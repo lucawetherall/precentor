@@ -195,6 +195,19 @@ export const responsesSettings = pgTable("responses_settings", {
   composer: text("composer").notNull(),
 });
 
+// ─── Invites ─────────────────────────────────────────────────
+export const invites = pgTable("invites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  role: memberRoleEnum("role").default("MEMBER").notNull(),
+  token: text("token").notNull().unique(),
+  invitedBy: uuid("invited_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at").notNull(),
+  acceptedAt: timestamp("accepted_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Rota & Availability ─────────────────────────────────────
 export const availability = pgTable("availability", {
   id: uuid("id").primaryKey().defaultRandom(),

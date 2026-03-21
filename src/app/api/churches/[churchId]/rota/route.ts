@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { rotaEntries } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -8,11 +8,9 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ churchId: string }> }
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { churchId } = await params;
+  const { error } = await requireChurchRole(churchId, "EDITOR");
+  if (error) return error;
 
   const body = await request.json();
   const { userId, serviceId, confirmed } = body;

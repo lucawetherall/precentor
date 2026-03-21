@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { services } from "@/lib/db/schema";
 
@@ -8,11 +8,8 @@ export async function POST(
   { params }: { params: Promise<{ churchId: string }> }
 ) {
   const { churchId } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { error } = await requireChurchRole(churchId, "EDITOR");
+  if (error) return error;
 
   const body = await request.json();
   const { liturgicalDayId, serviceType, time } = body;

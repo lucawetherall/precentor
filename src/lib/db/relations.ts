@@ -16,6 +16,7 @@ export const churchesRelations = relations(s.churches, ({ many }) => ({
   churchMassSettings: many(s.churchMassSettings),
   templates: many(s.serviceSheetTemplates),
   performanceLogs: many(s.performanceLogs),
+  invites: many(s.invites),
 }));
 
 // churchMemberships: belongs to user + church
@@ -88,6 +89,12 @@ export const canticleSettingsRelations = relations(s.canticleSettings, ({ one, m
 export const responsesSettingsRelations = relations(s.responsesSettings, ({ one, many }) => ({
   church: one(s.churches, { fields: [s.responsesSettings.churchId], references: [s.churches.id] }),
   musicSlots: many(s.musicSlots),
+}));
+
+// invites: belongs to church + invitedBy user
+export const invitesRelations = relations(s.invites, ({ one }) => ({
+  church: one(s.churches, { fields: [s.invites.churchId], references: [s.churches.id] }),
+  invitedByUser: one(s.users, { fields: [s.invites.invitedBy], references: [s.users.id] }),
 }));
 
 // availability: belongs to user + service
