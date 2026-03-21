@@ -3,9 +3,13 @@ import { parseICalFeed } from "@/lib/ical/parser";
 import { importICalFeed } from "@/lib/ical/mapper";
 
 export async function GET(request: Request) {
-  // Verify cron secret in production
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 });
+  }
+
   const authHeader = request.headers.get("authorization");
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -34,7 +38,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Lectionary sync failed:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Sync failed" },
       { status: 500 }
     );
   }

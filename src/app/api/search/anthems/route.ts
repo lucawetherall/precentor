@@ -10,10 +10,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
+  if (q.length > 256) {
+    return NextResponse.json({ error: "Query too long" }, { status: 400 });
+  }
+
   try {
     const results = await searchAnthems(q, churchId);
     return NextResponse.json(results);
   } catch (error) {
-    return NextResponse.json([], { status: 200 });
+    console.error("Anthem search failed:", error);
+    return NextResponse.json({ error: "Search failed" }, { status: 500 });
   }
 }

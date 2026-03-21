@@ -66,6 +66,7 @@ export const churchMemberships = pgTable("church_memberships", {
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
 }, (t) => [
   uniqueIndex("membership_unique").on(t.userId, t.churchId),
+  index("membership_user_idx").on(t.userId),
 ]);
 
 // ─── Liturgical Calendar ─────────────────────────────────────
@@ -105,6 +106,8 @@ export const services = pgTable("services", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [
   uniqueIndex("service_unique").on(t.churchId, t.liturgicalDayId, t.serviceType),
+  index("service_church_idx").on(t.churchId),
+  index("service_date_idx").on(t.liturgicalDayId),
 ]);
 
 export const musicSlots = pgTable("music_slots", {
@@ -119,7 +122,9 @@ export const musicSlots = pgTable("music_slots", {
   responsesSettingId: uuid("responses_setting_id").references(() => responsesSettings.id),
   freeText: text("free_text"),
   notes: text("notes"),
-});
+}, (t) => [
+  index("music_slot_service_idx").on(t.serviceId),
+]);
 
 // ─── Music Databases ─────────────────────────────────────────
 export const hymns = pgTable("hymns", {
@@ -221,7 +226,10 @@ export const performanceLogs = pgTable("performance_logs", {
   anthemId: uuid("anthem_id"),
   freeText: text("free_text"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("perf_log_church_date_idx").on(t.churchId, t.date),
+  index("perf_log_slot_idx").on(t.musicSlotId),
+]);
 
 // ─── Service Sheet Templates ──────────────────────────────────
 export const serviceSheetTemplates = pgTable("service_sheet_templates", {

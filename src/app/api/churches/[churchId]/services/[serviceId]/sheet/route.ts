@@ -8,6 +8,7 @@ import React from "react";
 import { ServiceSheetDocument, type ServiceSheetData } from "@/lib/pdf/service-sheet";
 import { generateServiceSheetDocx } from "@/lib/pdf/service-sheet-docx";
 import { MUSIC_SLOT_LABELS } from "@/types";
+import { requireMembership } from "@/lib/auth/membership";
 
 export async function GET(
   request: NextRequest,
@@ -20,6 +21,11 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const authResult = await requireMembership(user.id, churchId, "MEMBER");
+  if ("error" in authResult) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
   }
 
   try {
@@ -97,7 +103,7 @@ export async function GET(
   } catch (error) {
     console.error("Service sheet generation failed:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Generation failed" },
+      { error: "Generation failed" },
       { status: 500 }
     );
   }

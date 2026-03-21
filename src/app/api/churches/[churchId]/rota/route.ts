@@ -3,15 +3,22 @@ import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { rotaEntries } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
+import { requireMembership } from "@/lib/auth/membership";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ churchId: string }> }
 ) {
+  const { churchId } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const authResult = await requireMembership(user.id, churchId, "EDITOR");
+  if ("error" in authResult) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
   }
 
   const body = await request.json();

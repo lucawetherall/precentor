@@ -3,7 +3,10 @@ import postgres from "postgres";
 import * as schema from "./schema";
 import * as relations from "./relations";
 
-const connectionString = process.env.DATABASE_URL!;
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL environment variable is not set");
+}
 
 const client = postgres(connectionString, { prepare: false });
 

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (user) {
+      if (user && user.email) {
         // Upsert user record
         const existing = await db
           .select()
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
         if (existing.length === 0) {
           await db.insert(users).values({
-            email: user.email!,
+            email: user.email,
             supabaseId: user.id,
             name: user.user_metadata?.name || null,
           });

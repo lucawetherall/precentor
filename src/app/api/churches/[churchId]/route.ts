@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { requireMembership } from "@/lib/auth/membership";
 
 export async function PATCH(
   request: Request,
@@ -13,6 +14,11 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const authResult = await requireMembership(user.id, churchId, "ADMIN");
+  if ("error" in authResult) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
   }
 
   const body = await request.json();

@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createLLMProvider } from "@/lib/ai/provider";
 import { db } from "@/lib/db";
-import { services, liturgicalDays, readings, musicSlots, hymns, anthems, performanceLogs } from "@/lib/db/schema";
+import { services, liturgicalDays, readings, performanceLogs } from "@/lib/db/schema";
 import { eq, and, gte, desc } from "drizzle-orm";
 import { format, subWeeks } from "date-fns";
 import type { SuggestionContext } from "@/lib/ai/types";
+import { requireMembership, VALID_SLOT_TYPES, isValidEnum } from "@/lib/auth/membership";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -19,6 +20,10 @@ export async function POST(request: Request) {
 
   if (!serviceId || !slotType) {
     return NextResponse.json({ error: "serviceId and slotType required" }, { status: 400 });
+  }
+
+  if (!isValidEnum(slotType, VALID_SLOT_TYPES)) {
+    return NextResponse.json({ error: "Invalid slot type" }, { status: 400 });
   }
 
   try {
@@ -38,6 +43,12 @@ export async function POST(request: Request) {
     }
 
     const { service, day } = serviceResult[0];
+
+    // Verify user has access to this church
+    const authResult = await requireMembership(user.id, service.churchId, "MEMBER");
+    if ("error" in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
 
     // Get readings for the day
     const dayReadings = await db
@@ -89,7 +100,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("AI suggestion failed:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Suggestion failed" },
+      { error: "Suggestion failed" },
       { status: 500 }
     );
   }
