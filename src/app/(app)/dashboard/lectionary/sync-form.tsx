@@ -27,8 +27,8 @@ export function LectionarySync() {
       const res = await fetch(`/api/cron/sync-lectionary?${params}`);
       const data = await res.json();
       setResult(data);
-    } catch {
-      setResult({ success: false, error: "Sync failed" });
+    } catch (err) {
+      setResult({ success: false, error: `Sync failed: ${err instanceof Error ? err.message : "Network error"}` });
     }
     setLoading(false);
   };

@@ -122,6 +122,7 @@ async function fetchLiturgicalDate(
     try {
       const res = await fetch(`${LITURGICAL_API}/${date}`, {
         headers: { "Accept": "application/json" },
+        signal: AbortSignal.timeout(10_000),
       });
       if (res.ok) {
         return (await res.json()) as LiturgicalApiResponse;
@@ -132,7 +133,8 @@ async function fetchLiturgicalDate(
         continue;
       }
       return null;
-    } catch {
+    } catch (err) {
+      console.warn(`Liturgical API fetch failed for ${date}:`, err);
       if (attempt < retries) {
         await sleep(500 * (attempt + 1));
         continue;

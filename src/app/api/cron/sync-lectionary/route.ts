@@ -3,8 +3,12 @@ import { syncCurrentYear, syncLectionaryForYear } from "@/lib/lectionary/mapper"
 import { getChurchYear } from "@/lib/lectionary/calendar";
 
 export async function GET(request: Request) {
-  // Verify cron secret in production
+  // Verify cron secret — required in production, optional in development
   const authHeader = request.headers.get("authorization");
+  if (!process.env.CRON_SECRET && process.env.NODE_ENV === "production") {
+    console.error("CRON_SECRET is not set in production");
+    return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+  }
   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -14,12 +18,27 @@ export async function GET(request: Request) {
     const fetchText = url.searchParams.get("fetchText") === "true";
     const bibleVersion = url.searchParams.get("version") ?? undefined;
 
+    // Validate bible version if provided
+    const VALID_VERSIONS = ["NRSVAE", "NRSV", "AV", "BCP", "CW"];
+    if (bibleVersion && !VALID_VERSIONS.includes(bibleVersion)) {
+      return NextResponse.json(
+        { error: `Invalid version. Must be one of: ${VALID_VERSIONS.join(", ")}` },
+        { status: 400 },
+      );
+    }
+
     // Optional: sync a specific year (e.g., ?year=2026)
     const yearParam = url.searchParams.get("year");
     let result;
 
     if (yearParam) {
       const startYear = parseInt(yearParam, 10);
+      if (isNaN(startYear) || startYear < 2000 || startYear > 2100) {
+        return NextResponse.json(
+          { error: "Invalid year. Must be between 2000 and 2100." },
+          { status: 400 },
+        );
+      }
       result = await syncLectionaryForYear(
         { startYear, endYear: startYear + 1 },
         { fetchText, bibleVersion },
@@ -35,7 +54,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Lectionary sync failed:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Lectionary sync failed" },
       { status: 500 },
     );
   }
