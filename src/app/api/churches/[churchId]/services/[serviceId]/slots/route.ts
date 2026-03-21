@@ -33,7 +33,12 @@ export async function PUT(
   const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const { slots } = body;
 
   try {

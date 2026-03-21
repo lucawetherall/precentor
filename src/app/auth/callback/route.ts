@@ -7,7 +7,9 @@ import { eq } from "drizzle-orm";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next");
+  const rawNext = searchParams.get("next");
+  // Validate next param to prevent open redirects
+  const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
 
   if (code) {
     const supabase = await createClient();
@@ -29,8 +31,11 @@ export async function GET(request: Request) {
         let dbUserId: string;
 
         if (existing.length === 0) {
+          if (!user.email) {
+            return NextResponse.redirect(`${origin}/login?error=auth`);
+          }
           const [newUser] = await db.insert(users).values({
-            email: user.email!,
+            email: user.email,
             supabaseId: user.id,
             name: user.user_metadata?.name || null,
           }).returning();

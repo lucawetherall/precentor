@@ -12,7 +12,12 @@ export async function PATCH(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
   try {
     const [updated] = await db

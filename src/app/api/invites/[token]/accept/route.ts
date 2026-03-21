@@ -36,6 +36,14 @@ export async function POST(
 
     const invite = inviteResult[0];
 
+    // Verify the authenticated user's email matches the invite
+    if (authUser.email?.toLowerCase() !== invite.email.toLowerCase()) {
+      return NextResponse.json(
+        { error: "This invite was sent to a different email address." },
+        { status: 403 }
+      );
+    }
+
     // Find or create the DB user
     let dbUser = await db
       .select()
@@ -45,7 +53,7 @@ export async function POST(
 
     if (dbUser.length === 0) {
       const [newUser] = await db.insert(users).values({
-        email: authUser.email!,
+        email: authUser.email || invite.email,
         supabaseId: authUser.id,
         name: authUser.user_metadata?.name || null,
       }).returning();

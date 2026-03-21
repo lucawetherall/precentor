@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
-import { invites, churchMemberships } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { invites } from "@/lib/db/schema";
 import { randomBytes } from "crypto";
+
+const VALID_ROLES = ["ADMIN", "EDITOR", "MEMBER"] as const;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 export async function POST(
   request: Request,
@@ -13,12 +23,19 @@ export async function POST(
   const { user, error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const { email, role, sendEmail } = body;
 
-  if (!email) {
-    return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  if (!email || typeof email !== "string" || !EMAIL_REGEX.test(email)) {
+    return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
   }
+
+  const validatedRole = VALID_ROLES.includes(role) ? role : "MEMBER";
 
   try {
     const token = randomBytes(32).toString("hex");
@@ -27,7 +44,7 @@ export async function POST(
     const [invite] = await db.insert(invites).values({
       churchId,
       email,
-      role: (role || "MEMBER") as "ADMIN" | "EDITOR" | "MEMBER",
+      role: validatedRole,
       token,
       invitedBy: user!.id,
       expiresAt,
@@ -38,16 +55,17 @@ export async function POST(
       try {
         const { Resend } = await import("resend");
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const origin = request.headers.get("origin") || request.headers.get("x-forwarded-host") || "";
-        const inviteUrl = `${origin}/invite/${token}`;
+        // Use server-side configured origin to prevent spoofing
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\.supabase\.co.*/, "") || "";
+        const inviteUrl = `${appUrl}/invite/${token}`;
 
         await resend.emails.send({
           from: "Precentor <noreply@resend.dev>",
           to: email,
           subject: "You've been invited to join a church on Precentor",
           html: `
-            <p>You've been invited to join a church on Precentor as a <strong>${role || "MEMBER"}</strong>.</p>
-            <p><a href="${inviteUrl}">Click here to accept the invite</a></p>
+            <p>You've been invited to join a church on Precentor as a <strong>${escapeHtml(validatedRole)}</strong>.</p>
+            <p><a href="${escapeHtml(inviteUrl)}">Click here to accept the invite</a></p>
             <p>This link expires in 7 days.</p>
           `,
         });
