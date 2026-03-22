@@ -5,10 +5,10 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 6/20
+- Pages reviewed: 7/20
 - Cross-cutting reviews: 0/6
 - Quick wins fixed: 19
-- Medium issues: 6
+- Medium issues: 7
 - Major issues: 1
 
 ---
@@ -202,3 +202,25 @@ Details:
 - **Performance**: 1002ms page load (navigation entry). DOMInteractive 886ms. Higher than other auth pages due to cold start + API round-trip. Normal for dev server.
 - **Interactions**: With middleware fix applied, invalid token now correctly renders "Invalid Invite" error screen within ~300ms of component mount. Previously: permanently stuck on "Loading invite…".
 - **Source code**: The `loadInvite` function now has full try/catch and content-type guarding. No XSS vectors. Token is used only in a fetch URL (no DOM injection). TypeScript: all types inferred correctly. The `acceptInvite` function (`/api/invites/[token]/accept`) is POST-only and is only called after authentication — no auth bypass possible via the UI. The form branch is only shown when `isAuthenticated === false` (confirmed from Supabase `getUser()`).
+
+---
+
+### /non-existent-route (404 Behaviour)
+**Visual**: ⚠️ Raw Next.js default — black background, no app branding
+**Responsive**: ✅ Renders correctly at all breakpoints (text centred, no overflow)
+**Accessibility**: ⚠️ No navigation landmark or link to return to the app
+**Runtime**: ✅ No JS console errors
+
+Findings:
+- [MEDIUM] No custom `not-found.tsx` exists anywhere in the project. Unauthenticated users hitting any unknown route are redirected to `/login` by middleware (the `isPublicPath` guard in `src/lib/supabase/middleware.ts` only whitelists specific paths, so unknown routes all redirect). Authenticated users, and anyone hitting a path under the `/auth/*` whitelist that doesn't match a real page, see the raw Next.js 404 page: solid black background, white "404 | This page could not be found." text, no app branding, no navigation, no link back to the app. This is inconsistent with the app's warm ecclesiastical design system (cream/brown palette, Cormorant Garamond typography). A custom `not-found.tsx` at `src/app/not-found.tsx` should be added in a second pass.
+- [MEDIUM] The 404 page contains no link or navigation element to return the user to the app (dashboard, home, or login). Users are completely stranded — the only escape is the browser back button. A custom `not-found.tsx` should include at minimum a "Go to Dashboard" or "Go to Home" link.
+- [INFO] The middleware redirect behaviour means most real-world 404 encounters by unauthenticated users are silently converted to `/login` redirects. No HTTP 404 status is returned to the browser for those requests — the redirect returns a 307, then `/login` returns 200. This is technically correct from a security standpoint (does not reveal route structure) but means the 404 page is effectively invisible to unauthenticated users.
+- [INFO] Accessibility tree on the Next.js default 404: heading "404" (h1), heading "This page could not be found." (h2), no landmark regions, no interactive elements except the Next.js dev-tools button. The "Skip to content" link from the root layout is present but its target (`#main-content`) does not exist on the 404 page — the skip link is non-functional here.
+
+Details:
+- **Visual**: Stark black (#000) full-bleed background. "404" in white, a vertical divider, then "This page could not be found." — the default Next.js error page with no customisation. Completely inconsistent with the app's cream/warm-brown design system. Tested via `/auth/this-does-not-exist` (a whitelisted public prefix with no matching page file), which correctly produces an HTTP 404 without middleware interference.
+- **Responsive (mobile 375×812)**: Text centred and readable. No overflow. The default Next.js 404 is inherently minimal so it scales fine, but this is incidental rather than intentional design.
+- **Responsive (tablet 768×1024)**: Same — text centred, no overflow. Layout unchanged from desktop.
+- **Accessibility snapshot**: Two headings ("404", "This page could not be found."), "Skip to content" link (target missing), Next.js dev-tools button. No landmark regions (`<main>`, `<nav>`, etc.). No interactive links. The page title in the browser tab remains "Precentor — Church Music Planner" (from root layout metadata) — it does not update to indicate an error, which may confuse users and screen reader users.
+- **Runtime**: No JS console errors at error level. Clean.
+- **How to trigger in production**: Any authenticated user who navigates to a non-existent URL (e.g., a bookmarked link that no longer exists, a mistyped church ID) will hit this page. Also triggered by any path under `/auth/*`, `/invite/*`, or `/api/invites/*` that does not match a real file.
