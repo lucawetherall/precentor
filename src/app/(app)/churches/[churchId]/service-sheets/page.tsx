@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { services, liturgicalDays, musicSlots } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { format, parseISO } from "date-fns";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
 import { ServiceSheetActions } from "./actions-client";
@@ -58,7 +59,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
                   {SERVICE_TYPE_LABELS[s.serviceType as ServiceType] || s.serviceType}
                   {s.time && ` — ${s.time}`}
                 </p>
-                <p className="text-xs text-muted-foreground font-mono">{s.date}</p>
+                <p className="text-xs text-muted-foreground font-mono">{format(parseISO(s.date), "d MMM yyyy")}</p>
               </div>
               <ServiceSheetActions serviceId={s.serviceId} churchId={churchId} />
             </div>

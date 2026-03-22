@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { churchMemberships, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { InviteMemberForm } from "./invite-form";
+import { MembersTable } from "./members-table";
 import { hasMinRole } from "@/lib/auth/permissions";
 import type { MemberRole } from "@/types";
 
@@ -67,28 +68,11 @@ export default async function MembersPage({ params }: Props) {
 
       {isAdmin && <InviteMemberForm churchId={churchId} />}
 
-      <div className="mt-8 border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-foreground text-background">
-              <th className="px-3 py-2 text-left font-body font-normal">Name</th>
-              <th className="px-3 py-2 text-left font-body font-normal">Email</th>
-              <th className="px-3 py-2 text-left font-body font-normal">Role</th>
-              <th className="px-3 py-2 text-left font-body font-normal">Voice Part</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.map((m: MemberRow, i: number) => (
-              <tr key={m.id} className={i % 2 === 0 ? "bg-white" : "bg-background"}>
-                <td className="px-3 py-2">{m.userName || "—"}</td>
-                <td className="px-3 py-2 font-mono text-xs">{m.userEmail}</td>
-                <td className="px-3 py-2 text-xs">{m.role}</td>
-                <td className="px-3 py-2 text-xs">{m.voicePart || "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <MembersTable
+        initialMembers={members}
+        churchId={churchId}
+        isAdmin={isAdmin}
+      />
     </div>
   );
 }

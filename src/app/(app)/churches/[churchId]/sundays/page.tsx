@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { liturgicalDays } from "@/lib/db/schema";
 import { gte, asc } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import Link from "next/link";
 
 interface Props {
@@ -57,7 +57,7 @@ export default async function SundaysPage({ params }: Props) {
                 }}
               />
               <div className="flex-1">
-                <p className="font-mono text-xs text-muted-foreground">{day.date}</p>
+                <p className="font-mono text-xs text-muted-foreground">{format(parseISO(day.date), "EEE d MMM yyyy")}</p>
                 <p className="font-heading text-lg">{day.cwName}</p>
               </div>
               <span className="text-xs text-muted-foreground">{day.season}</span>
