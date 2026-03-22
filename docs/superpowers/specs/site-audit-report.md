@@ -5,10 +5,10 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 11/20
+- Pages reviewed: 12/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 33
-- Medium issues: 13
+- Quick wins fixed: 39
+- Medium issues: 15
 - Major issues: 1
 
 ---
@@ -368,3 +368,42 @@ Details:
 - **Interactions**: Click church card → navigates to `/churches/a0426f52-a3c0-4a07-a264-c3a73764cdcd/sundays` (confirmed by eval). Click "Add Church" button → navigates to `/churches/new` (confirmed by eval). Both work correctly.
 - **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Two sequential Drizzle ORM DB queries (user lookup, then membership join) in a `try/catch` — silently falls back to empty list on DB failure (correct defensive pattern). Auth gate via `supabase.auth.getUser()` + `redirect("/login")` — correct. TypeScript: inline `interface UserChurch` defined inside the async function component (valid but conventionally defined at module level). No stray `console.log`. `loading.tsx` provides a skeleton for the two expected skeleton cards — minimal but functional.
 - **Interactions**: Sync not triggered (known bug — `GET /api/cron/sync-lectionary` without auth header returns error). Day table rendered correctly with 60 rows showing Date, Name, Season, Year, Colour for each imported liturgical day. All data appears semantically correct for the 2025/2026 Church of England lectionary (Year A, Ordinary Time weeks, correct seasons).
+
+---
+
+### /churches/new (Create Church Form)
+**Visual**: ✅ Pass
+**Responsive**: ✅ Pass (mobile and tablet both render cleanly within `max-w-lg`)
+**Accessibility**: ⚠️ Two axe-core violations (both fixed); error `<p>` lacked `role="alert"` (fixed)
+**Runtime**: ✅ Pass (no console errors)
+**Design System**: ⚠️ Hardcoded `hover:bg-[#6B4423]` on submit button (fixed)
+**Interactions**: ⚠️ Empty-form submit bypassed JS-side validation — API called with empty name (fixed); no cancel/back link
+**Source Code**: ⚠️ Missing `id="main-content"` on `<main>` (fixed); missing `autocomplete` attributes (fixed); no try/catch on error-path `res.json()` (fixed); no JS-side required-field guard (fixed)
+**Performance**: ✅ Pass
+
+Findings:
+- [QUICK WIN] **Fixed**: Added `id="main-content"` to the `<main>` element in `src/app/(app)/churches/new/page.tsx`. The layout skip link (`href="#main-content"`) now has a reachable focusable target. Resolves axe-core `skip-link` violation (moderate). Confirmed by eval: `mainId === "main-content"`.
+- [QUICK WIN] **Fixed**: Replaced `hover:bg-[#6B4423]` with `hover:bg-primary-hover` on the "Create Church" submit button. Consistent with design token `--primary-hover: #6B4423` established in globals.css. Confirmed by eval: `submitClass` contains `hover:bg-primary-hover`.
+- [QUICK WIN] **Fixed**: Added `role="alert"` to the inline error `<p>` (`{error && <p role="alert" ...>}`). Previously, errors were rendered silently — screen readers received no announcement without a focus shift. The `role="alert"` live region ensures the "Church name is required." message is announced immediately.
+- [QUICK WIN] **Fixed**: Added explicit JS-side required-field guard in `handleSubmit`: checks `name.trim()` before the API call and calls `setError("Church name is required.")` / returns early if empty. This prevents the API being called with an empty church name when `e.preventDefault()` suppresses native browser validation in non-Chrome browsers. Confirmed by test: dispatching a raw `submit` event now shows the alert and stays on `/churches/new`.
+- [QUICK WIN] **Fixed**: Added `autocomplete` attributes to all inputs: `autoComplete="organization"` on church name, `autoComplete="off"` on diocese, `autoComplete="street-address"` on address textarea, `autoComplete="off"` on CCLI number. Consistent with pattern from `/onboarding` audit.
+- [QUICK WIN] **Fixed**: Added `inputMode="numeric"` to the CCLI Number input. The field is `type="text"` (correct, to allow leading zeros and avoid spinner UI) but `inputMode="numeric"` ensures mobile devices show a numeric keyboard. No behaviour change on desktop.
+- [QUICK WIN] **Fixed**: Wrapped the error-path `res.json()` call in a try/catch. Previously, a non-JSON error response (e.g., a 500 HTML page from the server) would throw an unhandled promise rejection, leaving `loading` stuck at `true` and the user seeing a spinner forever with no error message. Now falls back to `"Failed to create church."`.
+- [MODERATE – A11Y] `skip-link` violation (axe-core): Skip link `href="#main-content"` had no focusable target because `<main>` lacked `id="main-content"`. Fixed (see quick win above).
+- [MODERATE – A11Y] `region` violation (axe-core): One content node outside any landmark — the Next.js dev-tools button renders outside `<main>`. Dev-only overlay, low priority.
+- [MEDIUM – UX] No cancel or back link. The form is a dead end if the user changes their mind — the only escape is the browser back button. Given the `/churches` list page exists and links to this form, a "← Back to churches" link or a "Cancel" button (navigating to `/churches`) should be added below the submit button. This is especially important on mobile where the form is full-viewport.
+- [MEDIUM – UX/SECURITY] No guard against duplicate church creation: the same issue identified on `/onboarding` applies here. The `(app)/layout.tsx` does not check how many churches the user already has. A user could create unlimited churches via this page. The `/api/churches` POST handler should enforce any business-rule limit at the DB/API level.
+- [INFO] The page `<title>` is "Precentor — Church Music Planner" (inherited from root layout). No `metadata` export in `page.tsx`. Adding `export const metadata = { title: "Add Church — Precentor" }` would give screen reader users and browser tab users a more descriptive page title.
+- [INFO] Input height: all inputs render at ~38px bounding height (with `py-2` padding) — just under the 44px recommended touch target minimum. Consider `py-3` for consistency with the pattern noted across auth pages. Low priority.
+- [INFO] The form does not have a `slug` field, despite the audit task mentioning it. The source confirms: only `name`, `diocese`, `address`, and `ccliNumber` are collected. If the API auto-generates slugs, this is correct; if not, this is a data model gap.
+
+Details:
+- **Visual (desktop 1280×800)**: Clean single-column form within `max-w-lg` (512px) with `p-8` padding. "Add Church" h1 in Cormorant Garamond. Four labelled fields (Church Name required, Diocese, Address textarea, CCLI Number) plus a full-width primary submit button. No navigation chrome visible (no sidebar at this viewport — the `(app)/layout.tsx` renders no sidebar of its own; this is consistent with the onboarding page). Warm cream background (`--background`). All design tokens applied correctly post-fix.
+- **Responsive (mobile 375×812)**: All fields span full container width, no overflow. Submit button full-width and tappable. Labels and placeholders remain readable. The `max-w-lg` collapses gracefully. No visual regressions.
+- **Responsive (tablet 768×1024)**: Identical proportions within the `max-w-lg` container. Form centred. No clipping or overflow. Better than `/churches` page which had overflow issues — the narrower `max-w-lg` (512px vs 896px) fits comfortably within the 768px viewport even with `p-8` padding.
+- **Accessibility snapshot**: `h1` "Add Church" present. All four inputs have associated `<label>` elements via `htmlFor`/`id` (name → `#name`, diocese → `#diocese`, address → `#address`, ccliNumber → `#ccliNumber`). "Create Church" button in tree. `<main id="main-content">` is the skip link target (after fix). Error `<p role="alert">` confirmed present (after fix). axe-core: 2 violations pre-fix (skip-link, region); region violation is dev-only overlay.
+- **Runtime**: No JS console errors. Network failures in the log are all pre-navigation aborts from earlier browser sessions — none related to this page. No failed requests on `/churches/new` itself.
+- **Performance**: Page load fast (client component, no server-side data fetching beyond the auth check in `(app)/layout.tsx`). Supabase `getUser()` in the layout adds one server round-trip; all within normal dev-server ranges.
+- **CSS inspection**: `<main>` — `p-8 max-w-lg`, `id="main-content"` (after fix). `h1` — Cormorant Garamond (`font-heading`), 30px, weight 600. Submit button — `bg-primary` (`rgb(139, 69, 19)`), `text-primary-foreground` (`rgb(250, 246, 241)`), `hover:bg-primary-hover` (after fix). Inputs — `border-border`, `bg-white`, `focus:border-primary`, no border-radius (flat ecclesiastical aesthetic).
+- **Interactions (post-fix)**: Click "Create Church" with empty name → browser native validation tooltip "Please fill in this field." appears (Chrome), page stays on `/churches/new`. Programmatic `form.dispatchEvent(new Event('submit'))` → JS guard fires, `role="alert"` error "Church name is required." renders, page stays on `/churches/new`. Confirmed by eval: `url === "http://localhost:3000/churches/new"`, `errorText === "Church name is required."`. No API call made.
+- **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Form data serialised as JSON to `POST /api/churches`. No client-side slug generation (server-side concern). `loading` state disables button and changes label to "Creating...". `useRouter` from `next/navigation` (correct for App Router). TypeScript: all types inferred correctly. No stray `console.log`. Error state cleared at start of each submit attempt (`setError("")` before API call) — correct. The `required` attribute on church name provides a first line of defence via browser HTML5 validation; the JS guard provides a second line for environments where native validation is bypassed.
