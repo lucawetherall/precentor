@@ -31,12 +31,12 @@ export default async function ChurchesPage() {
   } catch { /* DB not available */ }
 
   return (
-    <main className="p-8 max-w-4xl">
+    <main id="main-content" className="p-8 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-heading font-semibold">Your Churches</h1>
         <Link
           href="/churches/new"
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors"
         >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
           Add Church
@@ -49,7 +49,7 @@ export default async function ChurchesPage() {
           <p className="text-muted-foreground mb-4">You haven&apos;t joined any churches yet.</p>
           <Link
             href="/churches/new"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors"
           >
             Create Your First Church
           </Link>

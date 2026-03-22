@@ -5,10 +5,10 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 10/20
+- Pages reviewed: 11/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 29
-- Medium issues: 12
+- Quick wins fixed: 33
+- Medium issues: 13
 - Major issues: 1
 
 ---
@@ -331,4 +331,40 @@ Details:
 - **Performance**: domContentLoaded 463ms, loadComplete 471ms, FCP 484ms, TTFB 401ms. The response time reflects the server-side DB query (`SELECT … FROM liturgical_days ORDER BY date DESC LIMIT 60`) in the page component. 60 rows is well within normal DB performance bounds.
 - **CSS inspection**: `h1` — Cormorant Garamond, 30px, weight 600, `rgb(44, 36, 22)`. Sync button — `bg-primary` (`rgb(139, 69, 19)`), `text-primary-foreground` (`rgb(250, 246, 241)`), `hover:bg-primary-hover` (after fix). `<main>` — `p-8 max-w-4xl`, `id="main-content"` (after fix). Table colour dot (green row) — `background-color: rgb(74, 103, 65)` (= `#4A6741` = `--liturgical-green` / `--secondary` — correct).
 - **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. DB query uses Drizzle ORM with no raw SQL — no injection risk. `day.colour` from DB is rendered in a hardcoded switch-style expression (safe — output is a CSS hex string, not HTML). The `try/catch` around the DB call silently continues with `days = []` on failure and logs a warning via `logger.warn` — appropriate defensive pattern. `loading` state on the button uses `disabled={loading}` with `disabled:opacity-50` — correct. TypeScript: all types correctly inferred via `typeof liturgicalDays.$inferSelect`. No stray `console.log`.
+
+---
+
+### /churches (Church List)
+**Visual**: ✅ Pass
+**Responsive**: ⚠️ Tablet (768px) layout overflow — "Add Church" button clips off-screen; ADMIN badge invisible
+**Accessibility**: ⚠️ Two axe-core violations (both fixed)
+**Runtime**: ✅ Pass (liturgical-days warning is pre-existing/unrelated)
+**Design System**: ⚠️ Two instances of hardcoded `hover:bg-[#6B4423]` (both fixed)
+**Interactions**: ✅ Pass
+**Source Code**: ✅ Pass
+**Performance**: ✅ Pass
+
+Findings:
+- [QUICK WIN] **Fixed**: Added `id="main-content"` to the `<main>` element in `src/app/(app)/churches/page.tsx`. The layout skip link (`href="#main-content"`) now has a reachable focusable target. Resolves axe-core `skip-link` violation (moderate).
+- [QUICK WIN] **Fixed**: Added `id="main-content"` to the `<main>` element in `src/app/(app)/churches/loading.tsx` for consistency — the skip link is present during the loading skeleton state and would otherwise have no target while the page streams in.
+- [QUICK WIN] **Fixed**: Replaced `hover:bg-[#6B4423]` with `hover:bg-primary-hover` on the "Add Church" button (header, line 39) in `src/app/(app)/churches/page.tsx`. Consistent with design token `--primary-hover: #6B4423`.
+- [QUICK WIN] **Fixed**: Replaced `hover:bg-[#6B4423]` with `hover:bg-primary-hover` on the "Create Your First Church" button (empty-state, line 52) in `src/app/(app)/churches/page.tsx`.
+- [MODERATE – A11Y] `skip-link` violation (axe-core): Skip link `href="#main-content"` had no focusable target because `<main>` lacked `id="main-content"`. Fixed (see quick win above). Confirmed 0 axe violations after fix.
+- [MODERATE – A11Y] `region` violation (axe-core): One content node outside any landmark — the Next.js dev-tools button renders outside `<main>`. Dev-only overlay, low priority.
+- [MEDIUM – RESPONSIVE] At tablet width (768px), the header `flex items-center justify-between` row overflows: the "Add Church" button is clipped to only show "Ad..." and the church card's ADMIN role badge is pushed off-screen to the right. The `max-w-4xl` container (`max-width: 896px`) is wider than the 768px viewport, so `p-8` padding (64px per side) reduces available inner width to ~640px — not enough for the heading and button at those sizes. The `<main>` element should have `overflow-x: hidden` or the header should use `flex-wrap` to allow the button to drop below the heading at narrow widths. No horizontal scroll is afforded, so content is simply clipped.
+- [INFO] The church card link (`<Link href={…/sundays}>`) has no `aria-label` beyond its text content. Its accessible name is "St Mary the Virgin, Testbury Diocese of Oxford ADMIN" (all child text concatenated) — this is technically acceptable but verbose. Adding a more concise `aria-label="St Mary the Virgin, Testbury — go to services"` would improve screen reader UX.
+- [INFO] The `<span>` displaying the role badge ("ADMIN") uses `text-xs` (12px) — below the 14px body copy minimum. At small sizes this could be difficult to read at low vision. Not a WCAG violation but worth noting.
+- [INFO] The page `<title>` is "Precentor — Church Music Planner" (inherited from layout). Adding `export const metadata = { title: "Your Churches — Precentor" }` to `page.tsx` would provide a more descriptive browser tab/screen reader title for this page.
+- [INFO] The `<Church>` icon in the empty state has no `aria-hidden="true"`. It is decorative (the adjacent `<p>` text provides context), so adding `aria-hidden="true"` would prevent it from being announced as an unlabelled image by some screen readers.
+
+Details:
+- **Visual (desktop 1280×800)**: Clean two-column header row with "Your Churches" h1 and "Add Church" primary button. Church card shows church name (Cormorant Garamond h2), diocese in muted text, and ADMIN badge. Layout well-proportioned, flat ecclesiastical aesthetic maintained. No visual regressions.
+- **Responsive (mobile 375×812)**: `text-3xl` heading wraps to two lines ("Your" / "Churches") and the "Add Church" button inflates to a large block because the flex container has no min-width protection. The button and heading compete for space in a `justify-between` row without a flex shrink guard, making the button disproportionately large. Functional but visually unbalanced.
+- **Responsive (tablet 768×1024)**: "Add Church" button clips at viewport right edge (only "Ad" visible). ADMIN badge on church card completely off-screen. The `max-w-4xl` on `<main>` does not prevent overflow at this viewport width when combined with the `p-8` padding. This is a functional regression — the button is unusable at 768px.
+- **Accessibility snapshot**: `h1` "Your Churches" present. `link` "Add Church" present. Church card is a `link` with concatenated accessible name "St Mary the Virgin, Testbury Diocese of Oxford ADMIN". `h2` "St Mary the Virgin, Testbury" inside the card link (heading inside link is valid for card patterns). Skip link present. 0 violations after fixes.
+- **Runtime**: No JS console errors. Pre-existing `[WARN] Failed to load liturgical days` server warnings (unrelated to this page — same as previous audits). One `net::ERR_ABORTED` for the initial `/` request (pre-navigation abort, expected).
+- **Performance**: domContentLoaded 506ms, loadComplete 507ms, 29 resources. Server-side render of the church list requires two sequential DB queries (user lookup + church membership join). Load time is reasonable for a dev server with auth check.
+- **CSS inspection**: `<main>` — `p-8 max-w-4xl`, `id="main-content"` (after fix). `h1` — Cormorant Garamond, 30px, weight 600, `rgb(44, 36, 22)`. "Add Church" button — `bg-primary` (`rgb(139, 69, 19)`), `text-primary-foreground` (`rgb(250, 246, 241)`), 14px, `hover:bg-primary-hover` (after fix). Church card link — `bg-card` (white), `border-border`, `shadow-sm`, `hover:border-primary`. Card `h2` — Cormorant Garamond, 18px, weight 600.
+- **Interactions**: Click church card → navigates to `/churches/a0426f52-a3c0-4a07-a264-c3a73764cdcd/sundays` (confirmed by eval). Click "Add Church" button → navigates to `/churches/new` (confirmed by eval). Both work correctly.
+- **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Two sequential Drizzle ORM DB queries (user lookup, then membership join) in a `try/catch` — silently falls back to empty list on DB failure (correct defensive pattern). Auth gate via `supabase.auth.getUser()` + `redirect("/login")` — correct. TypeScript: inline `interface UserChurch` defined inside the async function component (valid but conventionally defined at module level). No stray `console.log`. `loading.tsx` provides a skeleton for the two expected skeleton cards — minimal but functional.
 - **Interactions**: Sync not triggered (known bug — `GET /api/cron/sync-lectionary` without auth header returns error). Day table rendered correctly with 60 rows showing Date, Name, Season, Year, Colour for each imported liturgical day. All data appears semantically correct for the 2025/2026 Church of England lectionary (Year A, Ordinary Time weeks, correct seasons).
