@@ -9,13 +9,14 @@
  */
 
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { liturgicalDays, readings, liturgicalSeasonEnum, liturgicalColourEnum, lectionaryEnum, readingPositionEnum } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-const VALID_SEASONS = new Set(liturgicalSeasonEnum.enumValues);
-const VALID_COLOURS = new Set(liturgicalColourEnum.enumValues);
-const VALID_LECTIONARIES = new Set(lectionaryEnum.enumValues);
-const VALID_POSITIONS = new Set(readingPositionEnum.enumValues);
+const VALID_SEASONS: Set<string> = new Set(liturgicalSeasonEnum.enumValues);
+const VALID_COLOURS: Set<string> = new Set(liturgicalColourEnum.enumValues);
+const VALID_LECTIONARIES: Set<string> = new Set(lectionaryEnum.enumValues);
+const VALID_POSITIONS: Set<string> = new Set(readingPositionEnum.enumValues);
 import {
   computeLiturgicalCalendar,
   getChurchYear,
@@ -55,11 +56,11 @@ export async function syncLectionaryForYear(
   const fetchText = options?.fetchText ?? false;
   const bibleVersion = options?.bibleVersion ?? process.env.BIBLE_VERSION ?? "NRSVAE";
 
-  console.log(`Syncing lectionary for ${churchYear.startYear}/${churchYear.endYear} (Year ${year})`);
+  logger.info("Syncing lectionary", { churchYear: `${churchYear.startYear}/${churchYear.endYear}`, year });
 
   // 1. Compute the calendar
   const calendar = await computeLiturgicalCalendar(churchYear);
-  console.log(`Calendar: ${calendar.length} dates`);
+  logger.info("Calendar dates computed", { count: calendar.length });
 
   let imported = 0;
   let errors = 0;
@@ -69,23 +70,23 @@ export async function syncLectionaryForYear(
     try {
       const sundayData = data.sundays[entry.sundayKey];
       if (!sundayData) {
-        console.warn(`No lectionary data for key: ${entry.sundayKey}`);
+        logger.warn("No lectionary data for key", { sundayKey: entry.sundayKey });
         continue;
       }
 
       const yearReadings = sundayData.years[year];
       if (!yearReadings) {
-        console.warn(`No Year ${year} readings for: ${entry.name}`);
+        logger.warn("No readings for year", { year, name: entry.name });
         continue;
       }
 
       // Validate enum values before inserting
-      if (!VALID_SEASONS.has(entry.season as any)) {
-        console.warn(`Invalid season "${entry.season}" for ${entry.date}, skipping`);
+      if (!VALID_SEASONS.has(entry.season)) {
+        logger.warn("Invalid season, skipping", { season: entry.season, date: entry.date });
         continue;
       }
-      if (!VALID_COLOURS.has(entry.colour as any)) {
-        console.warn(`Invalid colour "${entry.colour}" for ${entry.date}, skipping`);
+      if (!VALID_COLOURS.has(entry.colour)) {
+        logger.warn("Invalid colour, skipping", { colour: entry.colour, date: entry.date });
         continue;
       }
 
@@ -142,7 +143,7 @@ export async function syncLectionaryForYear(
 
       imported++;
     } catch (error) {
-      console.error(`Failed to import ${entry.date} (${entry.name}):`, error);
+      logger.error("Failed to import liturgical day", error, { date: entry.date, name: entry.name });
       errors++;
     }
   }
@@ -187,8 +188,8 @@ function buildReadingRows(
   for (const [lectionary, serviceReadings] of services) {
     for (const reading of serviceReadings) {
       const position = reading.position as string;
-      if (!VALID_POSITIONS.has(position as any)) {
-        console.warn(`Invalid reading position "${position}" for "${reading.reference}", skipping`);
+      if (!VALID_POSITIONS.has(position)) {
+        logger.warn("Invalid reading position, skipping", { position, reference: reading.reference });
         continue;
       }
       rows.push({

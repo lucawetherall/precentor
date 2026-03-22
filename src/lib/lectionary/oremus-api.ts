@@ -13,6 +13,7 @@
  */
 
 import * as cheerio from "cheerio";
+import { logger } from "@/lib/logger";
 
 const OREMUS_API = "https://bible.oremus.org/";
 
@@ -36,14 +37,14 @@ export async function fetchReadingText(
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
 
     if (!res.ok) {
-      console.warn(`Oremus API error ${res.status} for "${reference}"`);
+      logger.warn("Oremus API error", { status: res.status, reference });
       return "";
     }
 
     const html = await res.text();
     return extractScriptureText(html);
   } catch (err) {
-    console.warn(`Oremus API fetch failed for "${reference}":`, err);
+    logger.warn("Oremus API fetch failed", { error: String(err), reference });
     return "";
   }
 }
@@ -70,7 +71,7 @@ export async function fetchMultipleReadings(
     results.set(reference, text);
 
     if ((i + 1) % 10 === 0) {
-      console.log(`  Fetched ${i + 1}/${references.length} readings...`);
+      logger.info("Fetched readings progress", { fetched: i + 1, total: references.length });
     }
   }
 

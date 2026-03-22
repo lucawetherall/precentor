@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 import { ChurchSettingsForm } from "./settings-form";
 
 interface Props {
@@ -15,7 +16,7 @@ export default async function ChurchSettingsPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  let church: any = null;
+  let church: InferSelectModel<typeof churches> | null = null;
   try {
     const result = await db.select().from(churches).where(eq(churches.id, churchId)).limit(1);
     church = result[0] || null;

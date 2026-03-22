@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { invites, users, churchMemberships } from "@/lib/db/schema";
 import { eq, and, isNull, gt } from "drizzle-orm";
 
@@ -75,7 +76,7 @@ export async function POST(
 
     return NextResponse.json({ churchId: invite.churchId });
   } catch (error) {
-    console.error("Failed to accept invite:", error);
+    logger.error("Failed to accept invite", error);
     return NextResponse.json({ error: "Failed to accept invite" }, { status: 500 });
   }
 }

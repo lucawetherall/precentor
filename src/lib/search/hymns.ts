@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { hymns } from "@/lib/db/schema";
 import { ilike, or, eq, and, type SQL } from "drizzle-orm";
 
-export async function searchHymns(query: string, book?: "NEH" | "AM") {
+export async function searchHymns(query: string, book?: "NEH" | "AM", offset = 0) {
   const conditions: SQL[] = [
     ilike(hymns.firstLine, `%${query}%`),
     ilike(hymns.tuneName, `%${query}%`),
@@ -22,5 +22,6 @@ export async function searchHymns(query: string, book?: "NEH" | "AM") {
     .select()
     .from(hymns)
     .where(whereClause!)
+    .offset(offset)
     .limit(20);
 }

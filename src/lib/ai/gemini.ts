@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
+import { logger } from "@/lib/logger";
 import type { LLMProvider, SuggestionContext, MusicSuggestion } from "./types";
 
 const suggestionSchema: Schema = {
@@ -37,7 +38,7 @@ export class GeminiProvider implements LLMProvider {
     try {
       return JSON.parse(text) as MusicSuggestion[];
     } catch {
-      console.error("Failed to parse Gemini response:", text);
+      logger.error("Failed to parse Gemini response", text);
       return [];
     }
   }

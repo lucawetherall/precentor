@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { churches, churchMemberships, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 import Link from "next/link";
 import { Calendar, Music, Users, FileText, Settings, ChevronLeft } from "lucide-react";
 import { hasMinRole } from "@/lib/auth/permissions";
@@ -20,8 +21,8 @@ export default async function ChurchLayout({ children, params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  let church: any = null;
-  let membership: any = null;
+  let church: InferSelectModel<typeof churches> | null = null;
+  let membership: InferSelectModel<typeof churchMemberships> | null = null;
 
   try {
     const dbUser = await db.select().from(users).where(eq(users.supabaseId, user.id)).limit(1);
@@ -48,7 +49,7 @@ export default async function ChurchLayout({ children, params }: Props) {
     }
   } catch { /* DB not available */ }
 
-  if (!church) {
+  if (!church || !membership) {
     redirect("/churches");
   }
 

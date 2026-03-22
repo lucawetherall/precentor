@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { liturgicalDays } from "@/lib/db/schema";
 import { gte, asc } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 import { format } from "date-fns";
 import Link from "next/link";
 
@@ -12,7 +13,7 @@ export default async function SundaysPage({ params }: Props) {
   const { churchId } = await params;
   const today = format(new Date(), "yyyy-MM-dd");
 
-  let upcomingDays: any[] = [];
+  let upcomingDays: InferSelectModel<typeof liturgicalDays>[] = [];
   try {
     upcomingDays = await db
       .select()
@@ -37,7 +38,7 @@ export default async function SundaysPage({ params }: Props) {
         </div>
       ) : (
         <div className="space-y-2">
-          {upcomingDays.map((day: any) => (
+          {upcomingDays.map((day) => (
             <Link
               key={day.id}
               href={`/churches/${churchId}/sundays/${day.date}`}

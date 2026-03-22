@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { services, liturgicalDays, musicSlots } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { SERVICE_TYPE_LABELS } from "@/types";
+import type { ServiceType } from "@/types";
 import { ServiceSheetActions } from "./actions-client";
 
 interface Props {
@@ -11,7 +12,8 @@ interface Props {
 export default async function ServiceSheetsPage({ params }: Props) {
   const { churchId } = await params;
 
-  let recentServices: any[] = [];
+  interface ServiceSheetRow { serviceId: string; serviceType: string; time: string | null; status: string; date: string; cwName: string; colour: string; }
+  let recentServices: ServiceSheetRow[] = [];
   try {
     recentServices = await db
       .select({
@@ -45,7 +47,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
         </div>
       ) : (
         <div className="space-y-2">
-          {recentServices.map((s: any) => (
+          {recentServices.map((s: ServiceSheetRow) => (
             <div
               key={s.serviceId}
               className="flex items-center gap-4 border border-border bg-card p-4 shadow-sm"
@@ -53,7 +55,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
               <div className="flex-1">
                 <p className="font-heading text-lg">{s.cwName}</p>
                 <p className="text-sm text-muted-foreground">
-                  {(SERVICE_TYPE_LABELS as any)[s.serviceType] || s.serviceType}
+                  {SERVICE_TYPE_LABELS[s.serviceType as ServiceType] || s.serviceType}
                   {s.time && ` — ${s.time}`}
                 </p>
                 <p className="text-xs text-muted-foreground font-mono">{s.date}</p>

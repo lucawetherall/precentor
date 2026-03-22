@@ -19,6 +19,9 @@ interface Member {
   role: string;
 }
 
+interface AvailabilityEntry { id: string; userId: string; serviceId: string; status: string; }
+interface RotaEntry { id: string; serviceId: string; userId: string; confirmed: boolean; }
+
 type AvailabilityStatus = "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE";
 
 export function RotaGrid({
@@ -31,13 +34,13 @@ export function RotaGrid({
   churchId: string;
   services: Service[];
   members: Member[];
-  availabilityData: any[];
-  rotaData: any[];
+  availabilityData: AvailabilityEntry[];
+  rotaData: RotaEntry[];
 }) {
   const [avail, setAvail] = useState<Record<string, AvailabilityStatus>>(() => {
     const initial: Record<string, AvailabilityStatus> = {};
     for (const a of availabilityData) {
-      initial[`${a.userId}-${a.serviceId}`] = a.status;
+      initial[`${a.userId}-${a.serviceId}`] = a.status as AvailabilityStatus;
     }
     return initial;
   });
@@ -48,8 +51,6 @@ export function RotaGrid({
     }
     return initial;
   });
-  const [saving, setSaving] = useState(false);
-
   const getAvailKey = (userId: string, serviceId: string) => `${userId}-${serviceId}`;
 
   const cycleAvailability = async (userId: string, serviceId: string) => {
@@ -154,15 +155,21 @@ export function RotaGrid({
                                 ? "border-destructive text-destructive"
                                 : "border-[#D4AF37] text-[#D4AF37]"
                             }`}
-                            title={status}
+                            aria-label={`${member.name || member.email}: ${
+                              status === "AVAILABLE" ? "Available" :
+                              status === "UNAVAILABLE" ? "Unavailable" : "Tentative"
+                            } for ${s.cwName} on ${s.date}. Click to change.`}
                           >
                             {status === "AVAILABLE" ? (
-                              <Check className="h-3 w-3" strokeWidth={2} />
+                              <Check className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
                             ) : status === "UNAVAILABLE" ? (
-                              <X className="h-3 w-3" strokeWidth={2} />
+                              <X className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
                             ) : (
-                              <Minus className="h-3 w-3" strokeWidth={2} />
+                              <Minus className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
                             )}
+                            <span className="sr-only">
+                              {status === "AVAILABLE" ? "Available" : status === "UNAVAILABLE" ? "Unavailable" : "Tentative"}
+                            </span>
                           </button>
                           <button
                             onClick={() => toggleRota(member.userId, s.serviceId)}
@@ -171,9 +178,9 @@ export function RotaGrid({
                                 ? "bg-primary text-primary-foreground border-primary"
                                 : "border-border text-muted-foreground"
                             }`}
-                            title={onRota ? "On rota" : "Not on rota"}
+                            aria-label={`${onRota ? "Remove" : "Add"} ${member.name || member.email} ${onRota ? "from" : "to"} rota for ${s.cwName}`}
                           >
-                            R
+                            <span aria-hidden="true">R</span>
                           </button>
                         </div>
                       </td>

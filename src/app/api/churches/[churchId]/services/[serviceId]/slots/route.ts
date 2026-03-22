@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
-import { musicSlots } from "@/lib/db/schema";
+import { logger } from "@/lib/logger";
+import { musicSlots, musicSlotTypeEnum } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(
@@ -46,9 +47,9 @@ export async function PUT(
 
     if (slots && slots.length > 0) {
       await db.insert(musicSlots).values(
-        slots.map((slot: any, i: number) => ({
+        slots.map((slot: { slotType: string; hymnId?: string; anthemId?: string; massSettingId?: string; canticleSettingId?: string; responsesSettingId?: string; freeText?: string; notes?: string }, i: number) => ({
           serviceId,
-          slotType: slot.slotType as any,
+          slotType: slot.slotType as (typeof musicSlotTypeEnum.enumValues)[number],
           positionOrder: i,
           hymnId: slot.hymnId || null,
           anthemId: slot.anthemId || null,
@@ -63,7 +64,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Failed to save music slots:", error);
+    logger.error("Failed to save music slots", error);
     return NextResponse.json({ error: "Failed to save" }, { status: 500 });
   }
 }

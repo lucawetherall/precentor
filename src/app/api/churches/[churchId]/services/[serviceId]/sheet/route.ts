@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { services, liturgicalDays, readings, musicSlots, churches } from "@/lib/db/schema";
@@ -92,7 +93,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Service sheet generation failed:", error);
+    logger.error("Service sheet generation failed", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Generation failed" },
       { status: 500 }

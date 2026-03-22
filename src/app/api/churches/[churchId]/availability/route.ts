@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireChurchRole, hasMinRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
-import { availability, services, churchMemberships } from "@/lib/db/schema";
+import { logger } from "@/lib/logger";
+import { availability, services, churchMemberships, availabilityStatusEnum } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import type { MemberRole } from "@/types";
 
@@ -66,16 +67,16 @@ export async function POST(
       .values({
         userId: targetUserId,
         serviceId,
-        status: status as any,
+        status: status as (typeof availabilityStatusEnum.enumValues)[number],
       })
       .onConflictDoUpdate({
         target: [availability.userId, availability.serviceId],
-        set: { status: status as any },
+        set: { status: status as (typeof availabilityStatusEnum.enumValues)[number] },
       });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Failed to update availability:", error);
+    logger.error("Failed to update availability", error);
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { services, musicSlots, performanceLogs, liturgicalDays } from "@/lib/db/schema";
 import { eq, and, lt, or, isNotNull, sql } from "drizzle-orm";
 import { format } from "date-fns";
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, logged: unloggedSlots.length });
   } catch (error) {
-    console.error("Performance logging failed:", error);
+    logger.error("Performance logging failed", error);
     return NextResponse.json({ error: "Logging failed" }, { status: 500 });
   }
 }

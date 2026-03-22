@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -34,7 +35,7 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error("Failed to update church:", error);
+    logger.error("Failed to update church", error);
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
   }
 }

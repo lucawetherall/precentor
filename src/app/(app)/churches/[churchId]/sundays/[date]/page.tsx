@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { liturgicalDays, readings, services, musicSlots, hymns, anthems, massSettings, canticleSettings, responsesSettings } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { SERVICE_TYPE_LABELS, LITURGICAL_COLOURS } from "@/types";
+import type { LiturgicalColour } from "@/types";
+import type { InferSelectModel } from "drizzle-orm";
 import { ServicePlanner } from "./service-planner";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -13,9 +15,9 @@ interface Props {
 export default async function SundayDetailPage({ params }: Props) {
   const { churchId, date } = await params;
 
-  let day: any = null;
-  let dayReadings: any[] = [];
-  let dayServices: any[] = [];
+  let day: InferSelectModel<typeof liturgicalDays> | null = null;
+  let dayReadings: InferSelectModel<typeof readings>[] = [];
+  let dayServices: InferSelectModel<typeof services>[] = [];
 
   try {
     const days = await db.select().from(liturgicalDays).where(eq(liturgicalDays.date, date)).limit(1);
@@ -42,7 +44,7 @@ export default async function SundayDetailPage({ params }: Props) {
     );
   }
 
-  const colour = (LITURGICAL_COLOURS as any)[day.colour] || "#4A6741";
+  const colour = LITURGICAL_COLOURS[day.colour as LiturgicalColour] || "#4A6741";
 
   return (
     <div className="p-8 max-w-5xl">
@@ -68,7 +70,7 @@ export default async function SundayDetailPage({ params }: Props) {
         <div className="mb-6 border border-border bg-card p-4 shadow-sm">
           <h2 className="text-lg font-heading font-semibold mb-3">Readings</h2>
           <div className="space-y-1">
-            {dayReadings.map((r: any) => (
+            {dayReadings.map((r) => (
               <div key={r.id} className="flex gap-3 text-sm">
                 <span className="text-muted-foreground w-24 flex-shrink-0">{r.position}</span>
                 <span>{r.reference}</span>

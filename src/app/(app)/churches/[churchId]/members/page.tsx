@@ -17,7 +17,8 @@ export default async function MembersPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  let members: any[] = [];
+  interface MemberRow { id: string; role: string; voicePart: string | null; joinedAt: Date; userName: string | null; userEmail: string; }
+  let members: MemberRow[] = [];
   let userRole: MemberRole = "MEMBER";
 
   try {
@@ -77,7 +78,7 @@ export default async function MembersPage({ params }: Props) {
             </tr>
           </thead>
           <tbody>
-            {members.map((m: any, i: number) => (
+            {members.map((m: MemberRow, i: number) => (
               <tr key={m.id} className={i % 2 === 0 ? "bg-white" : "bg-background"}>
                 <td className="px-3 py-2">{m.userName || "—"}</td>
                 <td className="px-3 py-2 font-mono text-xs">{m.userEmail}</td>
