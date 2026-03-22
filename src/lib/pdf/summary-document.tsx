@@ -6,14 +6,7 @@ import { accentColour } from "./theme";
 import { SheetHeader } from "./components/sheet-header";
 import { SheetFooter } from "./components/sheet-footer";
 import { MusicSlotRow } from "./components/music-slot-row";
-
-const POSITION_LABELS: Record<string, string> = {
-  OLD_TESTAMENT: "Old Testament",
-  PSALM: "Psalm",
-  EPISTLE: "Epistle",
-  GOSPEL: "Gospel",
-  CANTICLE: "Canticle",
-};
+import { POSITION_LABELS } from "@/types";
 
 export function SummaryDocument({
   data,
@@ -75,6 +68,20 @@ export function SummaryDocument({
                 <Text style={styles.readingValue}>{r.reference}</Text>
               </View>
             ))}
+          </View>
+        )}
+
+        {data.postCommunion && (
+          <View style={styles.section}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { borderBottomWidth: 0.5, borderBottomColor: accent },
+              ]}
+            >
+              Post Communion
+            </Text>
+            <Text style={styles.collectText}>{data.postCommunion}</Text>
           </View>
         )}
 
@@ -168,6 +175,20 @@ export function MultiSummaryDocument({
                     <Text style={styles.readingValue}>{r.reference}</Text>
                   </View>
                 ))}
+              </View>
+            )}
+
+            {data.postCommunion && (
+              <View style={styles.section}>
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    { borderBottomWidth: 0.5, borderBottomColor: accent },
+                  ]}
+                >
+                  Post Communion
+                </Text>
+                <Text style={styles.collectText}>{data.postCommunion}</Text>
               </View>
             )}
 

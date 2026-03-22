@@ -15,6 +15,7 @@ export function ServiceSheetActions({
   defaultMode?: SheetMode;
 }) {
   const [generating, setGenerating] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<SheetMode>(defaultMode ?? "summary");
   const [size, setSize] = useState<"A4" | "A5">(
     defaultMode === "booklet" ? "A5" : "A4"
@@ -22,35 +23,39 @@ export function ServiceSheetActions({
 
   const handleModeChange = (newMode: SheetMode) => {
     setMode(newMode);
-    // Default sizes per mode
     setSize(newMode === "booklet" ? "A5" : "A4");
   };
 
   const handleGenerate = async (format: "pdf" | "docx", preview = false) => {
     const key = preview ? "preview" : format;
     setGenerating(key);
+    setError(null);
     try {
       const res = await fetch(
         `/api/churches/${churchId}/services/${serviceId}/sheet?format=${format}&size=${size}&mode=${mode}`
       );
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-
-        if (preview) {
-          window.open(url, "_blank");
-        } else {
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `service-sheet.${format}`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(body?.error ?? `Failed to generate (${res.status})`);
+        setGenerating(null);
+        return;
       }
-    } catch (e) {
-      console.error("Failed to generate:", e);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      if (preview) {
+        window.open(url, "_blank");
+      } else {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `service-sheet.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      setError("Network error — could not generate sheet");
     }
     setGenerating(null);
   };
@@ -115,6 +120,10 @@ export function ServiceSheetActions({
         )}
         DOCX
       </button>
+
+      {error && (
+        <span className="text-xs text-destructive">{error}</span>
+      )}
     </div>
   );
 }
@@ -127,6 +136,7 @@ export function BatchDownloadActions({
   churchId: string;
 }) {
   const [generating, setGenerating] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<SheetMode>("summary");
   const [size, setSize] = useState<"A4" | "A5">("A4");
 
@@ -138,25 +148,30 @@ export function BatchDownloadActions({
   const handleBatch = async (format: "pdf" | "docx") => {
     if (serviceIds.length === 0) return;
     setGenerating(format);
+    setError(null);
     try {
       const res = await fetch(`/api/churches/${churchId}/sheets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ serviceIds, format, size, mode }),
       });
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `service-sheets.${format}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(body?.error ?? `Batch generation failed (${res.status})`);
+        setGenerating(null);
+        return;
       }
-    } catch (e) {
-      console.error("Batch generation failed:", e);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `service-sheets.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("Network error — could not generate sheets");
     }
     setGenerating(null);
   };
@@ -211,6 +226,10 @@ export function BatchDownloadActions({
         )}
         All as DOCX
       </button>
+
+      {error && (
+        <span className="text-xs text-destructive">{error}</span>
+      )}
     </div>
   );
 }

@@ -7,7 +7,6 @@ import {
   BorderStyle,
   Packer,
 } from "docx";
-import type { ServiceSheetData } from "./service-sheet";
 import { SERVICE_TYPE_DISPLAY } from "./service-sheet";
 import type {
   BookletServiceSheetData,
@@ -17,198 +16,15 @@ import type {
 import type { LiturgicalTextBlock } from "@/data/liturgy/types";
 import { accentColourDocx } from "./theme";
 import { resolveTemplate } from "./resolve-template";
-import { MUSIC_SLOT_LABELS } from "@/types";
+import { MUSIC_SLOT_LABELS, POSITION_LABELS } from "@/types";
 
-// ─── Legacy support (old flat ServiceSheetData) ─────────────────
-
-/** @deprecated — kept for backward compat with old API route data shape */
-function accentColourLegacy(colour: string): string {
-  const map: Record<string, string> = {
-    PURPLE: "5B2C6F", WHITE: "8B7D6B", GOLD: "D4AF37",
-    GREEN: "4A6741", RED: "8B2500", ROSE: "C48A9F",
-    Purple: "5B2C6F", White: "8B7D6B", Gold: "D4AF37",
-    Green: "4A6741", Red: "8B2500", Rose: "C48A9F",
-  };
-  return map[colour] ?? "D4C5B2";
-}
-
-function buildServiceSection(data: ServiceSheetData): Paragraph[] {
-  const accent = accentColourLegacy(data.colour);
-  const children: Paragraph[] = [];
-
-  children.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [
-        new TextRun({ text: data.churchName, bold: true, size: 28, font: "Times New Roman" }),
-      ],
-    })
-  );
-
-  children.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 100 },
-      children: [
-        new TextRun({
-          text: SERVICE_TYPE_DISPLAY[data.serviceType] || data.serviceType,
-          bold: true, size: 36, font: "Times New Roman",
-        }),
-      ],
-    })
-  );
-
-  children.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [
-        new TextRun({ text: data.liturgicalName, size: 22, font: "Times New Roman" }),
-      ],
-    })
-  );
-
-  children.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
-      children: [
-        new TextRun({ text: data.date, size: 22, font: "Times New Roman", color: "6B5D4D" }),
-      ],
-    })
-  );
-
-  children.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 300 },
-      border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: accent } },
-      children: [
-        new TextRun({ text: `${data.season} — ${data.colour}`, size: 18, font: "Times New Roman", color: accent }),
-      ],
-    })
-  );
-
-  if (data.collect) {
-    children.push(
-      new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: accent } },
-        children: [new TextRun({ text: "Collect", bold: true, size: 24, font: "Times New Roman" })],
-      })
-    );
-    children.push(
-      new Paragraph({
-        spacing: { after: 200 },
-        children: [
-          new TextRun({ text: data.collect, italics: true, size: 20, font: "Times New Roman" }),
-        ],
-      })
-    );
-  }
-
-  if (data.readings.length > 0) {
-    children.push(
-      new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: accent } },
-        children: [new TextRun({ text: "Readings", bold: true, size: 24, font: "Times New Roman" })],
-      })
-    );
-    for (const reading of data.readings) {
-      children.push(
-        new Paragraph({
-          spacing: { after: 60 },
-          children: [
-            new TextRun({ text: `${reading.position}: `, italics: true, size: 20, font: "Times New Roman" }),
-            new TextRun({ text: reading.reference, size: 20, font: "Times New Roman" }),
-          ],
-        })
-      );
-    }
-    children.push(new Paragraph({ spacing: { after: 200 }, children: [] }));
-  }
-
-  if (data.musicSlots.length > 0) {
-    children.push(
-      new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: accent } },
-        children: [new TextRun({ text: "Music", bold: true, size: 24, font: "Times New Roman" })],
-      })
-    );
-    for (const slot of data.musicSlots) {
-      const runs: TextRun[] = [
-        new TextRun({ text: `${slot.label}: `, bold: true, size: 20, font: "Times New Roman" }),
-        new TextRun({ text: slot.value, size: 20, font: "Times New Roman" }),
-      ];
-      if (slot.hymnNumber) {
-        runs.push(new TextRun({ text: ` [${slot.hymnNumber}]`, italics: true, size: 18, font: "Times New Roman", color: "6B5D4D" }));
-      }
-      if (slot.notes) {
-        runs.push(new TextRun({ text: ` (${slot.notes})`, italics: true, size: 18, font: "Times New Roman", color: "6B5D4D" }));
-      }
-      children.push(
-        new Paragraph({
-          spacing: { after: 60 },
-          children: runs,
-        })
-      );
-    }
-  }
-
-  children.push(
-    new Paragraph({
-      spacing: { before: 400 },
-      border: { top: { style: BorderStyle.SINGLE, size: 1, color: accent } },
-      alignment: AlignmentType.CENTER,
-      children: [
-        new TextRun({
-          text: "Generated by Precentor — Church Music Planner",
-          size: 16, font: "Times New Roman", color: "6B5D4D",
-        }),
-      ],
-    })
-  );
-
-  return children;
-}
-
-export async function generateServiceSheetDocx(
-  data: ServiceSheetData
-): Promise<Buffer> {
-  const doc = new Document({
-    sections: [{ children: buildServiceSection(data) }],
-  });
-  return Buffer.from(await Packer.toBuffer(doc));
-}
-
-export async function generateMultiServiceDocx(
-  sheets: ServiceSheetData[]
-): Promise<Buffer> {
-  const doc = new Document({
-    sections: sheets.map((data, idx) => ({
-      children: buildServiceSection(data),
-      properties: idx > 0 ? { page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } } } : undefined,
-    })),
-  });
-  return Buffer.from(await Packer.toBuffer(doc));
-}
-
-// ─── New booklet DOCX generation ─────────────────────────────────
+// ─── Shared helpers ──────────────────────────────────────────────
 
 const SPEAKER_LABELS: Record<string, string> = {
   president: "President",
   all: "All",
   reader: "Reader",
   deacon: "Deacon",
-};
-
-const POSITION_LABELS: Record<string, string> = {
-  OLD_TESTAMENT: "Old Testament",
-  PSALM: "Psalm",
-  EPISTLE: "Epistle",
-  GOSPEL: "Gospel",
-  CANTICLE: "Canticle",
 };
 
 function textBlockToParagraphs(block: LiturgicalTextBlock, _accent: string): Paragraph[] {
@@ -520,6 +336,23 @@ function buildSummarySection(data: SummaryServiceSheetData): Paragraph[] {
       );
     }
     children.push(new Paragraph({ spacing: { after: 200 }, children: [] }));
+  }
+
+  // Post Communion
+  if (data.postCommunion) {
+    children.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_2,
+        border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: accent } },
+        children: [new TextRun({ text: "Post Communion", bold: true, size: 24, font: "Times New Roman" })],
+      })
+    );
+    children.push(
+      new Paragraph({
+        spacing: { after: 200 },
+        children: [new TextRun({ text: data.postCommunion, italics: true, size: 20, font: "Times New Roman" })],
+      })
+    );
   }
 
   // Music

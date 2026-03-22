@@ -35,11 +35,11 @@ const SERVICE_TYPE_TO_TEMPLATE: Partial<Record<ServiceType, ServiceTemplate>> = 
   CHORAL_EVENSONG: BCP_EVENSONG,
 };
 
-function resolveServiceTemplate(serviceType: ServiceType): ServiceTemplate {
+export function resolveServiceTemplate(serviceType: ServiceType): ServiceTemplate {
   return SERVICE_TYPE_TO_TEMPLATE[serviceType] ?? CW_EUCHARIST_ORDER_ONE;
 }
 
-function resolveEucharisticPrayer(key: string | null): LiturgicalSection | undefined {
+export function resolveEucharisticPrayer(key: string | null): LiturgicalSection | undefined {
   if (!key) return undefined;
   // Support both "A" and "eucharistic-prayer-a" formats
   const normalised = key.toUpperCase().replace("EUCHARISTIC-PRAYER-", "");
@@ -55,6 +55,7 @@ interface FetchedServiceData {
   dayReadings: ReadingEntry[];
   resolvedSlots: MusicSlotEntry[];
   templateLayout: TemplateLayout;
+  logoUrl?: string;
 }
 
 async function fetchServiceData(
@@ -121,19 +122,23 @@ async function fetchServiceData(
     return entry;
   });
 
-  // Fetch church template layout
+  // Fetch church template layout and logo
   let templateLayout: TemplateLayout = { ...DEFAULT_TEMPLATE_LAYOUT };
+  let logoUrl: string | undefined;
   const templates = await db
     .select()
     .from(serviceSheetTemplates)
     .where(eq(serviceSheetTemplates.churchId, churchId))
     .limit(1);
 
-  if (templates.length > 0 && templates[0].layout) {
-    templateLayout = {
-      ...DEFAULT_TEMPLATE_LAYOUT,
-      ...(templates[0].layout as Partial<TemplateLayout>),
-    };
+  if (templates.length > 0) {
+    if (templates[0].layout) {
+      templateLayout = {
+        ...DEFAULT_TEMPLATE_LAYOUT,
+        ...(templates[0].layout as Partial<TemplateLayout>),
+      };
+    }
+    logoUrl = templates[0].logoUrl || undefined;
   }
 
   const readingEntries: ReadingEntry[] = dayReadings.map((r) => ({
@@ -150,6 +155,7 @@ async function fetchServiceData(
     dayReadings: readingEntries,
     resolvedSlots,
     templateLayout,
+    logoUrl,
   };
 }
 
@@ -163,7 +169,7 @@ export async function buildBookletData(
   const fetched = await fetchServiceData(serviceId, churchId);
   if (!fetched) return null;
 
-  const { service, day, church, dayReadings, resolvedSlots, templateLayout } = fetched;
+  const { service, day, church, dayReadings, resolvedSlots, templateLayout, logoUrl } = fetched;
   const layout = layoutOverride
     ? { ...templateLayout, ...layoutOverride }
     : templateLayout;
@@ -175,7 +181,7 @@ export async function buildBookletData(
     churchName: church.name,
     churchAddress: church.address || undefined,
     ccliNumber: church.ccliNumber || undefined,
-    logoUrl: undefined, // TODO: resolve from church template
+    logoUrl,
     serviceType: service.serviceType as ServiceType,
     date: day.date,
     time: service.time || undefined,
@@ -202,7 +208,7 @@ export async function buildSummaryData(
   const fetched = await fetchServiceData(serviceId, churchId);
   if (!fetched) return null;
 
-  const { service, day, church, dayReadings, resolvedSlots, templateLayout } = fetched;
+  const { service, day, church, dayReadings, resolvedSlots, templateLayout, logoUrl } = fetched;
   const layout = layoutOverride
     ? { ...templateLayout, ...layoutOverride }
     : templateLayout;
@@ -210,7 +216,7 @@ export async function buildSummaryData(
   return {
     mode: "summary",
     churchName: church.name,
-    logoUrl: undefined,
+    logoUrl,
     serviceType: service.serviceType as ServiceType,
     date: day.date,
     time: service.time || undefined,

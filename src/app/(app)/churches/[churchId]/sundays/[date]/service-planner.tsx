@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SERVICE_TYPE_LABELS, EUCHARIST_SLOTS, EVENSONG_SLOTS, MUSIC_SLOT_LABELS } from "@/types";
 import type { ServiceType, MusicSlotType } from "@/types";
 import { MusicSlotEditor } from "./music-slot-editor";
+import { ServiceSettings } from "./service-settings";
 import { Plus, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
@@ -13,6 +14,9 @@ interface Service {
   time: string | null;
   status: string;
   notes: string | null;
+  sheetMode: string;
+  eucharisticPrayer: string | null;
+  includeReadingText: boolean;
 }
 
 export function ServicePlanner({
@@ -48,8 +52,14 @@ export function ServicePlanner({
 
       if (res.ok) {
         const service = await res.json();
-        setServices((prev) => [...prev, service]);
-        setActiveTab(service.id);
+        const newService: Service = {
+          ...service,
+          sheetMode: service.sheetMode ?? "summary",
+          eucharisticPrayer: service.eucharisticPrayer ?? null,
+          includeReadingText: service.includeReadingText ?? true,
+        };
+        setServices((prev) => [...prev, newService]);
+        setActiveTab(newService.id);
         addToast("Service created", "success");
       } else {
         addToast("Failed to create service", "error");
@@ -59,6 +69,8 @@ export function ServicePlanner({
     }
     setCreating(false);
   };
+
+  const activeService = services.find((s) => s.id === activeTab);
 
   return (
     <div>
@@ -110,13 +122,25 @@ export function ServicePlanner({
         </div>
       </div>
 
-      {/* Active service music slots */}
-      {activeTab && (
-        <MusicSlotEditor
-          serviceId={activeTab}
-          serviceType={services.find((s) => s.id === activeTab)?.serviceType || "CUSTOM"}
-          churchId={churchId}
-        />
+      {/* Active service content */}
+      {activeService && (
+        <>
+          <MusicSlotEditor
+            serviceId={activeService.id}
+            serviceType={activeService.serviceType || "CUSTOM"}
+            churchId={churchId}
+          />
+          <ServiceSettings
+            serviceId={activeService.id}
+            serviceType={activeService.serviceType}
+            churchId={churchId}
+            initialSettings={{
+              sheetMode: activeService.sheetMode,
+              eucharisticPrayer: activeService.eucharisticPrayer,
+              includeReadingText: activeService.includeReadingText,
+            }}
+          />
+        </>
       )}
 
       {services.length === 0 && (

@@ -2,14 +2,7 @@ import React from "react";
 import { View, Text } from "@react-pdf/renderer";
 import type { ReadingEntry } from "@/types/service-sheet";
 import type { PdfStyles } from "../create-styles";
-
-const POSITION_LABELS: Record<string, string> = {
-  OLD_TESTAMENT: "Old Testament",
-  PSALM: "Psalm",
-  EPISTLE: "Epistle",
-  GOSPEL: "Gospel",
-  CANTICLE: "Canticle",
-};
+import { POSITION_LABELS } from "@/types";
 
 interface ReadingBlockProps {
   reading: ReadingEntry;
