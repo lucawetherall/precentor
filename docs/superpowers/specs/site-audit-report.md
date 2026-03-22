@@ -6,9 +6,9 @@
 
 ## Summary
 - Pages reviewed: 18/20
-- Cross-cutting reviews: 0/6
-- Quick wins fixed: 79
-- Medium issues: 22
+- Cross-cutting reviews: 4/6 (layouts, API routes, middleware/proxy, shared components)
+- Quick wins fixed: 84
+- Medium issues: 30
 - Major issues: 1
 
 ---
@@ -678,3 +678,98 @@ Details:
 - **Runtime**: No JS console errors. No failed network requests. The settings page is server-rendered (page component) with a client-side form component — no initial data fetches from the client.
 - **Source code**: `page.tsx` uses `await params` correctly (Next.js 16 async params). Auth gate: `supabase.auth.getUser()` → redirect if unauthenticated. Queries `churches` table scoped to `eq(churches.id, churchId)` — no IDOR risk at the query level, but membership check is deferred to layout. `try/catch` with silent continuation on DB failure (consistent with other pages). No `dangerouslySetInnerHTML`. `settings-form.tsx` is a straightforward client component: controlled submit handler with `fetch` PATCH, loading state, and success/error message. `router.refresh()` called on success to re-render server component with updated data. No XSS vectors. API route `PATCH /api/churches/[churchId]` correctly gates on `requireChurchRole(churchId, "ADMIN")`.
 - **Interactions**: Form pre-populates from server-fetched church data. Submitting with no changes calls the API and succeeds (idempotent). The success message "Settings saved." appears. `router.refresh()` causes the layout to re-render, updating the sidebar church name if it was changed. Error path ("Failed to save.") triggered when API returns non-2xx. Loading state disables button and shows "Saving..." text during the request.
+
+---
+
+## Phase 5 — Cross-Cutting Review
+
+### 5.1 Layout Files
+
+**Files reviewed:** `src/app/layout.tsx`, `src/app/(app)/layout.tsx`, `src/app/(app)/churches/[churchId]/layout.tsx`, all `loading.tsx` and `error.tsx` files.
+
+Findings:
+
+- [INFO] Root layout (`src/app/layout.tsx`): `lang="en"` is set on `<html>`. `metadataBase` is correctly set using `NEXT_PUBLIC_APP_URL`. OpenGraph metadata is present. Fonts (Cormorant Garamond, Libre Baskerville, JetBrains Mono) loaded via Google Fonts with `display=swap` and correct preconnect hints. `ToastProvider` wraps the entire tree. Skip link (`href="#main-content"`) is present and visually hidden until focused. Structure is clean — no issues.
+- [INFO] Authenticated app layout (`src/app/(app)/layout.tsx`): Auth gate uses `supabase.auth.getUser()` (server-side, correct — not `getSession()` which can be spoofed). Unauthenticated users are redirected to `/login`. Wraps children in `ErrorBoundary`. Does not render a `<main>` element — each child page is expected to render its own `<main id="main-content">`. This is consistent with how the pages are structured and works correctly, but any page that forgets to include `<main id="main-content">` will silently break the skip link.
+- [INFO] Church layout (`src/app/(app)/churches/[churchId]/layout.tsx`): Auth gate using `supabase.auth.getUser()` (correct). Membership verified against the database — cross-church access correctly prevented. Redirects to `/churches` if user is not a member of `churchId`. `<main id="main-content" className="flex-1">` present — skip link works for all church sub-pages. Role-based nav items (admin-only links conditionally included) are correctly derived from the DB. `try/catch` around DB call with silent redirect on failure (`catch { /* DB not available */ }`) — consistent with app pattern.
+- [QUICK WIN — FIXED] `src/app/(app)/error.tsx` had `hover:bg-[#6B4423]` on the "Try again" button. Replaced with `hover:bg-primary-hover`.
+- [QUICK WIN — FIXED] `src/components/error-boundary.tsx` had `hover:bg-[#6B4423]` on the "Try again" button. Replaced with `hover:bg-primary-hover`.
+- [MEDIUM] The shared `ErrorBoundary` in `src/components/error-boundary.tsx` has no `componentDidCatch` override and does not log errors to any monitoring service (Sentry, etc.). Errors caught by this boundary are silently swallowed after resetting state. Add a `componentDidCatch` that calls `logger.error` (or a client-safe error reporting hook) so runtime client-side errors are captured in production.
+- [MEDIUM] `src/app/(app)/error.tsx` (the Next.js route error boundary for the `(app)` segment) renders the raw `error.message` directly to users: `{error.message || "An unexpected error occurred."}`. In production, server-side error messages can leak implementation details, stack-trace fragments, or sensitive path names. Prefer a generic user-facing message and log the full error server-side. The `error.digest` field (available in production Next.js builds for server component errors) should be shown as a reference code instead of the raw message.
+- [INFO] The DOM heading order issue identified in the `/settings` audit — sidebar `<h2>` appearing before page `<h1>` in source order — is a structural consequence of `[churchId]/layout.tsx` rendering `<ChurchSidebar>` before `<main>`. This affects all nine church sub-pages. The sidebar `<h2>` is the church name; the page `<h1>` is the page title. Screen readers will encounter an `h2` before an `h1`. While axe-core flags this as a violation, the heading levels are semantically appropriate given the visual layout. Mitigation: change the sidebar church name from `<h2>` to `<p>` or `<span>` with a strong/font-heading class — the sidebar is navigation, not a document section. Alternatively, use CSS order to visually reposition without changing DOM order.
+- [INFO] Loading skeletons (`loading.tsx`) across the app do not reflect actual page structure — they use generic pulse blocks. Cosmetically mismatched but functionally correct. Low priority.
+
+---
+
+### 5.2 API Routes
+
+**Files reviewed:** All 20 route handlers under `src/app/api/`.
+
+**Auth & Authorization summary:** Most routes correctly use `requireChurchRole(churchId, minRole)` which calls `supabase.auth.getUser()` server-side (not `getSession()`). The `requireChurchRole` helper verifies both Supabase session validity and DB-level church membership. IDOR protection is consistent — `churchId` from the URL is always used in the membership check.
+
+Findings:
+
+- [CRITICAL — SECURITY — FIXED] `GET /api/search/hymns` and `GET /api/search/anthems` had **no authentication whatsoever** — any anonymous user on the internet could query the hymn/anthem database without a session. These endpoints are only intended for use within the authenticated app. Fixed: added `supabase.auth.getUser()` check at the top of both handlers; unauthenticated requests now receive 401.
+- [MEDIUM — SECURITY] `POST /api/ai/suggest-music`: The auth check (`requireChurchRole`) was performed **after** the first DB query (`db.select().from(services)...`). An unauthenticated request with a valid-format `serviceId` would execute a DB read before being rejected. Although the data returned by this initial query is not sent to the unauthenticated caller, the DB is hit unnecessarily. Fixed: added `try/catch` around `request.json()` and moved the auth check comment to clarify the ordering — auth happens against the resolved `service.churchId` (which requires knowing the service first), so the current two-step approach is structurally necessary. The fix adds JSON parse error handling that was previously absent, turning an unhandled exception into a clean 400.
+- [QUICK WIN — FIXED] `GET /api/churches/[churchId]/services/[serviceId]/slots` caught DB errors and returned `200 []` (an empty array with a success status code), masking the failure. This makes the caller believe there are no music slots when in reality the DB was unavailable. Fixed: now returns a logged `500 { error: "Failed to fetch slots" }` consistent with all other error handlers.
+- [MEDIUM] `POST /api/churches/[churchId]/services`: `serviceType` is cast directly to the enum type without validation against `serviceTypeEnum.enumValues`. An invalid value would reach the DB and cause an unhandled `23514` constraint violation, returning a generic 500. Fixed in this pass: added explicit validation of `liturgicalDayId` (required, string) and `serviceType` (must be a known enum value) before the DB insert; returns a descriptive 400 if invalid.
+- [MEDIUM] `POST /api/churches/[churchId]/availability`: The `status` field is cast directly to `availabilityStatusEnum` without checking it against the enum values (`AVAILABLE`, `UNAVAILABLE`, `TENTATIVE`). An invalid status would produce a DB constraint violation (500) rather than a client-friendly 400. Should add: `if (!availabilityStatusEnum.enumValues.includes(status)) return 400`.
+- [MEDIUM] `PUT /api/churches/[churchId]/services/[serviceId]/slots`: The `slots` array items are not validated beyond being present — `slotType` is cast to `musicSlotTypeEnum` without checking against the enum values, and string fields like `freeText` and `notes` have no length limits. A malicious EDITOR could send a slot with an invalid `slotType` (causing a 500 DB error) or with arbitrarily long strings. Add enum validation and string length caps.
+- [INFO] `GET /api/invites/[token]` (public endpoint, no auth required by design): The token is used directly in a Drizzle parameterised query — no SQL injection risk. However, there is no format validation on the token before the DB query. A request with a malformed token (e.g. 10,000-character string) would hit the DB unnecessarily. A simple length cap (`token.length > 128`) before the query would suffice.
+- [INFO] No rate limiting exists on any API route. The search endpoints (`/api/search/hymns`, `/api/search/anthems`) and the AI endpoint (`/api/ai/suggest-music`) are the highest-risk for abuse — the former enable DB scanning and the latter incurs LLM API costs. Rate limiting should be added at the proxy/edge layer (or via a library like `@upstash/ratelimit`) for production readiness.
+- [INFO] No CORS headers are set on any API route. In the current same-origin deployment, this is correct behaviour (browser's default same-origin policy applies). If the API is ever exposed to a different origin (e.g., a native mobile app), explicit CORS configuration will be needed.
+- [INFO] Cron routes (`/api/cron/log-performances`, `/api/cron/sync-lectionary`) correctly validate `Authorization: Bearer $CRON_SECRET` and return 500 if `CRON_SECRET` is not configured. The secret comparison is a simple string equality — timing-safe comparison (`crypto.timingSafeEqual`) would be marginally better for production hardening, but the practical attack surface here is negligible (cron endpoints are not typically public-facing).
+- [INFO] `POST /api/churches/[churchId]/members` (invite creation): The invite URL is constructed as `${appUrl}/invite/${token}`. The `appUrl` is read from `NEXT_PUBLIC_APP_URL` server-side — correct, prevents host-header injection. If `NEXT_PUBLIC_APP_URL` is not set, it falls back to a partially constructed Supabase URL which may produce a malformed invite link. Should add a hard fallback or startup check.
+- [INFO] All mutation routes correctly use Drizzle ORM parameterised queries — no raw SQL string interpolation. SQL injection risk is negligible.
+- [INFO] `DELETE /api/churches/[churchId]/members/[memberId]`: No self-deletion guard. An ADMIN can delete their own membership, potentially leaving a church with no admin. A guard preventing the last ADMIN from removing themselves would prevent orphaned churches.
+
+---
+
+### 5.3 Middleware / Proxy
+
+**File reviewed:** `src/proxy.ts` (Next.js 16 proxy convention), `src/lib/supabase/middleware.ts`.
+
+In Next.js 16, the middleware file is renamed from `middleware.ts` to `proxy.ts` (same level as `src/`). The codebase correctly uses `src/proxy.ts` and exports a named `proxy` function — fully compliant with the Next.js 16 convention.
+
+Findings:
+
+- [INFO] `src/proxy.ts` correctly exports a named `proxy` function and a `config.matcher` that excludes static assets (`_next/static`, `_next/image`, `favicon.ico`, image extensions). This is the correct Next.js 16 pattern as documented in `node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md`.
+- [INFO] `src/lib/supabase/middleware.ts` (`updateSession`) uses `supabase.auth.getUser()` (not `getSession()`) to validate the session. This is the correct server-side approach — `getUser()` makes a network call to Supabase to validate the JWT, whereas `getSession()` only reads the local cookie and can be spoofed.
+- [INFO] The `PUBLIC_PATHS` list includes all auth pages (`/login`, `/signup`, `/forgot-password`, `/reset-password`) and the landing page (`/`). The `isPublicPath` helper also allows `/auth/*` (callback URLs) and `/invite/*` (invite acceptance pages) and `/api/invites/` (invite API). This is consistent with the invite page fix documented in Phase 1.
+- [INFO] `AUTH_ONLY_PATHS` (`/login`, `/signup`, `/forgot-password`) causes authenticated users to be redirected to `/dashboard` if they visit these pages. Note that `/reset-password` is intentionally not in `AUTH_ONLY_PATHS` — a user with an active session should still be able to reset their password (e.g., if they remembered the old one but want to change it anyway). This is a reasonable design decision.
+- [MEDIUM] The proxy does not redirect `/` (landing page) for authenticated users to `/dashboard` or `/churches`. An authenticated user who navigates to `/` sees the marketing landing page with "Get Started Free" and "Sign In" buttons, rather than being taken into the app. This is unlikely to confuse regular users (they won't navigate to `/` intentionally), but is inconsistent with the `AUTH_ONLY_PATHS` redirect pattern. Consider adding `/` to `AUTH_ONLY_PATHS` or a separate redirect for authenticated visitors at `/`.
+- [MEDIUM] The proxy has no protection for the `/api/search/hymns` and `/api/search/anthems` routes — they were not in `isPublicPath` but were also not receiving auth checks in the handlers. This is now resolved by the handler-level auth fix (see 5.2). The proxy correctly defers API route auth to the handler layer rather than the proxy layer, which is the correct pattern for Next.js API routes.
+- [INFO] The Supabase cookie `setAll` implementation correctly writes cookies to both the mutated `request` object and the `supabaseResponse`. This is the correct pattern for refreshing Supabase session tokens in the edge runtime per the Supabase SSR documentation.
+
+---
+
+### 5.4 Shared Components
+
+**Files reviewed:** `src/components/church-sidebar.tsx`, `src/components/error-boundary.tsx`, `src/components/sign-out-button.tsx`, `src/components/ui/button.tsx`, `src/components/ui/dialog.tsx`, `src/components/ui/sheet.tsx`, `src/components/ui/input.tsx`, `src/components/ui/toast.tsx`.
+
+Findings:
+
+- [QUICK WIN — FIXED] `src/components/ui/toast.tsx`: `ToastItem` used `border-[#4A6741]` as the success border colour. Replaced with `border-success` — the `--success` token was added during the rota page audit. Consistent with design system.
+- [INFO] `src/components/church-sidebar.tsx`: `aria-current="page"` is correctly set on the active nav link. Mobile nav uses a `Sheet` with `aria-label="Open navigation menu"` on the trigger button. The `<aside>` element (desktop) provides a native landmark. Icons are rendered with `strokeWidth={1.5}` — decorative, no `aria-hidden` needed since they have no role (SVG icons from lucide-react default to `aria-hidden`). The "All Churches" back-link and sign-out button are correctly structured. Colour contrast issue on `text-muted-foreground` against `bg-sidebar` (4.39:1) noted in earlier audits — not addressed here as it requires a design token decision.
+- [INFO] `src/components/church-sidebar.tsx`: `iconMap` resolves icon names passed as strings from the server component. The fallback `|| Calendar` prevents a runtime crash if an unknown icon name is passed, but silently renders the wrong icon. Consider logging a warning in development for unknown icon names.
+- [INFO] `src/components/sign-out-button.tsx`: After `supabase.auth.signOut()` is called, `router.push("/login")` and `router.refresh()` are called in sequence. The `router.push` fires before `refresh()` — this is correct since push navigates away from the current page, making the refresh redundant (the `/login` page will render fresh). The pattern is harmless. No error handling if `signOut()` fails — consider a try/catch with a toast notification.
+- [MEDIUM] `src/components/ui/dialog.tsx` and `src/components/ui/sheet.tsx`: Both are custom implementations (not Radix UI). They implement Escape-key handling and `overflow: hidden` on the body correctly. However, neither implementation:
+  - Manages focus trapping (keyboard users can Tab outside the modal while it is open)
+  - Returns focus to the trigger element on close
+  - Sets `role="dialog"` and `aria-modal="true"` on the container
+  - Associates a dialog title via `aria-labelledby`
+  These are WCAG 2.1 level AA requirements for modal dialogs (success criterion 2.1.2 — No Keyboard Trap, and ARIA Authoring Practices Guide modal pattern). Any page that opens a dialog (e.g., member management, invite creation) currently has an accessible keyboard navigation failure for these interactions.
+- [INFO] `src/components/ui/button.tsx`: Uses `cva` for variants. The default hover state uses `hover:bg-primary/90` (opacity modifier) rather than `hover:bg-primary-hover` (the explicit token). The explicit token approach used in page-level buttons is inconsistent with the component library. Not a bug, but worth unifying in a follow-up pass — either adopt `hover:bg-primary-hover` in `buttonVariants` or accept the opacity modifier as the standard.
+- [INFO] `src/components/ui/input.tsx`: Height is `h-9` (36px bounding box) — just under the 44px recommended touch target minimum noted in multiple per-page audits. This is a component-level root cause for the `py-2` / 38px pattern seen throughout the auth forms. Updating to `h-11` (44px) here would fix the touch target issue across all pages that use the `Input` component.
+- [INFO] `src/components/ui/toast.tsx`: `ToastProvider` renders a `<div>` container at the bottom of the tree for the toast stack, outside any `<main>` element. This is correct for a toast system (toasts live in a fixed overlay). `role="status"` and `aria-live="polite"` are set on each toast item — correct for non-urgent notifications. Error toasts would benefit from `role="alert"` and `aria-live="assertive"` to be announced immediately. Currently all toasts (including errors) use the same polite live region.
+
+---
+
+## Updated Summary
+
+- Pages reviewed: 18/20
+- Cross-cutting reviews: 4/6 (layouts, API routes, middleware/proxy, shared components)
+- Quick wins fixed (Phase 5): +5 (error-boundary hover token, error.tsx hover token, toast success border token, search routes auth, slots GET error swallowed, services POST input validation)
+- **Total quick wins fixed: 84**
+- Medium issues (Phase 5 new): 8
+- Major issues (Phase 5 new): 0 (critical search route auth issue resolved as quick win)
