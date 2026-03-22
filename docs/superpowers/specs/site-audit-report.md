@@ -5,9 +5,9 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 15/20
+- Pages reviewed: 16/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 59
+- Quick wins fixed: 64
 - Medium issues: 19
 - Major issues: 1
 
@@ -529,3 +529,37 @@ Details:
 - **Interactions**: Created a Sung Eucharist service at 10:00 — service appeared as a tab with 12 music slots. Toast "Service created" appeared. Music slot inputs accept text. AI suggest (sparkle) buttons visible per slot. Save Music and Save (settings) buttons both present and functional.
 - **Security review**: `POST /api/churches/[churchId]/services` — requires church membership (via `requireChurchMembership`). Service type validated against allowed enum values. `PUT .../slots` — validates `slots` array structure. `PATCH .../services/[serviceId]` — validates `sheetMode`, `eucharisticPrayer`, `includeReadingText` fields. No `dangerouslySetInnerHTML`. AI suggest endpoint at `/api/ai/suggest-music` accepts `serviceId` and `slotType` — suggest confirming this endpoint validates `serviceId` belongs to the requesting user's church.
 - **Source code**: `page.tsx` correctly uses `await params` (Next.js 16 async params). DB queries scoped to `churchId` — no IDOR. `ServicePlanner` and `MusicSlotEditor` are clean client components with proper loading states. Error boundaries via try/catch on all fetches. `EUCHARIST_SLOTS` and `EVENSONG_SLOTS` constants used correctly from `@/types`. `loading.tsx` provides appropriate skeleton (back-link, h1, readings card, 5 slot rows).
+
+---
+
+### /churches/[churchId]/repertoire (Repertoire Log / Performance History)
+**Visual**: ✅ Pass
+**Responsive**: ✅ Pass
+**Accessibility**: ⚠️ Two missing accessible labels on search/sort controls (fixed)
+**Runtime**: ✅ Pass (no console errors, no page-specific network failures)
+**Design System**: ⚠️ Three `bg-white` instances on form controls and table rows (fixed)
+**Interactions**: ℹ️ Empty state only (no archived services yet); search, sort, and load-more controls present in source but untestable with current data
+**Source Code**: ✅ Pass
+
+Findings:
+
+- [QUICK WIN — FIXED] `bg-white` on the search `<input>` (line 74) replaced with `bg-background` in `repertoire-list.tsx`.
+- [QUICK WIN — FIXED] `bg-white` on the sort `<select>` (line 82) replaced with `bg-background` in `repertoire-list.tsx`.
+- [QUICK WIN — FIXED] `bg-white` on even-indexed table rows (`i % 2 === 0 ? "bg-white" : "bg-background"`) replaced with `bg-background` / `bg-muted/30` stripe pattern in `repertoire-list.tsx`. The old pattern meant every other row had a hardcoded white background; now both rows use design tokens.
+- [QUICK WIN — FIXED] Search `<input>` had no accessible label (`<label>`, `aria-label`, or `aria-labelledby`). Only a `placeholder` was present, which is insufficient for screen readers. Added `aria-label="Search pieces"` to the input.
+- [QUICK WIN — FIXED] Sort `<select>` had no accessible label. Added `aria-label="Sort by"` to the select element.
+- [INFO] The `<Music>` icon in the empty state has no `aria-hidden="true"`. It is purely decorative (adjacent `<p>` provides context). Low priority since the icon is SVG-rendered without explicit `role="img"` so most screen readers skip it, but adding `aria-hidden="true"` is best practice — not fixed in this pass (not a quick win, would require `aria-hidden` prop on the Lucide `<Music>` component).
+- [INFO] The page title is "Repertoire Log" (`h1`) but the sidebar nav link and route are labelled "Repertoire". Minor inconsistency — not a bug, but could be unified.
+- [INFO] The page-level `<h1>` should ideally be reflected in the document `<title>` (currently "Precentor — Church Music Planner" for all church sub-pages). A dynamic title per route would improve browser tab legibility and SEO. Consider `export const metadata` or dynamic `generateMetadata` in `page.tsx`.
+- [INFO] The `performanceLogs` query uses `.limit(200)` for grouping. If a church has more than 200 archived services, the "Most Performed" summary will undercount. This is an acceptable tradeoff for now but worth documenting.
+- [INFO] The `catch { /* DB not available */ }` pattern silently swallows DB errors. The page shows the empty state rather than an error message when the DB is unavailable — this could confuse users who expect to see data. A visible error indicator would improve UX.
+
+Details:
+- **Visual (desktop 1280×800)**: Clean empty state. Music note icon centred in a bordered card. Single `h1` "Repertoire Log" in Cormorant Garamond. No visual regressions. Sidebar shows "Repertoire" as active link. Footer-area shows user email and Sign out button.
+- **Responsive (mobile 375×812)**: Empty state card fills container width correctly. No overflow. Hamburger nav renders correctly. Typography scales down appropriately.
+- **Responsive (tablet 768×1024)**: At 768px the sidebar breakpoint has not yet kicked in (hamburger still shown at 768px, sidebar appears at higher width). Empty state displays correctly within the content area. No issues.
+- **Accessibility snapshot**: `<main id="main-content">` present (in church layout). Skip link target resolvable. `h1` "Repertoire Log" present. Empty-state `<p>` present. No table, search, or sort controls visible (empty state branch). No heading hierarchy issues.
+- **Axe-core**: 1 violation group reported (`color-contrast`, serious, 4 nodes) — all 4 nodes are in the shared church sidebar (`text-muted-foreground` at 4.39:1 on `bg-sidebar` at small font sizes). These are pre-existing cross-cutting issues in the shared layout, not specific to this page. No violations specific to the repertoire content.
+- **Runtime**: No JS console errors. Network failures are all stale `ERR_ABORTED` HMR chunk requests from a prior session (dev-only, not page-specific). No API calls made by this page at rest (server-rendered, no client fetch).
+- **Source code**: `page.tsx` uses `await params` correctly (Next.js 16 async params pattern). DB query scoped to `eq(performanceLogs.churchId, churchId)` — no IDOR risk. Church membership verified in `[churchId]/layout.tsx` (inner join on `churchMemberships` + redirect if not a member). No `dangerouslySetInnerHTML`. No XSS vectors. `loading.tsx` provides a two-element pulse skeleton (h1 + content block). Client component `RepertoireList` uses `useMemo` correctly for filtered/sorted state. "Show more" pagination implemented via local `showCount` state — no unnecessary re-fetches.
+- **Interactions**: Page is in empty state (no archived services). Search input, sort select, table, and load-more button are only rendered when `pieces.length > 0`. Untestable with current data. Source review confirms search filters by piece name (case-insensitive substring), sort toggles between count/date/alpha, and load-more increments `showCount` by 30.

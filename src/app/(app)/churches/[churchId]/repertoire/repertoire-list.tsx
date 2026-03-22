@@ -71,7 +71,8 @@ export function RepertoireList({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search pieces..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+            aria-label="Search pieces"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-border bg-background focus:border-primary focus:outline-none"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -79,7 +80,8 @@ export function RepertoireList({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortField)}
-            className="text-sm border border-border px-2 py-2 bg-white focus:border-primary focus:outline-none"
+            aria-label="Sort by"
+            className="text-sm border border-border px-2 py-2 bg-background focus:border-primary focus:outline-none"
           >
             <option value="count">Most performed</option>
             <option value="lastDate">Most recent</option>
@@ -105,7 +107,7 @@ export function RepertoireList({
               </thead>
               <tbody>
                 {filteredPieces.slice(0, showCount).map((piece, i) => (
-                  <tr key={piece.name} className={i % 2 === 0 ? "bg-white" : "bg-background"}>
+                  <tr key={piece.name} className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}>
                     <td className="px-3 py-2">
                       {piece.name}
                       <span className="text-xs text-muted-foreground sm:hidden block">

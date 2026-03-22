@@ -127,28 +127,28 @@ export function RotaGrid({
   return (
     <div>
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 mb-4 text-xs text-muted-foreground">
-        <span className="font-heading font-semibold text-foreground text-sm">Legend:</span>
+      <div className="flex flex-wrap items-center gap-4 mb-4 text-xs text-muted-foreground" aria-label="Legend">
+        <span className="font-heading font-semibold text-foreground text-sm" aria-hidden="true">Legend:</span>
         <span className="flex items-center gap-1">
-          <span className="w-5 h-5 flex items-center justify-center border border-[#4A6741] text-[#4A6741]">
+          <span className="w-5 h-5 flex items-center justify-center border border-success text-success" aria-hidden="true">
             <Check className="h-3 w-3" strokeWidth={2} />
           </span>
           Available
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-5 h-5 flex items-center justify-center border border-destructive text-destructive">
+          <span className="w-5 h-5 flex items-center justify-center border border-destructive text-destructive" aria-hidden="true">
             <X className="h-3 w-3" strokeWidth={2} />
           </span>
           Unavailable
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-5 h-5 flex items-center justify-center border border-[#D4AF37] text-[#D4AF37]">
+          <span className="w-5 h-5 flex items-center justify-center border border-warning text-warning" aria-hidden="true">
             <Minus className="h-3 w-3" strokeWidth={2} />
           </span>
           Tentative
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-5 h-5 flex items-center justify-center bg-primary text-primary-foreground border border-primary">
+          <span className="w-5 h-5 flex items-center justify-center bg-primary text-primary-foreground border border-primary" aria-hidden="true">
             <UserCheck className="h-3 w-3" strokeWidth={2} />
           </span>
           On rota
@@ -178,7 +178,7 @@ export function RotaGrid({
                   </td>
                 </tr>
                 {partMembers.map((member, mi) => (
-                  <tr key={member.userId} className={mi % 2 === 0 ? "bg-white" : "bg-background"}>
+                  <tr key={member.userId} className={mi % 2 === 0 ? "bg-card" : "bg-background"}>
                     <td className="px-3 py-1.5 sticky left-0 bg-inherit z-10 border-r border-border">
                       {member.name || member.email}
                     </td>
@@ -195,10 +195,10 @@ export function RotaGrid({
                               title={`${AVAIL_LABEL[status]} — click to change`}
                               className={`w-6 h-6 flex items-center justify-center border text-xs ${
                                 status === "AVAILABLE"
-                                  ? "border-[#4A6741] text-[#4A6741]"
+                                  ? "border-success text-success"
                                   : status === "UNAVAILABLE"
                                   ? "border-destructive text-destructive"
-                                  : "border-[#D4AF37] text-[#D4AF37]"
+                                  : "border-warning text-warning"
                               }`}
                               aria-label={`${member.name || member.email}: ${AVAIL_LABEL[status]} for ${s.cwName}. Click to change.`}
                             >
@@ -259,10 +259,10 @@ export function RotaGrid({
                             onClick={() => cycleAvailability(member.userId, s.serviceId)}
                             className={`px-2 py-1 text-xs border flex items-center gap-1 ${
                               status === "AVAILABLE"
-                                ? "border-[#4A6741] text-[#4A6741]"
+                                ? "border-success text-success"
                                 : status === "UNAVAILABLE"
                                 ? "border-destructive text-destructive"
-                                : "border-[#D4AF37] text-[#D4AF37]"
+                                : "border-warning text-warning"
                             }`}
                             aria-label={`${member.name || member.email}: ${AVAIL_LABEL[status]}. Click to change.`}
                           >
