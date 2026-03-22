@@ -5,11 +5,11 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 5/20
+- Pages reviewed: 6/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 12
-- Medium issues: 5
-- Major issues: 0
+- Quick wins fixed: 19
+- Medium issues: 6
+- Major issues: 1
 
 ---
 
@@ -167,3 +167,38 @@ Details:
 - **CSS inspection**: `form` width 384px (`max-w-sm`), `space-y-4`. Inputs: `border-border`, `bg-white`, `focus:border-primary`, no border-radius (flat ecclesiastical aesthetic). Submit button: `bg-primary` (`rgb(139,69,19)`), `text-primary-foreground`, `hover:bg-primary-hover` (after fix), height 38px.
 - **Interactions**: Submit empty form → `role="alert"` error paragraph "Password must be at least 8 characters." renders inline (confirmed by eval). Password mismatch → "Passwords do not match." renders. Error clears on re-submit (`setError("")` at top of `handleSubmit`). `loading` state disables button and changes label to "Updating...".
 - **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Auth via `supabase.auth.updateUser({ password })` — correct for PKCE recovery flow (Supabase sets the session from the URL hash before this call). `router.push("/dashboard")` on success. Error message uses Supabase's `updateError.message` directly — this is acceptable as Supabase recovery errors are not user-enumeration risks (token-based, not email-based). `loading` state prevents double-submit. TypeScript: all types inferred correctly. No stray `console.log`. Client-side validation (length ≥ 8, passwords match) runs before Supabase call — correct order.
+
+---
+
+### /invite/[token] (Invite Acceptance)
+**Visual**: ✅ Pass (after fix)
+**Responsive**: ✅ Pass
+**Accessibility**: ✅ Pass (0 violations after fixes)
+**Runtime**: ✅ Pass (after fix)
+**Design System**: ⚠️ Hardcoded `hover:bg-[#6B4423]` on both action buttons (fixed)
+**Interactions**: ✅ Pass (after fix — previously stuck loading forever)
+**Source Code**: ⚠️ Critical bug: `/api/invites/` not in public paths; unhandled JSON parse on redirected response (both fixed)
+**Performance**: ✅ Pass
+
+Findings:
+- [CRITICAL – BUG] **Fixed**: The middleware (`src/lib/supabase/middleware.ts`) did not include `/api/invites/` in the list of public paths. For unauthenticated visitors (the primary audience for invite links), all `GET /api/invites/[token]` requests were intercepted by the middleware and redirected to `/login`, returning a 200 HTML response. In `loadInvite()`, `res.ok` evaluated to `true` (HTTP 200), then `res.json()` threw a parse error on the HTML body. This error was unhandled, leaving the component in a permanently stuck `invite = null, isAuthenticated = null` loading state. The user saw "Loading invite…" forever with no way out. Fix: added `pathname.startsWith("/api/invites/")` to `isPublicPath()` in `src/lib/supabase/middleware.ts` so the API endpoint is reachable without authentication.
+- [CRITICAL – BUG] **Fixed**: `loadInvite()` had no try/catch and no content-type guard around `res.json()`. Even with the middleware fix, a network error or unexpected non-JSON response would silently crash the function in the same way. Fix: wrapped the entire `loadInvite` body in try/catch, and added a `content-type: application/json` check before calling `res.json()` on error responses, falling back to a default "Invalid or expired invite." message.
+- [QUICK WIN] **Fixed**: Added `id="main-content"` to all three `<main>` render branches (loading state, error state, form state) so the layout skip link (`href="#main-content"`) has a focusable target. Resolves axe-core `skip-link` violation (moderate).
+- [QUICK WIN] **Fixed**: Added `<h1 className="sr-only">Loading Invite</h1>` to the loading-state branch. The loading state previously rendered no heading, failing the axe-core `page-has-heading-one` rule (moderate). The heading is visually hidden so it does not disrupt the minimal loading UI.
+- [QUICK WIN] **Fixed**: Added `role="alert"` to the error `<p>` in both the page-error state and the inline form error, so screen readers announce error messages without requiring focus shift.
+- [QUICK WIN] **Fixed**: Changed "Go to sign in" link from `hover:underline` (colour-only at rest) to `underline hover:no-underline`. Resolves WCAG 1.4.1 — in-text links must be distinguishable without relying on colour alone.
+- [QUICK WIN] **Fixed**: Replaced `hover:bg-[#6B4423]` with `hover:bg-primary-hover` on both action buttons ("Accept Invite" and "Create Account & Join"). Consistent with design token introduced in earlier audit pages.
+- [QUICK WIN] **Fixed**: Added `autocomplete` attributes to all form inputs: `autoComplete="name"` on the full name input, `autoComplete="email"` on the disabled email input, `autoComplete="new-password"` on both password inputs. Improves password-manager and browser autofill UX.
+- [INFO] The disabled email input had no `id` attribute (label `htmlFor` pointed at no element). Added `id="invite-email"` and matched the label's `htmlFor`. This was a latent a11y issue (label not programmatically associated with input) — axe did not surface it because the input is disabled, but it is correct practice.
+- [MEDIUM – UX] The error message shown to users when the DB is unavailable is "Failed to fetch invite" (propagated directly from the API error body). This is a technical message not suitable for end users. The API route's catch block should return a user-friendly message such as "Something went wrong. Please try again later." rather than the raw "Failed to fetch invite" string. Out of scope for this audit (API route change).
+- [MEDIUM – SECURITY] The invite token is used verbatim in the API fetch URL without any client-side format validation (e.g., UUID check). A malformed token makes a DB round-trip that will fail, but it is harmless since the API uses a parameterised Drizzle query. No SQL injection risk, but adding a simple UUID-format check before `fetch()` would avoid unnecessary DB load.
+
+Details:
+- **Visual**: Error state (invalid token): clean centred layout, "Invalid Invite" h1 (Cormorant Garamond), muted error message, underlined "Go to sign in" link. Consistent with auth flow design system.
+- **Responsive (mobile 375×812)**: Error state centred correctly, text wraps cleanly, "Go to sign in" link remains centred and tappable. No overflow.
+- **Responsive (tablet 768×1024)**: Identical proportions. All content within `max-w-sm` container, centred.
+- **Accessibility snapshot (post-fix)**: `h1` "Invalid Invite" present. Error paragraph has `role="alert"`. "Go to sign in" link in tree. `<main id="main-content">` is the skip link target. axe-core: 0 violations confirmed.
+- **Runtime**: No JS console errors. No failed network requests (after middleware fix). API returns JSON 500 for unknown token (expected — no DB connection in dev).
+- **Performance**: 1002ms page load (navigation entry). DOMInteractive 886ms. Higher than other auth pages due to cold start + API round-trip. Normal for dev server.
+- **Interactions**: With middleware fix applied, invalid token now correctly renders "Invalid Invite" error screen within ~300ms of component mount. Previously: permanently stuck on "Loading invite…".
+- **Source code**: The `loadInvite` function now has full try/catch and content-type guarding. No XSS vectors. Token is used only in a fetch URL (no DOM injection). TypeScript: all types inferred correctly. The `acceptInvite` function (`/api/invites/[token]/accept`) is POST-only and is only called after authentication — no auth bypass possible via the UI. The form branch is only shown when `isAuthenticated === false` (confirmed from Supabase `getUser()`).
