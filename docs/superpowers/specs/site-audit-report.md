@@ -5,10 +5,10 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 7/20
+- Pages reviewed: 8/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 19
-- Medium issues: 7
+- Quick wins fixed: 23
+- Medium issues: 9
 - Major issues: 1
 
 ---
@@ -224,3 +224,40 @@ Details:
 - **Accessibility snapshot**: Two headings ("404", "This page could not be found."), "Skip to content" link (target missing), Next.js dev-tools button. No landmark regions (`<main>`, `<nav>`, etc.). No interactive links. The page title in the browser tab remains "Precentor — Church Music Planner" (from root layout metadata) — it does not update to indicate an error, which may confuse users and screen reader users.
 - **Runtime**: No JS console errors at error level. Clean.
 - **How to trigger in production**: Any authenticated user who navigates to a non-existent URL (e.g., a bookmarked link that no longer exists, a mistyped church ID) will hit this page. Also triggered by any path under `/auth/*`, `/invite/*`, or `/api/invites/*` that does not match a real file.
+
+---
+
+### /onboarding (Post-Signup Church Setup)
+**Visual**: ✅ Pass
+**Responsive**: ✅ Pass
+**Accessibility**: ✅ Pass (0 violations after fixes; 2 pre-fix)
+**Runtime**: ✅ Pass
+**Design System**: ⚠️ Hardcoded `hover:bg-[#6B4423]` on submit button (fixed)
+**Interactions**: ⚠️ Validation error `<p>` lacked `role="alert"` (fixed); no custom error for API failure JSON parse edge case
+**Source Code**: ⚠️ Missing `id="main-content"` on `<main>` (fixed); missing `autocomplete` attributes (fixed); no try/catch around `res.json()` on error path
+**Performance**: ⚠️ 2018ms load (navigation entry) — slow due to dev-server cold render + Supabase auth check in layout
+
+**Redirect behaviour note:** The test user ("Audit Tester") already has a church. Despite this, `/onboarding` renders the form without redirecting. The `(app)/layout.tsx` only checks for an authenticated session — it does not query whether the user has an existing church and redirect them to `/dashboard` or their church. A returning user who navigates directly to `/onboarding` can create a second church. This is a design-level gap.
+
+Findings:
+- [QUICK WIN] **Fixed**: Added `id="main-content"` to the `<main>` element in `src/app/(app)/onboarding/page.tsx`. The layout skip link (`href="#main-content"`) now has a reachable focusable target. Resolves axe-core `skip-link` violation (moderate). Confirmed 0 violations post-fix.
+- [QUICK WIN] **Fixed**: Replaced `hover:bg-[#6B4423]` with `hover:bg-primary-hover` on the "Create Church" submit button. Consistent with design token established in earlier audit pages.
+- [QUICK WIN] **Fixed**: Added `role="alert"` to the inline error `<p>` (`{error && <p role="alert" ...>}`). Previously, validation errors (e.g. "Church name is required.") and API errors ("Failed to create church.") were rendered silently — screen readers received no announcement without a focus shift. The `role="alert"` live region ensures errors are announced immediately on update.
+- [QUICK WIN] **Fixed**: Added `autocomplete` attributes to all four inputs: `autoComplete="organization"` on church name, `autoComplete="off"` on diocese, `autoComplete="street-address"` on address, `autoComplete="off"` on CCLI number. Improves browser autofill behaviour and password-manager UX.
+- [MODERATE – A11Y] `region` violation (axe-core, pre-fix): One content node outside any landmark — the Next.js dev-tools button renders outside `<main>`. Dev-only overlay, not present in production builds. Resolves to 0 violations after the `id="main-content"` fix (confirmed by re-run).
+- [MEDIUM – UX/SECURITY] No guard against duplicate church creation: The `(app)/layout.tsx` authenticates the user but does not check whether they already have a church. An existing user navigating directly to `/onboarding` sees the full form and can submit a second church creation. The `/api/churches` POST handler should either enforce a one-church-per-user limit at the DB/API level (preferred), or the onboarding page should redirect users who already have a church (e.g., to `/dashboard`).
+- [MEDIUM – RESILIENCE] No try/catch in the error branch of `handleSubmit`: `const data = await res.json()` on the `else` branch (API error path) has no error handling. If the API returns a non-JSON error response (e.g., a 500 HTML page from the server during a crash), `res.json()` will throw an unhandled promise rejection, crashing the component silently — the user sees no error message and the loading spinner may never resolve. Fix: wrap the `else` branch in try/catch and fall back to `data.error || "Failed to create church."` with a plain string default.
+- [INFO] Input height: all four inputs render at 38px bounding height (with `py-2` padding, full rendered height ~38px) — just under the 44px recommended touch target minimum. Consider `py-3` to reach 44px, consistent with the pattern noted across auth pages.
+- [INFO] The `(app)/layout.tsx` checks auth via `supabase.auth.getUser()` (server-side, correct — uses the secure cookie-based session). The layout wraps children in `<ErrorBoundary>` for runtime crash isolation. No other middleware-level logic applies to `/onboarding` beyond the `isPublicPath` check (onboarding is not in the public list, so auth is required — correct).
+- [INFO] Performance: 2018ms load time. The elevated time (vs. ~164–245ms for auth pages) reflects the Supabase `getUser()` call in the server-side `(app)/layout.tsx` adding a round-trip before the page is streamed. Expected behaviour in dev; would be faster in production with edge middleware.
+
+Details:
+- **Visual**: Clean single-column centred form with four fields. "Set Up Your Church" h1 in Cormorant Garamond. Muted subtitle text. Required asterisk on church name rendered in `text-destructive` (correct). Submit button full-width, consistent `bg-primary` style. No decorative elements — appropriate for a focused setup flow.
+- **Responsive (mobile 375×812)**: All fields span full container width, no overflow. Submit button full-width and tappable. All labels and placeholders readable. No truncation.
+- **Responsive (tablet 768×1024)**: Identical proportions within `max-w-md` container. Submit button is cut off at the bottom of the initial viewport (below the fold), but reachable by scrolling — acceptable behaviour for a form of this length.
+- **Accessibility snapshot**: `h1` "Set Up Your Church" present. All four inputs have associated `<label>` elements via `htmlFor`/`id` (`church-name`, `diocese`, `address`, `ccli`). "Create Church" button in tree. `<main id="main-content">` is the skip link target (after fix). Error `<p>` has `role="alert"` (after fix). 0 axe violations confirmed post-fix.
+- **Runtime**: No JS console errors. One failed network request: `GET http://localhost:3000/ [FAILED: net::ERR_ABORTED]` — this is a pre-navigation abort from the initial page load before the redirect to `/onboarding`, not a runtime error. No issues.
+- **Performance**: 2018ms load (navigation entry). DOMInteractive 1977ms. responseStart 1969ms — the slow response start reflects the Supabase `getUser()` server round-trip in the layout. All metrics within expected dev-server ranges for a server-rendered layout with an auth check.
+- **CSS inspection**: Submit button: `bg-primary` (`rgb(139, 69, 19)`), `text-primary-foreground` (`rgb(250, 246, 241)`), height 38px (bounding box 20px text; full height 38px with `py-2`). `hover:bg-primary-hover` after fix. Form `max-w-md` (448px — slightly wider than auth pages' `max-w-sm`). No border-radius on inputs (consistent flat ecclesiastical aesthetic).
+- **Interactions**: Empty submit (dispatched form event) → "Church name is required." error renders with `role="alert"`. The `required` attribute on the church-name input means native browser validation fires for the HTML5 `submit` event path, but `handleSubmit` also has an explicit `if (!name.trim())` guard — dual protection is correct.
+- **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Form data sent as JSON to `/api/churches` (POST). Church name trimmed before submission (`name.trim()`) — correct. `loading` state disables button and changes label to "Creating..." to prevent double-submit. `useRouter` from `next/navigation` (correct for App Router). TypeScript: all types correctly inferred. No stray `console.log`. Error state cleared at start of each submit attempt (`setError("")` before Supabase call) — correct.
