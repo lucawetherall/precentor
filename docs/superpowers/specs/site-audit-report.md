@@ -5,10 +5,10 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 13/20
+- Pages reviewed: 14/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 44
-- Medium issues: 16
+- Quick wins fixed: 49
+- Medium issues: 17
 - Major issues: 1
 
 ---
@@ -445,3 +445,44 @@ Details:
 - **CSS inspection**: `<main>` — `p-8 max-w-lg`, `id="main-content"` (after fix). `h1` — Cormorant Garamond (`font-heading`), 30px, weight 600. Submit button — `bg-primary` (`rgb(139, 69, 19)`), `text-primary-foreground` (`rgb(250, 246, 241)`), `hover:bg-primary-hover` (after fix). Inputs — `border-border`, `bg-white`, `focus:border-primary`, no border-radius (flat ecclesiastical aesthetic).
 - **Interactions (post-fix)**: Click "Create Church" with empty name → browser native validation tooltip "Please fill in this field." appears (Chrome), page stays on `/churches/new`. Programmatic `form.dispatchEvent(new Event('submit'))` → JS guard fires, `role="alert"` error "Church name is required." renders, page stays on `/churches/new`. Confirmed by eval: `url === "http://localhost:3000/churches/new"`, `errorText === "Church name is required."`. No API call made.
 - **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Form data serialised as JSON to `POST /api/churches`. No client-side slug generation (server-side concern). `loading` state disables button and changes label to "Creating...". `useRouter` from `next/navigation` (correct for App Router). TypeScript: all types inferred correctly. No stray `console.log`. Error state cleared at start of each submit attempt (`setError("")` before API call) — correct. The `required` attribute on church name provides a first line of defence via browser HTML5 validation; the JS guard provides a second line for environments where native validation is bypassed.
+
+---
+
+### /churches/[churchId]/members (Member Management + Invite)
+**Visual**: ✅ Pass
+**Responsive**: ⚠️ Table clips on mobile (no horizontal scroll wrapper on the outer container — row content overflows at 375px)
+**Accessibility**: ⚠️ Five axe-core violations pre-fix (critical: select-name ×2; serious: color-contrast ×4; moderate: skip-link, region; minor: empty-table-header) — four fixed
+**Runtime**: ⚠️ Build errors in unrelated sundays pages logged in console (from prior audit mid-compilation); 500 on `/churches/[churchId]/sundays` route (separate issue)
+**Design System**: ⚠️ Hardcoded `hover:bg-[#6B4423]` on Send Email button (fixed)
+**Interactions**: ✅ Send Email / Get Link buttons correctly disabled when email field is empty; confirm-before-remove pattern on delete is good UX
+**Source Code**: ✅ ADMIN-only guards correctly enforced at both page (server) and API level; IDOR prevention via `churchId` scoping in all DB queries
+**Security**: ✅ Strong — `requireChurchRole(churchId, "ADMIN")` gates all mutations; email validated server-side with regex; role/voice-part values validated against allowlists; invite URL built server-side from `process.env.NEXT_PUBLIC_APP_URL` (prevents host-header spoofing); HTML in invite email is escaped via `escapeHtml()`
+
+Findings:
+- [QUICK WIN] **Fixed**: Replaced `hover:bg-[#6B4423]` with `hover:bg-primary-hover` on the "Send Email" button in `src/app/(app)/churches/[churchId]/members/invite-form.tsx` (line 84).
+- [QUICK WIN] **Fixed**: Added `autoComplete="email"` to the invite email input in `invite-form.tsx`. Improves UX for password managers and browser autofill; resolves missing `autocomplete` on email inputs pattern noted across earlier pages.
+- [QUICK WIN] **Fixed**: Added `aria-label` to the read-only invite link `<input>` in `invite-form.tsx` (both `aria-label="Invite link"` and an associated `<label htmlFor="invite-link" className="sr-only">`). Previously this input had no accessible name — screen readers would announce it as an unlabelled text field.
+- [QUICK WIN] **Fixed**: Added `aria-label={`Role for ${m.userName || m.userEmail}`}` to the role `<select>` in each table row in `members-table.tsx`. Previously these selects had no accessible name — axe-core reported `select-name` (critical, WCAG 4.1.2). Confirmed: 2 nodes affected.
+- [QUICK WIN] **Fixed**: Added `aria-label={`Voice part for ${m.userName || m.userEmail}`}` to the voice-part `<select>` in each table row in `members-table.tsx`. Resolves the second `select-name` critical violation.
+- [QUICK WIN] **Fixed**: Added `aria-label="Actions"` to the empty `<th>` in the members table header (`members-table.tsx` line 99). Resolves axe-core `empty-table-header` violation (minor).
+- [CRITICAL – A11Y] `select-name` (pre-fix): The role and voice-part `<select>` elements in each member row had no accessible name. A screen reader user would hear "combo box" with no context for which member or field it controls. Fixed with `aria-label` as above.
+- [SERIOUS – A11Y] `color-contrast` (4 nodes): axe-core reports 4 contrast failures. These are likely the "Send Email" button in its disabled/muted state and possibly the muted-foreground email text in the table. Not fixed in this pass — requires design token review.
+- [MODERATE – A11Y] `skip-link`: The skip link (`href="#main-content"`) has a valid target in the layout source (`<main id="main-content">`), but the id was absent from the live DOM at audit time. This appears to be a transient dev-server compilation lag — the id is present in `src/app/(app)/churches/[churchId]/layout.tsx` line 77. No code change needed; the issue should self-resolve on a clean build.
+- [MODERATE – A11Y] `region`: One content node outside any landmark — the Next.js dev-tools button. Dev-only overlay; low priority.
+- [MODERATE – RESPONSIVE] On mobile (375px), the table has no horizontal scroll treatment: the outer `<div class="mt-8 border border-border overflow-x-auto">` does clip correctly, but the invite form's button row (`flex gap-2 items-end`) wraps awkwardly at 375px — the "Invite by email" label wraps to three lines, and the buttons overflow their cells. The labels stack vertically making the form hard to use. Consider a column layout (`flex-col`) on small screens for the invite form.
+- [MEDIUM – UX] No empty-state validation feedback on the invite form: `handleInvite` returns early with `if (!email) return` — no user-visible error message is shown. The buttons are correctly `disabled` when the email field is empty, which is good; but if JS is slow or the disabled state is not noticed by a keyboard user, the silent return is confusing. The buttons being disabled is the primary guard — acceptable, but consider a `role="alert"` error message for completeness.
+- [MEDIUM – SECURITY] The invite token is returned in the API response body (`{ token, inviteId }`). This is intentional (needed for "Get Link" flow), but means the raw token is visible in browser DevTools network panel and JS console if logged. This is acceptable for an invite flow, but worth documenting: any admin with DevTools access can extract the token and share it independently of the intended recipient.
+- [INFO] The invite form renders only for admins (server-side `isAdmin` guard), but the `MembersTable` ADMIN-specific controls (role/voice-part selects, remove button) are controlled only by the client-side `isAdmin` prop passed from the server. Because the page is a Server Component, `isAdmin` is computed server-side from the DB — this is correct and safe. The API routes independently enforce `requireChurchRole(churchId, "ADMIN")`, providing defence in depth.
+- [INFO] The page `<title>` is "Precentor — Church Music Planner" (inherited from root layout). Adding `export const metadata = { title: "Members — Precentor" }` in `page.tsx` would give a more descriptive page title.
+- [INFO] The `loading.tsx` skeleton does not match the actual page layout: it shows a single full-width bar for the invite form and a large block for the table, but the real page has a labelled two-column invite form. This is cosmetic — the skeleton is functional.
+- [INFO] The members table uses `i % 2 === 0 ? "bg-white" : "bg-background"` for striping. Both `bg-white` and `bg-background` are near-identical cream tones — the alternating row effect is barely perceptible. This is a design choice, not a bug.
+
+Details:
+- **Visual (desktop 1280×800)**: Clean layout. "Members" h1 in Cormorant Garamond. Invite form: labelled email input, role dropdown, "Send Email" (primary, muted brown) and "Get Link" (secondary, white) buttons inline. Members table: dark header row (foreground/background inverted), four columns (Name, Email, Role, Voice Part), one action column with trash icon. Single member row (Audit Tester / ADMIN / TENOR) visible. No visual regressions.
+- **Responsive (mobile 375×812)**: Sidebar collapses to hamburger. Invite form labels wrap awkwardly (see medium UX finding). Table fits within overflow-x-auto wrapper — scrollable horizontally. Email column correctly hidden on small screens (`hidden sm:table-cell`), email shown below name in the Name cell instead.
+- **Responsive (tablet 768×1024)**: Sidebar visible. Invite form fits in one row without overflow. Table fully visible. Pass.
+- **Accessibility snapshot**: `h1` "Members" present. Invite-by-email input has label `Invite by email` via `htmlFor="invite-email"`. Role select in invite form has label `Role` via `htmlFor="invite-role"`. Table has correct `<thead>/<tbody>` structure with `columnheader` roles. Role and voice-part selects in rows have `aria-label` (after fix). Remove button has `aria-label="Remove Audit Tester"` — good. Skip link present; `<main id="main-content">` in layout (id present in source; transient absence in DOM noted above).
+- **Runtime**: Build errors in console from sundays pages (compilation lag from prior audit). 500 on `/churches/[churchId]/sundays` route — unrelated to this page. No errors specific to the members page. No failed network requests on this page.
+- **Interactions**: "Send Email" button correctly disabled when email field is empty (confirmed by eval: `sendBtnDisabled === true`). Email input `type="email"` — browser prevents submission of clearly invalid emails. `autoComplete="email"` added. Role dropdown defaults to "Member". Confirm-before-remove pattern: clicking trash sets `confirmRemoveId`, showing inline "Confirm / Cancel" — good UX safety net.
+- **Security review**: `POST /api/churches/[churchId]/members` — requires `ADMIN` role via `requireChurchRole`. Email validated against `EMAIL_REGEX`. Role validated against `VALID_ROLES` allowlist (falls back to `"MEMBER"` if invalid — safe). Invite URL constructed from `process.env.NEXT_PUBLIC_APP_URL` (server-side env var), not from `request.headers.host` — prevents host-header injection. Email HTML uses `escapeHtml()` helper on `validatedRole` and `inviteUrl`. `PATCH /api/churches/[churchId]/members/[memberId]` — requires `ADMIN`. Field values validated against allowlists. DB query scoped to `churchId AND memberId` — prevents IDOR (a member cannot be updated across churches). `DELETE` — same guards. All correct.
+- **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Invite token generated with `randomBytes(32)` — cryptographically secure. Expiry set to 7 days. Email send failure is caught and logged but does not fail the request (invite link still usable) — correct graceful-degradation pattern. `logger.error` used consistently (not `console.error`). TypeScript: `MemberRole` type used correctly; `VALID_ROLES` and `VALID_VOICE_PARTS` as `const` arrays. Optimistic UI updates in `MembersTable` with rollback on error — good UX pattern.
