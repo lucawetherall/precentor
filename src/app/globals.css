@@ -9,6 +9,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -81,6 +82,7 @@
 
   /* Primary (saddle brown) */
   --primary: #8B4513;
+  --primary-hover: #6B4423;
   --primary-foreground: #FAF6F1;
 
   /* Secondary (muted olive green) */
