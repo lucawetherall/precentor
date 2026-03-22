@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      success: true,
+      success: result.imported > 0 || result.errors === 0,
       ...result,
     });
   } catch (error) {

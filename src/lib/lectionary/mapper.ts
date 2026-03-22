@@ -11,7 +11,7 @@
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { liturgicalDays, readings, liturgicalSeasonEnum, liturgicalColourEnum, lectionaryEnum, readingPositionEnum } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, or, ne, isNull } from "drizzle-orm";
 
 const VALID_SEASONS: Set<string> = new Set(liturgicalSeasonEnum.enumValues);
 const VALID_COLOURS: Set<string> = new Set(liturgicalColourEnum.enumValues);
@@ -93,32 +93,47 @@ export async function syncLectionaryForYear(
       const season = entry.season as (typeof liturgicalSeasonEnum.enumValues)[number];
       const colour = entry.colour as (typeof liturgicalColourEnum.enumValues)[number];
 
-      // Upsert the liturgical day
-      const [day] = await db
-        .insert(liturgicalDays)
-        .values({
-          date: entry.date,
-          season,
-          colour,
-          cwName: sundayData.name || entry.name,
-          icalUid: entry.sundayKey,
-          lectionaryYear: year,
-          collect: sundayData.collect ?? null,
-          postCommunion: sundayData.postCommunion ?? null,
-        })
-        .onConflictDoUpdate({
-          target: liturgicalDays.icalUid,
-          set: {
+      // Upsert the liturgical day.
+      // The table has two unique constraints (date + ical_uid) but ON CONFLICT
+      // can only target one. Pre-delete any row with a matching date but
+      // mismatched ical_uid to prevent a constraint violation on date.
+      const [day] = await db.transaction(async (tx) => {
+        await tx.delete(liturgicalDays).where(
+          and(
+            eq(liturgicalDays.date, entry.date),
+            or(
+              ne(liturgicalDays.icalUid, entry.sundayKey),
+              isNull(liturgicalDays.icalUid),
+            ),
+          ),
+        );
+
+        return tx
+          .insert(liturgicalDays)
+          .values({
             date: entry.date,
-            cwName: sundayData.name || entry.name,
             season,
             colour,
+            cwName: sundayData.name || entry.name,
+            icalUid: entry.sundayKey,
             lectionaryYear: year,
             collect: sundayData.collect ?? null,
             postCommunion: sundayData.postCommunion ?? null,
-          },
-        })
-        .returning();
+          })
+          .onConflictDoUpdate({
+            target: liturgicalDays.icalUid,
+            set: {
+              date: entry.date,
+              cwName: sundayData.name || entry.name,
+              season,
+              colour,
+              lectionaryYear: year,
+              collect: sundayData.collect ?? null,
+              postCommunion: sundayData.postCommunion ?? null,
+            },
+          })
+          .returning();
+      });
 
       // Build reading rows from all three services
       const readingRows = buildReadingRows(yearReadings, day.id, fetchText, bibleVersion);
