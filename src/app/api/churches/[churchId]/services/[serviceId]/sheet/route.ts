@@ -2,14 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
-import { services, liturgicalDays, readings, musicSlots, churches, hymns } from "@/lib/db/schema";
+import { services } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { renderToBuffer } from "@react-pdf/renderer";
 import React from "react";
-import { ServiceSheetDocument, type ServiceSheetData } from "@/lib/pdf/service-sheet";
+import {
+  buildBookletData,
+  buildSummaryData,
+  resolveSheetMode,
+} from "@/lib/pdf/build-sheet-data";
+import { BookletDocument } from "@/lib/pdf/booklet-document";
+import { SummaryDocument } from "@/lib/pdf/summary-document";
+import { generateBookletDocx, generateSummaryDocx } from "@/lib/pdf/service-sheet-docx";
 import { SERVICE_TYPE_DISPLAY } from "@/lib/pdf/service-sheet";
-import { generateServiceSheetDocx } from "@/lib/pdf/service-sheet-docx";
-import { MUSIC_SLOT_LABELS } from "@/types";
+import type { TemplateLayout } from "@/types/service-sheet";
 
 export async function GET(
   request: NextRequest,
@@ -17,90 +23,88 @@ export async function GET(
 ) {
   const { churchId, serviceId } = await params;
   const format = request.nextUrl.searchParams.get("format") || "pdf";
-  const pageSize = request.nextUrl.searchParams.get("size") === "A5" ? "A5" : "A4";
+  const sizeParam = request.nextUrl.searchParams.get("size");
+  const modeParam = request.nextUrl.searchParams.get("mode");
 
   const { error } = await requireChurchRole(churchId, "MEMBER");
   if (error) return error;
 
   try {
-    // Fetch service data
-    const serviceResult = await db
-      .select({
-        service: services,
-        day: liturgicalDays,
-        church: churches,
-      })
+    // Determine sheet mode from service record + query override
+    const serviceRecord = await db
+      .select({ sheetMode: services.sheetMode })
       .from(services)
-      .innerJoin(liturgicalDays, eq(services.liturgicalDayId, liturgicalDays.id))
-      .innerJoin(churches, eq(services.churchId, churches.id))
       .where(eq(services.id, serviceId))
       .limit(1);
 
-    if (serviceResult.length === 0) {
+    if (serviceRecord.length === 0) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
-    const { service, day, church } = serviceResult[0];
+    const mode = resolveSheetMode(serviceRecord[0].sheetMode, modeParam);
 
-    // Fetch readings
-    const dayReadings = await db
-      .select()
-      .from(readings)
-      .where(eq(readings.liturgicalDayId, day.id));
+    // Build layout override from query params
+    const layoutOverride: Partial<TemplateLayout> = {};
+    if (sizeParam === "A4" || sizeParam === "A5") {
+      layoutOverride.paperSize = sizeParam;
+    }
 
-    // Fetch music slots with hymn details via left join
-    const slotsRaw = await db
-      .select({
-        slot: musicSlots,
-        hymn: {
-          book: hymns.book,
-          number: hymns.number,
-          firstLine: hymns.firstLine,
+    if (mode === "booklet") {
+      const data = await buildBookletData(serviceId, churchId, layoutOverride);
+      if (!data) {
+        return NextResponse.json({ error: "Service not found" }, { status: 404 });
+      }
+
+      const serviceLabel =
+        SERVICE_TYPE_DISPLAY[data.serviceType] || data.serviceType;
+      const safeLabel = serviceLabel.toLowerCase().replace(/\s+/g, "-");
+      const filename = `${safeLabel}-booklet-${data.date}`;
+
+      if (format === "docx") {
+        const buffer = await generateBookletDocx(data);
+        return new NextResponse(new Uint8Array(buffer), {
+          headers: {
+            "Content-Type":
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "Content-Disposition": `attachment; filename="${filename}.docx"`,
+          },
+        });
+      }
+
+      const pdfElement = React.createElement(BookletDocument, { data });
+      // @ts-expect-error - react-pdf types are strict about Document props
+      const pdfBuffer = await renderToBuffer(pdfElement);
+      return new NextResponse(new Uint8Array(pdfBuffer), {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="${filename}.pdf"`,
         },
-      })
-      .from(musicSlots)
-      .leftJoin(hymns, eq(musicSlots.hymnId, hymns.id))
-      .where(eq(musicSlots.serviceId, serviceId))
-      .orderBy(musicSlots.positionOrder);
+      });
+    }
 
-    const serviceLabel = SERVICE_TYPE_DISPLAY[service.serviceType] || service.serviceType;
+    // Summary mode
+    const data = await buildSummaryData(serviceId, churchId, layoutOverride);
+    if (!data) {
+      return NextResponse.json({ error: "Service not found" }, { status: 404 });
+    }
+
+    const serviceLabel =
+      SERVICE_TYPE_DISPLAY[data.serviceType] || data.serviceType;
     const safeLabel = serviceLabel.toLowerCase().replace(/\s+/g, "-");
-
-    const sheetData: ServiceSheetData = {
-      churchName: church.name,
-      serviceType: service.serviceType,
-      date: day.date,
-      liturgicalName: day.cwName,
-      season: day.season,
-      colour: day.colour,
-      collect: day.collect || undefined,
-      format: pageSize as "A4" | "A5",
-      readings: dayReadings.map((r) => ({
-        position: r.position,
-        reference: r.reference,
-      })),
-      musicSlots: slotsRaw.map((s) => ({
-        label: (MUSIC_SLOT_LABELS as Record<string, string>)[s.slot.slotType] || s.slot.slotType,
-        value: s.hymn?.firstLine || s.slot.freeText || "TBC",
-        hymnNumber: s.hymn ? `${s.hymn.book} ${s.hymn.number}` : undefined,
-        notes: s.slot.notes || undefined,
-      })),
-    };
-
-    const filename = `${safeLabel}-${day.date}`;
+    const filename = `${safeLabel}-${data.date}`;
 
     if (format === "docx") {
-      const buffer = await generateServiceSheetDocx(sheetData);
+      const buffer = await generateSummaryDocx(data);
       return new NextResponse(new Uint8Array(buffer), {
         headers: {
-          "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "Content-Type":
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
           "Content-Disposition": `attachment; filename="${filename}.docx"`,
         },
       });
     }
 
-    // PDF
-    const pdfElement = React.createElement(ServiceSheetDocument, { data: sheetData });
+    const pdfElement = React.createElement(SummaryDocument, { data });
     // @ts-expect-error - react-pdf types are strict about Document props
     const pdfBuffer = await renderToBuffer(pdfElement);
     return new NextResponse(new Uint8Array(pdfBuffer), {

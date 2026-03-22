@@ -7,25 +7,10 @@ import {
   StyleSheet,
 } from "@react-pdf/renderer";
 
-/** Map liturgical colour names to hex values for PDF accents */
-const COLOUR_HEX: Record<string, string> = {
-  PURPLE: "#5B2C6F",
-  WHITE: "#8B7D6B",
-  GOLD: "#D4AF37",
-  GREEN: "#4A6741",
-  RED: "#8B2500",
-  ROSE: "#C48A9F",
-  Purple: "#5B2C6F",
-  White: "#8B7D6B",
-  Gold: "#D4AF37",
-  Green: "#4A6741",
-  Red: "#8B2500",
-  Rose: "#C48A9F",
-};
+import { COLOUR_HEX, accentColour } from "./theme";
 
-function accentColour(colour: string): string {
-  return COLOUR_HEX[colour] ?? "#D4C5B2";
-}
+// Re-export for backward compat
+export { COLOUR_HEX };
 
 const styles = StyleSheet.create({
   page: {
