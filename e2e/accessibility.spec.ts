@@ -47,7 +47,7 @@ test.describe("Accessibility", () => {
     await page.getByRole("button", { name: /create account/i }).click();
 
     // Error message should appear with role="alert"
-    const errorMsg = page.locator('[role="alert"]');
+    const errorMsg = page.locator('p[role="alert"]');
     await expect(errorMsg).toBeVisible();
     await expect(errorMsg).toContainText("Passwords do not match");
   });
