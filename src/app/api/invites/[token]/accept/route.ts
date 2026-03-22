@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { invites, churches, users, churchMemberships } from "@/lib/db/schema";
+import { invites, users, churchMemberships } from "@/lib/db/schema";
 import { eq, and, isNull, gt } from "drizzle-orm";
 
 export async function POST(
@@ -60,25 +60,12 @@ export async function POST(
       dbUser = [newUser];
     }
 
-    // Check if already a member
-    const existing = await db
-      .select()
-      .from(churchMemberships)
-      .where(
-        and(
-          eq(churchMemberships.userId, dbUser[0].id),
-          eq(churchMemberships.churchId, invite.churchId)
-        )
-      )
-      .limit(1);
-
-    if (existing.length === 0) {
-      await db.insert(churchMemberships).values({
-        userId: dbUser[0].id,
-        churchId: invite.churchId,
-        role: invite.role,
-      });
-    }
+    // Add membership (ignore if already exists due to unique constraint)
+    await db.insert(churchMemberships).values({
+      userId: dbUser[0].id,
+      churchId: invite.churchId,
+      role: invite.role,
+    }).onConflictDoNothing();
 
     // Mark invite as accepted
     await db

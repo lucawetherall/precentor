@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Check, X, Minus } from "lucide-react";
 
 interface Service {
@@ -34,8 +34,20 @@ export function RotaGrid({
   availabilityData: any[];
   rotaData: any[];
 }) {
-  const [avail, setAvail] = useState<Record<string, AvailabilityStatus>>({});
-  const [rota, setRota] = useState<Record<string, boolean>>({});
+  const [avail, setAvail] = useState<Record<string, AvailabilityStatus>>(() => {
+    const initial: Record<string, AvailabilityStatus> = {};
+    for (const a of availabilityData) {
+      initial[`${a.userId}-${a.serviceId}`] = a.status;
+    }
+    return initial;
+  });
+  const [rota, setRota] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const r of rotaData) {
+      initial[`${r.userId}-${r.serviceId}`] = r.confirmed;
+    }
+    return initial;
+  });
   const [saving, setSaving] = useState(false);
 
   const getAvailKey = (userId: string, serviceId: string) => `${userId}-${serviceId}`;
@@ -49,11 +61,18 @@ export function RotaGrid({
 
     setAvail((prev) => ({ ...prev, [key]: next }));
 
-    await fetch(`/api/churches/${churchId}/availability`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, serviceId, status: next }),
-    });
+    try {
+      const res = await fetch(`/api/churches/${churchId}/availability`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, serviceId, status: next }),
+      });
+      if (!res.ok) {
+        setAvail((prev) => ({ ...prev, [key]: current }));
+      }
+    } catch {
+      setAvail((prev) => ({ ...prev, [key]: current }));
+    }
   };
 
   const toggleRota = async (userId: string, serviceId: string) => {
@@ -61,11 +80,18 @@ export function RotaGrid({
     const current = rota[key] || false;
     setRota((prev) => ({ ...prev, [key]: !current }));
 
-    await fetch(`/api/churches/${churchId}/rota`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, serviceId, confirmed: !current }),
-    });
+    try {
+      const res = await fetch(`/api/churches/${churchId}/rota`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, serviceId, confirmed: !current }),
+      });
+      if (!res.ok) {
+        setRota((prev) => ({ ...prev, [key]: current }));
+      }
+    } catch {
+      setRota((prev) => ({ ...prev, [key]: current }));
+    }
   };
 
   // Group members by voice part
@@ -100,8 +126,8 @@ export function RotaGrid({
         </thead>
         <tbody>
           {Object.entries(grouped).map(([part, partMembers]) => (
-            <>
-              <tr key={part}>
+            <Fragment key={part}>
+              <tr>
                 <td colSpan={services.length + 1} className="px-3 py-1 text-xs font-heading font-semibold bg-muted">
                   {part}
                 </td>
@@ -155,7 +181,7 @@ export function RotaGrid({
                   })}
                 </tr>
               ))}
-            </>
+            </Fragment>
           ))}
         </tbody>
       </table>

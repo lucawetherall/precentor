@@ -6,11 +6,8 @@ export async function searchHymns(query: string, book?: "NEH" | "AM") {
   const conditions: SQL[] = [
     ilike(hymns.firstLine, `%${query}%`),
     ilike(hymns.tuneName, `%${query}%`),
+    ilike(hymns.author, `%${query}%`),
   ];
-
-  if (hymns.author) {
-    conditions.push(ilike(hymns.author, `%${query}%`));
-  }
 
   // Match by number if query is numeric
   if (!isNaN(Number(query))) {

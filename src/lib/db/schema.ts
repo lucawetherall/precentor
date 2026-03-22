@@ -66,6 +66,7 @@ export const churchMemberships = pgTable("church_memberships", {
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
 }, (t) => [
   uniqueIndex("membership_unique").on(t.userId, t.churchId),
+  index("membership_user_idx").on(t.userId),
 ]);
 
 // ─── Liturgical Calendar ─────────────────────────────────────
@@ -93,7 +94,9 @@ export const readings = pgTable("readings", {
   bookName: text("book_name"),
   readingText: text("reading_text"), // Actual scripture text from Oremus Bible API
   bibleVersion: text("bible_version"), // e.g., "NRSVAE"
-});
+}, (t) => [
+  index("reading_liturgical_day_idx").on(t.liturgicalDayId),
+]);
 
 // ─── Services & Music Planning ───────────────────────────────
 export const services = pgTable("services", {
@@ -108,6 +111,7 @@ export const services = pgTable("services", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [
   uniqueIndex("service_unique").on(t.churchId, t.liturgicalDayId, t.serviceType),
+  index("service_church_idx").on(t.churchId),
 ]);
 
 export const musicSlots = pgTable("music_slots", {
@@ -122,7 +126,9 @@ export const musicSlots = pgTable("music_slots", {
   responsesSettingId: uuid("responses_setting_id").references(() => responsesSettings.id),
   freeText: text("free_text"),
   notes: text("notes"),
-});
+}, (t) => [
+  index("music_slot_service_idx").on(t.serviceId),
+]);
 
 // ─── Music Databases ─────────────────────────────────────────
 export const hymns = pgTable("hymns", {
