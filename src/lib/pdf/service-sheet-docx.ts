@@ -8,20 +8,30 @@ import {
   Packer,
 } from "docx";
 import type { ServiceSheetData } from "./service-sheet";
+import { SERVICE_TYPE_DISPLAY } from "./service-sheet";
 
-export async function generateServiceSheetDocx(
-  data: ServiceSheetData
-): Promise<Buffer> {
-  const serviceTypeLabel: Record<string, string> = {
-    SUNG_EUCHARIST: "Sung Eucharist",
-    CHORAL_EVENSONG: "Choral Evensong",
-    SAID_EUCHARIST: "Said Eucharist",
-    CHORAL_MATINS: "Choral Matins",
-    FAMILY_SERVICE: "Family Service",
-    COMPLINE: "Compline",
-    CUSTOM: "Service",
-  };
+/** Map liturgical colour names to DOCX hex (no #) */
+const COLOUR_HEX: Record<string, string> = {
+  PURPLE: "5B2C6F",
+  WHITE: "8B7D6B",
+  GOLD: "D4AF37",
+  GREEN: "4A6741",
+  RED: "8B2500",
+  ROSE: "C48A9F",
+  Purple: "5B2C6F",
+  White: "8B7D6B",
+  Gold: "D4AF37",
+  Green: "4A6741",
+  Red: "8B2500",
+  Rose: "C48A9F",
+};
 
+function accentColour(colour: string): string {
+  return COLOUR_HEX[colour] ?? "D4C5B2";
+}
+
+function buildServiceSection(data: ServiceSheetData): Paragraph[] {
+  const accent = accentColour(data.colour);
   const children: Paragraph[] = [];
 
   // Header
@@ -40,7 +50,7 @@ export async function generateServiceSheetDocx(
       spacing: { after: 100 },
       children: [
         new TextRun({
-          text: serviceTypeLabel[data.serviceType] || data.serviceType,
+          text: SERVICE_TYPE_DISPLAY[data.serviceType] || data.serviceType,
           bold: true,
           size: 36,
           font: "Times New Roman",
@@ -72,9 +82,9 @@ export async function generateServiceSheetDocx(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 300 },
-      border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: "D4C5B2" } },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: accent } },
       children: [
-        new TextRun({ text: `${data.season} — ${data.colour}`, size: 18, font: "Times New Roman", color: "6B5D4D" }),
+        new TextRun({ text: `${data.season} — ${data.colour}`, size: 18, font: "Times New Roman", color: accent }),
       ],
     })
   );
@@ -84,6 +94,7 @@ export async function generateServiceSheetDocx(
     children.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_2,
+        border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: accent } },
         children: [new TextRun({ text: "Collect", bold: true, size: 24, font: "Times New Roman" })],
       })
     );
@@ -102,6 +113,7 @@ export async function generateServiceSheetDocx(
     children.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_2,
+        border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: accent } },
         children: [new TextRun({ text: "Readings", bold: true, size: 24, font: "Times New Roman" })],
       })
     );
@@ -124,20 +136,25 @@ export async function generateServiceSheetDocx(
     children.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_2,
+        border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: accent } },
         children: [new TextRun({ text: "Music", bold: true, size: 24, font: "Times New Roman" })],
       })
     );
     for (const slot of data.musicSlots) {
+      const runs: TextRun[] = [
+        new TextRun({ text: `${slot.label}: `, bold: true, size: 20, font: "Times New Roman" }),
+        new TextRun({ text: slot.value, size: 20, font: "Times New Roman" }),
+      ];
+      if (slot.hymnNumber) {
+        runs.push(new TextRun({ text: ` [${slot.hymnNumber}]`, italics: true, size: 18, font: "Times New Roman", color: "6B5D4D" }));
+      }
+      if (slot.notes) {
+        runs.push(new TextRun({ text: ` (${slot.notes})`, italics: true, size: 18, font: "Times New Roman", color: "6B5D4D" }));
+      }
       children.push(
         new Paragraph({
           spacing: { after: 60 },
-          children: [
-            new TextRun({ text: `${slot.label}: `, bold: true, size: 20, font: "Times New Roman" }),
-            new TextRun({ text: slot.value, size: 20, font: "Times New Roman" }),
-            ...(slot.notes
-              ? [new TextRun({ text: ` (${slot.notes})`, italics: true, size: 18, font: "Times New Roman", color: "6B5D4D" })]
-              : []),
-          ],
+          children: runs,
         })
       );
     }
@@ -147,7 +164,7 @@ export async function generateServiceSheetDocx(
   children.push(
     new Paragraph({
       spacing: { before: 400 },
-      border: { top: { style: BorderStyle.SINGLE, size: 1, color: "D4C5B2" } },
+      border: { top: { style: BorderStyle.SINGLE, size: 1, color: accent } },
       alignment: AlignmentType.CENTER,
       children: [
         new TextRun({
@@ -160,8 +177,28 @@ export async function generateServiceSheetDocx(
     })
   );
 
+  return children;
+}
+
+export async function generateServiceSheetDocx(
+  data: ServiceSheetData
+): Promise<Buffer> {
   const doc = new Document({
-    sections: [{ children }],
+    sections: [{ children: buildServiceSection(data) }],
+  });
+
+  return Buffer.from(await Packer.toBuffer(doc));
+}
+
+/** Generate a single DOCX with multiple services (one section per service with page breaks) */
+export async function generateMultiServiceDocx(
+  sheets: ServiceSheetData[]
+): Promise<Buffer> {
+  const doc = new Document({
+    sections: sheets.map((data, idx) => ({
+      children: buildServiceSection(data),
+      properties: idx > 0 ? { page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } } } : undefined,
+    })),
   });
 
   return Buffer.from(await Packer.toBuffer(doc));
