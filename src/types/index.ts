@@ -118,3 +118,11 @@ export const EVENSONG_SLOTS: MusicSlotType[] = [
   "HYMN", // Final
   "ORGAN_VOLUNTARY_POST",
 ];
+
+export const POSITION_LABELS: Record<string, string> = {
+  OLD_TESTAMENT: "Old Testament",
+  PSALM: "Psalm",
+  EPISTLE: "Epistle",
+  GOSPEL: "Gospel",
+  CANTICLE: "Canticle",
+};

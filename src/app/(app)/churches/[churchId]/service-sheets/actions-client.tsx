@@ -1,43 +1,61 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Download, Loader2, Eye } from "lucide-react";
+import { FileText, Download, Loader2, Eye, BookOpen } from "lucide-react";
+
+type SheetMode = "summary" | "booklet";
 
 export function ServiceSheetActions({
   serviceId,
   churchId,
+  defaultMode,
 }: {
   serviceId: string;
   churchId: string;
+  defaultMode?: SheetMode;
 }) {
   const [generating, setGenerating] = useState<string | null>(null);
-  const [size, setSize] = useState<"A4" | "A5">("A4");
+  const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<SheetMode>(defaultMode ?? "summary");
+  const [size, setSize] = useState<"A4" | "A5">(
+    defaultMode === "booklet" ? "A5" : "A4"
+  );
+
+  const handleModeChange = (newMode: SheetMode) => {
+    setMode(newMode);
+    setSize(newMode === "booklet" ? "A5" : "A4");
+  };
 
   const handleGenerate = async (format: "pdf" | "docx", preview = false) => {
     const key = preview ? "preview" : format;
     setGenerating(key);
+    setError(null);
     try {
       const res = await fetch(
-        `/api/churches/${churchId}/services/${serviceId}/sheet?format=${format}&size=${size}`
+        `/api/churches/${churchId}/services/${serviceId}/sheet?format=${format}&size=${size}&mode=${mode}`
       );
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-
-        if (preview) {
-          window.open(url, "_blank");
-        } else {
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `service-sheet.${format}`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(body?.error ?? `Failed to generate (${res.status})`);
+        setGenerating(null);
+        return;
       }
-    } catch (e) {
-      console.error("Failed to generate:", e);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      if (preview) {
+        window.open(url, "_blank");
+      } else {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `service-sheet.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      setError("Network error — could not generate sheet");
     }
     setGenerating(null);
   };
@@ -45,12 +63,22 @@ export function ServiceSheetActions({
   return (
     <div className="flex items-center gap-2">
       <select
+        value={mode}
+        onChange={(e) => handleModeChange(e.target.value as SheetMode)}
+        className="px-2 py-1 text-xs border border-border bg-background"
+        title="Sheet mode"
+      >
+        <option value="summary">Summary</option>
+        <option value="booklet">Booklet</option>
+      </select>
+
+      <select
         value={size}
         onChange={(e) => setSize(e.target.value as "A4" | "A5")}
         className="px-2 py-1 text-xs border border-border bg-background"
       >
         <option value="A4">A4</option>
-        <option value="A5">A5 Booklet</option>
+        <option value="A5">A5</option>
       </select>
 
       <button
@@ -73,6 +101,8 @@ export function ServiceSheetActions({
       >
         {generating === "pdf" ? (
           <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
+        ) : mode === "booklet" ? (
+          <BookOpen className="h-3 w-3" strokeWidth={1.5} />
         ) : (
           <FileText className="h-3 w-3" strokeWidth={1.5} />
         )}
@@ -90,6 +120,10 @@ export function ServiceSheetActions({
         )}
         DOCX
       </button>
+
+      {error && (
+        <span className="text-xs text-destructive">{error}</span>
+      )}
     </div>
   );
 }
@@ -102,30 +136,42 @@ export function BatchDownloadActions({
   churchId: string;
 }) {
   const [generating, setGenerating] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<SheetMode>("summary");
   const [size, setSize] = useState<"A4" | "A5">("A4");
+
+  const handleModeChange = (newMode: SheetMode) => {
+    setMode(newMode);
+    setSize(newMode === "booklet" ? "A5" : "A4");
+  };
 
   const handleBatch = async (format: "pdf" | "docx") => {
     if (serviceIds.length === 0) return;
     setGenerating(format);
+    setError(null);
     try {
       const res = await fetch(`/api/churches/${churchId}/sheets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ serviceIds, format, size }),
+        body: JSON.stringify({ serviceIds, format, size, mode }),
       });
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `service-sheets.${format}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(body?.error ?? `Batch generation failed (${res.status})`);
+        setGenerating(null);
+        return;
       }
-    } catch (e) {
-      console.error("Batch generation failed:", e);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `service-sheets.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("Network error — could not generate sheets");
     }
     setGenerating(null);
   };
@@ -139,12 +185,21 @@ export function BatchDownloadActions({
       </span>
 
       <select
+        value={mode}
+        onChange={(e) => handleModeChange(e.target.value as SheetMode)}
+        className="px-2 py-1.5 text-xs border border-border bg-background"
+      >
+        <option value="summary">Summary</option>
+        <option value="booklet">Booklet</option>
+      </select>
+
+      <select
         value={size}
         onChange={(e) => setSize(e.target.value as "A4" | "A5")}
         className="px-2 py-1.5 text-xs border border-border bg-background"
       >
         <option value="A4">A4</option>
-        <option value="A5">A5 Booklet</option>
+        <option value="A5">A5</option>
       </select>
 
       <button
@@ -171,6 +226,10 @@ export function BatchDownloadActions({
         )}
         All as DOCX
       </button>
+
+      {error && (
+        <span className="text-xs text-destructive">{error}</span>
+      )}
     </div>
   );
 }
