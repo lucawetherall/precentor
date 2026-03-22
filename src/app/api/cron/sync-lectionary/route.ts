@@ -4,13 +4,13 @@ import { syncCurrentYear, syncLectionaryForYear } from "@/lib/lectionary/mapper"
 import { getChurchYear } from "@/lib/lectionary/calendar";
 
 export async function GET(request: Request) {
-  // Verify cron secret — required in production, optional in development
+  // Verify cron secret
   const authHeader = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET && process.env.NODE_ENV === "production") {
-    logger.error("CRON_SECRET is not set in production");
+  if (!process.env.CRON_SECRET) {
+    logger.error("CRON_SECRET is not set");
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
   }
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

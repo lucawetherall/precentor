@@ -5,6 +5,12 @@ import { ToastProvider } from "@/components/ui/toast";
 export const metadata: Metadata = {
   title: "Precentor — Church Music Planner",
   description: "AI-powered liturgical music and service planning for Church of England parishes",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://precentor.app"),
+  openGraph: {
+    title: "Precentor — Church Music Planner",
+    description: "AI-powered liturgical music and service planning for Church of England parishes",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -22,7 +28,12 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Libre+Baskerville:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap"
         />
       </head>
-      <body className="min-h-full flex flex-col"><ToastProvider>{children}</ToastProvider></body>
+      <body className="min-h-full flex flex-col">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground">
+          Skip to content
+        </a>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

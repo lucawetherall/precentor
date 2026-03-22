@@ -11,11 +11,11 @@
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { liturgicalDays, readings, liturgicalSeasonEnum, liturgicalColourEnum, lectionaryEnum, readingPositionEnum } from "@/lib/db/schema";
+// lectionaryEnum used for type extraction below
 import { eq, and, or, ne, isNull } from "drizzle-orm";
 
 const VALID_SEASONS: Set<string> = new Set(liturgicalSeasonEnum.enumValues);
 const VALID_COLOURS: Set<string> = new Set(liturgicalColourEnum.enumValues);
-const VALID_LECTIONARIES: Set<string> = new Set(lectionaryEnum.enumValues);
 const VALID_POSITIONS: Set<string> = new Set(readingPositionEnum.enumValues);
 import {
   computeLiturgicalCalendar,
@@ -136,7 +136,7 @@ export async function syncLectionaryForYear(
       });
 
       // Build reading rows from all three services
-      const readingRows = buildReadingRows(yearReadings, day.id, fetchText, bibleVersion);
+      const readingRows = buildReadingRows(yearReadings, day.id);
 
       // If fetching text, do it before the transaction to avoid holding it open
       if (fetchText && readingRows.length > 0) {
@@ -181,8 +181,6 @@ type PositionValue = (typeof readingPositionEnum.enumValues)[number];
 function buildReadingRows(
   yearReadings: ServiceReadings,
   liturgicalDayId: string,
-  _fetchText: boolean,
-  _bibleVersion: string,
 ) {
   const rows: Array<{
     liturgicalDayId: string;

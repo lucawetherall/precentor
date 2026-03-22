@@ -123,7 +123,7 @@ export default async function DashboardPage() {
             href={`/churches/${uc.churchId}/sundays`}
             className="flex items-center gap-3 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
           >
-            <Calendar className="h-5 w-5 text-primary flex-shrink-0" strokeWidth={1.5} />
+            <Calendar className="h-5 w-5 text-primary flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
             <div className="min-w-0">
               <p className="text-sm font-heading font-semibold">Plan Services</p>
               <p className="text-xs text-muted-foreground truncate">{uc.churchName}</p>
@@ -136,7 +136,7 @@ export default async function DashboardPage() {
             href={`/churches/${uc.churchId}/rota`}
             className="flex items-center gap-3 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
           >
-            <Users className="h-5 w-5 text-primary flex-shrink-0" strokeWidth={1.5} />
+            <Users className="h-5 w-5 text-primary flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
             <div className="min-w-0">
               <p className="text-sm font-heading font-semibold">Choir Rota</p>
               <p className="text-xs text-muted-foreground truncate">{uc.churchName}</p>
@@ -149,7 +149,7 @@ export default async function DashboardPage() {
             href={`/churches/${uc.churchId}/repertoire`}
             className="flex items-center gap-3 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
           >
-            <Music className="h-5 w-5 text-primary flex-shrink-0" strokeWidth={1.5} />
+            <Music className="h-5 w-5 text-primary flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
             <div className="min-w-0">
               <p className="text-sm font-heading font-semibold">Repertoire</p>
               <p className="text-xs text-muted-foreground truncate">{uc.churchName}</p>
@@ -163,7 +163,7 @@ export default async function DashboardPage() {
         <h2 className="text-xl font-heading font-semibold mb-4">Upcoming Services</h2>
         {upcomingServices.length === 0 ? (
           <div className="border border-border bg-card p-8 text-center">
-            <Calendar className="h-10 w-10 mx-auto text-muted-foreground mb-3" strokeWidth={1.5} />
+            <Calendar className="h-10 w-10 mx-auto text-muted-foreground mb-3" strokeWidth={1.5} aria-hidden="true" />
             <p className="text-muted-foreground">
               No upcoming services planned.{" "}
               {userChurches.length > 0 && (
@@ -186,6 +186,8 @@ export default async function DashboardPage() {
                   <span
                     className="w-2 h-10 flex-shrink-0"
                     style={{ backgroundColor: colour }}
+                    aria-hidden="true"
+                    title={s.colour}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-heading text-base">{s.cwName}</p>
@@ -198,7 +200,7 @@ export default async function DashboardPage() {
                       {userChurches.length > 1 && ` — ${s.churchName}`}
                     </p>
                   </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" strokeWidth={1.5} />
+                  <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
                 </Link>
               );
             })}
@@ -224,7 +226,7 @@ export default async function DashboardPage() {
               href={`/churches/${uc.churchId}/sundays`}
               className="flex items-center gap-3 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
             >
-              <Church className="h-6 w-6 text-muted-foreground flex-shrink-0" strokeWidth={1.5} />
+              <Church className="h-6 w-6 text-muted-foreground flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
               <div className="min-w-0">
                 <p className="font-heading font-semibold truncate">{uc.churchName}</p>
                 <p className="text-xs text-muted-foreground">

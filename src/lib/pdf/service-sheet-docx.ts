@@ -27,7 +27,7 @@ const SPEAKER_LABELS: Record<string, string> = {
   deacon: "Deacon",
 };
 
-function textBlockToParagraphs(block: LiturgicalTextBlock, _accent: string): Paragraph[] {
+function textBlockToParagraphs(block: LiturgicalTextBlock): Paragraph[] {
   if (block.speaker === "rubric") {
     return [
       new Paragraph({
@@ -71,7 +71,7 @@ function textBlockToParagraphs(block: LiturgicalTextBlock, _accent: string): Par
   return paragraphs;
 }
 
-function musicSlotToParagraph(slot: MusicSlotEntry, _accent: string): Paragraph {
+function musicSlotToParagraph(slot: MusicSlotEntry): Paragraph {
   const label = (MUSIC_SLOT_LABELS as Record<string, string>)[slot.slotType] || slot.label;
   const runs: TextRun[] = [
     new TextRun({ text: `${label}: `, bold: true, size: 20, font: "Times New Roman" }),
@@ -190,7 +190,7 @@ function buildBookletSection(data: BookletServiceSheetData): Paragraph[] {
 
     // Text blocks with speaker attribution
     for (const block of rs.resolvedBlocks) {
-      children.push(...textBlockToParagraphs(block, accent));
+      children.push(...textBlockToParagraphs(block));
     }
 
     // Reading
@@ -219,7 +219,7 @@ function buildBookletSection(data: BookletServiceSheetData): Paragraph[] {
 
     // Music slot
     if (rs.musicSlot) {
-      children.push(musicSlotToParagraph(rs.musicSlot, accent));
+      children.push(musicSlotToParagraph(rs.musicSlot));
     }
   }
 
@@ -365,7 +365,7 @@ function buildSummarySection(data: SummaryServiceSheetData): Paragraph[] {
       })
     );
     for (const slot of data.musicSlots) {
-      children.push(musicSlotToParagraph(slot, accent));
+      children.push(musicSlotToParagraph(slot));
     }
   }
 

@@ -22,7 +22,8 @@ export async function GET(
   { params }: { params: Promise<{ churchId: string; serviceId: string }> }
 ) {
   const { churchId, serviceId } = await params;
-  const format = request.nextUrl.searchParams.get("format") || "pdf";
+  const formatParam = request.nextUrl.searchParams.get("format") || "pdf";
+  const format = formatParam === "docx" ? "docx" : "pdf";
   const sizeParam = request.nextUrl.searchParams.get("size");
   const modeParam = request.nextUrl.searchParams.get("mode");
 
@@ -57,7 +58,7 @@ export async function GET(
 
       const serviceLabel =
         SERVICE_TYPE_DISPLAY[data.serviceType] || data.serviceType;
-      const safeLabel = serviceLabel.toLowerCase().replace(/\s+/g, "-");
+      const safeLabel = serviceLabel.toLowerCase().replace(/[^a-z0-9-]/g, "-");
       const filename = `${safeLabel}-booklet-${data.date}`;
 
       if (format === "docx") {
@@ -90,7 +91,7 @@ export async function GET(
 
     const serviceLabel =
       SERVICE_TYPE_DISPLAY[data.serviceType] || data.serviceType;
-    const safeLabel = serviceLabel.toLowerCase().replace(/\s+/g, "-");
+    const safeLabel = serviceLabel.toLowerCase().replace(/[^a-z0-9-]/g, "-");
     const filename = `${safeLabel}-${data.date}`;
 
     if (format === "docx") {
@@ -116,7 +117,7 @@ export async function GET(
   } catch (error) {
     logger.error("Service sheet generation failed", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Generation failed" },
+      { error: "Service sheet generation failed" },
       { status: 500 }
     );
   }

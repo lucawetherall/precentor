@@ -34,13 +34,11 @@ function createEntry(level: LogLevel, message: string, context?: Record<string, 
 export const logger = {
   info(message: string, context?: Record<string, unknown>) {
     const entry = createEntry("info", message, context);
-    // eslint-disable-next-line no-console
     console.log(formatEntry(entry));
   },
 
   warn(message: string, context?: Record<string, unknown>) {
     const entry = createEntry("warn", message, context);
-    // eslint-disable-next-line no-console
     console.warn(formatEntry(entry));
   },
 
@@ -53,7 +51,6 @@ export const logger = {
       errorContext.error = String(error);
     }
     const entry = createEntry("error", message, errorContext);
-    // eslint-disable-next-line no-console
     console.error(formatEntry(entry));
   },
 };

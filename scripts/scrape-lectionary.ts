@@ -280,12 +280,14 @@ interface WalkState {
  */
 function walkNode(
   $: cheerio.CheerioAPI,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   node: any,
   section: string,
   sundays: Record<string, LectionarySunday>,
   state: WalkState,
 ) {
   const el = $(node);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tagName = (node as any).tagName?.toLowerCase();
 
   // h5 tags contain Sunday/feast names (class B2, C1, or no class)
@@ -471,6 +473,7 @@ function flushParagraphReadings(
  */
 function parseTable(
   $: cheerio.CheerioAPI,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tableEl: cheerio.Cheerio<any>,
   sundayName: string,
   section: string,
