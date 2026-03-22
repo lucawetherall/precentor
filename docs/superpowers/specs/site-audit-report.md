@@ -5,10 +5,10 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 17/20
+- Pages reviewed: 18/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 69
-- Medium issues: 21
+- Quick wins fixed: 79
+- Medium issues: 22
 - Major issues: 1
 
 ---
@@ -601,3 +601,37 @@ Details:
 - **Interactions**: Clicking the availability button cycles through AVAILABLE → UNAVAILABLE → TENTATIVE. Optimistic update fires immediately (UI updates before API response). If the API fails, state rolls back with a toast error — tested by reviewing the source `cycleAvailability` and `toggleRota` implementations. Rota toggle (UserCheck button) toggles on/off, also with optimistic update + rollback. Both API routes (`/api/churches/[churchId]/availability` and `/api/churches/[churchId]/rota`) are correctly implemented with auth guards.
 - **Security review**: `POST /api/churches/[churchId]/availability` — requires `MEMBER` role via `requireChurchRole`. Members can only update their own `userId`; editors+ can update others. Service ownership verified (`services.churchId === churchId`). Target user membership verified (if updating another user). `onConflictDoUpdate` used correctly — no duplicate rows possible. `POST /api/churches/[churchId]/rota` — requires `EDITOR` role. Service and user membership verified. Delete-on-false correctly removes row. No `dangerouslySetInnerHTML`. `logger.error` used for server errors. Strong IDOR protection throughout.
 - **Source code**: `page.tsx` uses `await params` correctly (Next.js 16 async params). Auth gate: `supabase.auth.getUser()` → redirect if unauthenticated. `try/catch` with silent continuation on DB failure (consistent pattern). `limit(12)` on services prevents unbounded result. `rota-grid.tsx` uses optimistic updates with rollback on both availability and rota mutations. Grouped members by voice part using a plain object accumulator — correct. `Fragment` key used for voice-part groups — correct. Known stub: `availabilityData`/`rotaData` only fetched for `serviceIds[0]` (see medium finding above).
+
+---
+
+### /churches/[churchId]/settings (Church Settings)
+**Visual**: ✅ Pass
+**Responsive**: ✅ Pass (single-column form scales correctly at all breakpoints; sidebar collapses to hamburger on mobile)
+**Accessibility**: ⚠️ Missing `autocomplete` on all inputs; status message lacked `role="alert"`; heading order in DOM (`h2` sidebar name before `h1` page title); `bg-white` on inputs — all fixed
+**Runtime**: ✅ Pass (no console errors, no failed network requests)
+**Design System**: ⚠️ `hover:bg-[#6B4423]` on Save button; `bg-white` on all four inputs — all fixed
+**Interactions**: ✅ Form submits, API responds, `router.refresh()` updates sidebar church name
+**Source Code**: ⚠️ Page does not enforce ADMIN role server-side (relies on layout navigation gating and API-level check); no danger-zone / delete church UI present
+**Security**: ✅ Strong — `PATCH /api/churches/[churchId]` requires `ADMIN` role via `requireChurchRole`; JSON parse errors handled; DB errors logged and returned as 500
+
+Findings:
+
+- [QUICK WIN — FIXED] Replaced `hover:bg-[#6B4423]` with `hover:bg-primary-hover` on the Save Settings button in `settings-form.tsx`. Consistent with the design-token pattern used across the codebase.
+- [QUICK WIN — FIXED] Replaced `bg-white` with `bg-background` on all four form controls (Church Name input, Diocese input, Address textarea, CCLI Number input) in `settings-form.tsx`. Consistent with the design-token pattern and dark-mode ready.
+- [QUICK WIN — FIXED] Added `autoComplete="organization"` to the Church Name input, `autoComplete="street-address"` to the Address textarea, and `autoComplete="off"` to the Diocese and CCLI Number inputs in `settings-form.tsx`. These fields hold organisation-specific data that browsers should not autofill with personal values.
+- [QUICK WIN — FIXED] Added `role="alert"` to the save feedback `<p>` in `settings-form.tsx` (conditionally rendered on submit as "Settings saved." or "Failed to save."). Without this, screen readers would not announce the outcome of the form submission.
+- [MEDIUM — SECURITY] `page.tsx` for `/churches/[churchId]/settings` does not itself check whether the authenticated user holds the ADMIN role for the church. Access is gated at two weaker points: (1) the sidebar navigation conditionally renders the "Settings" link only for admins, and (2) the `PATCH /api/churches/[churchId]` API route requires `ADMIN`. A non-admin member who knows the URL can reach and view the settings page. They cannot save changes (the API will 403), but they can read the church name, diocese, address, and CCLI number — which are low-sensitivity fields. To close this fully, add `requireChurchRole(churchId, "ADMIN")` at the top of `page.tsx`, similar to how the API route is protected. Not fixed in this pass as it requires design discussion (currently all layout-level pages only check membership, not role).
+- [INFO] The DOM heading order on this page has the sidebar's `<h2>` ("St Mary the Virgin, Testbury") appearing before the page `<h1>` ("Church Settings") in source order. This is a structural quirk of the shared layout (sidebar rendered first, content second). Screen readers will encounter an `h2` before the page's `h1`. The `[churchId]/layout.tsx` renders `<ChurchSidebar>` before `<main>`, so this affects all church sub-pages, not just settings. Low priority but worth noting.
+- [INFO] No danger-zone / delete-church UI is present on the settings page. This is acceptable if church deletion is handled via a different admin flow. If it is planned, it should be a separate destructive-action section with confirmation (e.g., requiring the user to type the church name).
+- [INFO] The page `<title>` is "Precentor — Church Music Planner" (inherited from root layout). Adding `export const metadata = { title: "Church Settings — Precentor" }` in `page.tsx` would give a more descriptive browser tab title and improve navigation history legibility.
+- [INFO] The `loading.tsx` skeleton for this page renders four generic pulse blocks. It does not label them or mirror the actual form structure. Cosmetic, low priority.
+
+Details:
+- **Visual (desktop 1280×800)**: Clean form layout. "Church Settings" `h1` in Cormorant Garamond at 30px. Four labelled fields: Church Name (pre-populated), Diocese (pre-populated), Address (textarea, pre-populated), CCLI Number (empty). "Save Settings" button in primary brown. No danger zone section. Sidebar shows Settings item highlighted. Visually correct, no design regressions.
+- **Responsive (mobile 375×812)**: Single-column form fills width correctly. All labels and inputs stack. "Save Settings" button full-width-style. Hamburger menu shown in top-left. No overflow or clipping issues. Confirmed by screenshot at mobile viewport.
+- **Responsive (tablet 768×1024)**: Sidebar visible with Settings item highlighted. Form occupies the right panel at comfortable reading width (`max-w-lg`). No layout issues. Confirmed by screenshot at tablet viewport.
+- **Accessibility snapshot**: `<main id="main-content">` present (from `[churchId]/layout.tsx`). `<h1>` "Church Settings" present. All four inputs have `<label>` elements with matching `for`/`id` pairs (name, diocese, address, ccliNumber). Submit button has visible text "Save Settings". No unlabelled controls. No table or complex widget requiring additional ARIA.
+- **Axe-core**: 1 violation (`page-has-heading-one`, moderate). Investigation confirms the page does have an `<h1>` in the DOM; axe flagged it because the sidebar's `<h2>` element comes first in source order. The `<h1>` itself is present and correct. No violations specific to the settings form content.
+- **Runtime**: No JS console errors. No failed network requests. The settings page is server-rendered (page component) with a client-side form component — no initial data fetches from the client.
+- **Source code**: `page.tsx` uses `await params` correctly (Next.js 16 async params). Auth gate: `supabase.auth.getUser()` → redirect if unauthenticated. Queries `churches` table scoped to `eq(churches.id, churchId)` — no IDOR risk at the query level, but membership check is deferred to layout. `try/catch` with silent continuation on DB failure (consistent with other pages). No `dangerouslySetInnerHTML`. `settings-form.tsx` is a straightforward client component: controlled submit handler with `fetch` PATCH, loading state, and success/error message. `router.refresh()` called on success to re-render server component with updated data. No XSS vectors. API route `PATCH /api/churches/[churchId]` correctly gates on `requireChurchRole(churchId, "ADMIN")`.
+- **Interactions**: Form pre-populates from server-fetched church data. Submitting with no changes calls the API and succeeds (idempotent). The success message "Settings saved." appears. `router.refresh()` causes the layout to re-render, updating the sidebar church name if it was changed. Error path ("Failed to save.") triggered when API returns non-2xx. Loading state disables button and shows "Saving..." text during the request.
