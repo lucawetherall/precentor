@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { MUSIC_SLOT_LABELS, EUCHARIST_SLOTS, EVENSONG_SLOTS } from "@/types";
 import type { MusicSlotType } from "@/types";
 import { Sparkles, Save, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 interface MusicSlot {
   id: string;
@@ -38,6 +39,7 @@ export function MusicSlotEditor({
   const [saving, setSaving] = useState(false);
   const [suggestions, setSuggestions] = useState<Record<number, Suggestion[]>>({});
   const [suggestingFor, setSuggestingFor] = useState<number | null>(null);
+  const { addToast } = useToast();
 
   // Determine template slots based on service type
   const templateSlots: MusicSlotType[] =
@@ -114,12 +116,16 @@ export function MusicSlotEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slots }),
       });
-      if (!res.ok) {
+      if (res.ok) {
+        addToast("Music saved", "success");
+      } else {
         const data = await res.json().catch(() => ({}));
         setSaveError(data.error || "Failed to save music slots");
+        addToast("Failed to save music", "error");
       }
     } catch {
       setSaveError("Network error — could not save");
+      addToast("Network error — could not save", "error");
     }
     setSaving(false);
   };
@@ -139,8 +145,8 @@ export function MusicSlotEditor({
         const data = await res.json();
         setSuggestions((prev) => ({ ...prev, [index]: data.suggestions }));
       }
-    } catch (e) {
-      console.error("Suggestion failed:", e);
+    } catch {
+      addToast("Could not load AI suggestions", "error");
     }
     setSuggestingFor(null);
   };

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { liturgicalDays, readings, services, musicSlots, hymns, anthems, massSettings, canticleSettings, responsesSettings } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { SERVICE_TYPE_LABELS, LITURGICAL_COLOURS } from "@/types";
+import { format, parseISO } from "date-fns";
 import type { LiturgicalColour } from "@/types";
 import type { InferSelectModel } from "drizzle-orm";
 import { ServicePlanner } from "./service-planner";
@@ -60,7 +61,7 @@ export default async function SundayDetailPage({ params }: Props) {
         <span className="w-3 h-12 flex-shrink-0 mt-1" style={{ backgroundColor: colour }} />
         <div>
           <h1 className="text-3xl font-heading font-semibold">{day.cwName}</h1>
-          <p className="text-sm text-muted-foreground font-mono">{day.date}</p>
+          <p className="text-sm text-muted-foreground font-mono">{format(parseISO(day.date), "EEEE d MMMM yyyy")}</p>
           <p className="text-sm text-muted-foreground">{day.season} — {day.colour}</p>
         </div>
       </div>

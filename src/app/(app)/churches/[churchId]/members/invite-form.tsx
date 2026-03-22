@@ -1,45 +1,50 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 export function InviteMemberForm({ churchId }: { churchId: string }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("MEMBER");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [inviteLink, setInviteLink] = useState("");
+  const { addToast } = useToast();
 
   const handleInvite = async (sendEmail: boolean) => {
     if (!email) return;
     setLoading(true);
-    setMessage("");
     setInviteLink("");
 
-    const res = await fetch(`/api/churches/${churchId}/members`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, role, sendEmail }),
-    });
+    try {
+      const res = await fetch(`/api/churches/${churchId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role, sendEmail }),
+      });
 
-    const data = await res.json();
-    if (res.ok) {
-      const link = `${window.location.origin}/invite/${data.token}`;
-      if (sendEmail) {
-        setMessage("Invite email sent.");
+      const data = await res.json();
+      if (res.ok) {
+        const link = `${window.location.origin}/invite/${data.token}`;
+        if (sendEmail) {
+          addToast("Invite email sent", "success");
+        } else {
+          setInviteLink(link);
+          addToast("Invite link generated — copy and share it", "success");
+        }
+        setEmail("");
       } else {
-        setInviteLink(link);
-        setMessage("Invite link generated.");
+        addToast(data.error || "Failed to invite member", "error");
       }
-      setEmail("");
-    } else {
-      setMessage(data.error || "Failed to invite member");
+    } catch {
+      addToast("Network error — could not send invite", "error");
     }
     setLoading(false);
   };
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(inviteLink);
-    setMessage("Link copied to clipboard.");
+    addToast("Link copied to clipboard", "success");
   };
 
   return (
@@ -76,15 +81,16 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
           type="button"
           onClick={() => handleInvite(true)}
           disabled={loading || !email}
-          className="px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
         >
-          {loading ? "..." : "Send Email"}
+          {loading && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />}
+          Send Email
         </button>
         <button
           type="button"
           onClick={() => handleInvite(false)}
           disabled={loading || !email}
-          className="px-4 py-2 text-sm bg-white text-foreground border border-border hover:bg-muted transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm bg-white text-foreground border border-border hover:bg-muted transition-colors disabled:opacity-50"
         >
           Get Link
         </button>
@@ -108,7 +114,6 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
         </div>
       )}
 
-      {message && <p className="text-sm text-muted-foreground">{message}</p>}
     </div>
   );
 }

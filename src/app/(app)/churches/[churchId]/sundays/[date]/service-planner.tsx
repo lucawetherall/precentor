@@ -4,7 +4,8 @@ import { useState } from "react";
 import { SERVICE_TYPE_LABELS, EUCHARIST_SLOTS, EVENSONG_SLOTS, MUSIC_SLOT_LABELS } from "@/types";
 import type { ServiceType, MusicSlotType } from "@/types";
 import { MusicSlotEditor } from "./music-slot-editor";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 interface Service {
   id: string;
@@ -30,23 +31,31 @@ export function ServicePlanner({
   const [creating, setCreating] = useState(false);
   const [newType, setNewType] = useState<ServiceType>("SUNG_EUCHARIST");
   const [newTime, setNewTime] = useState("10:00");
+  const { addToast } = useToast();
 
   const handleCreateService = async () => {
     setCreating(true);
-    const res = await fetch(`/api/churches/${churchId}/services`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        liturgicalDayId,
-        serviceType: newType,
-        time: newTime,
-      }),
-    });
+    try {
+      const res = await fetch(`/api/churches/${churchId}/services`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          liturgicalDayId,
+          serviceType: newType,
+          time: newTime,
+        }),
+      });
 
-    if (res.ok) {
-      const service = await res.json();
-      setServices((prev) => [...prev, service]);
-      setActiveTab(service.id);
+      if (res.ok) {
+        const service = await res.json();
+        setServices((prev) => [...prev, service]);
+        setActiveTab(service.id);
+        addToast("Service created", "success");
+      } else {
+        addToast("Failed to create service", "error");
+      }
+    } catch {
+      addToast("Network error — could not create service", "error");
     }
     setCreating(false);
   };
@@ -95,7 +104,7 @@ export function ServicePlanner({
             disabled={creating}
             className="flex items-center gap-1 px-2 py-1 text-xs bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] disabled:opacity-50"
           >
-            <Plus className="h-3 w-3" strokeWidth={1.5} />
+            {creating ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <Plus className="h-3 w-3" strokeWidth={1.5} />}
             Add
           </button>
         </div>
