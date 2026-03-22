@@ -117,7 +117,7 @@ export async function POST(
   } catch (error) {
     logger.error("Batch service sheet generation failed", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Generation failed" },
+      { error: "Service sheet generation failed" },
       { status: 500 }
     );
   }

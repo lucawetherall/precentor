@@ -267,11 +267,11 @@ export function RotaGrid({
                             aria-label={`${member.name || member.email}: ${AVAIL_LABEL[status]}. Click to change.`}
                           >
                             {status === "AVAILABLE" ? (
-                              <Check className="h-3 w-3" strokeWidth={2} />
+                              <Check className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
                             ) : status === "UNAVAILABLE" ? (
-                              <X className="h-3 w-3" strokeWidth={2} />
+                              <X className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
                             ) : (
-                              <Minus className="h-3 w-3" strokeWidth={2} />
+                              <Minus className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
                             )}
                             <span>{AVAIL_LABEL[status]}</span>
                           </button>
@@ -282,9 +282,9 @@ export function RotaGrid({
                                 ? "bg-primary text-primary-foreground border-primary"
                                 : "border-border text-muted-foreground"
                             }`}
-                            aria-label={`${onRota ? "Remove from" : "Add to"} rota`}
+                            aria-label={`${onRota ? "Remove" : "Add"} ${member.name || member.email} ${onRota ? "from" : "to"} rota for ${s.cwName}`}
                           >
-                            <UserCheck className="h-3.5 w-3.5" strokeWidth={2} />
+                            <UserCheck className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
                           </button>
                         </div>
                       </div>

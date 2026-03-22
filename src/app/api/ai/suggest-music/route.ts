@@ -1,20 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createLLMProvider } from "@/lib/ai/provider";
+import { requireChurchRole } from "@/lib/auth/permissions";
 import { logger } from "@/lib/logger";
 import { db } from "@/lib/db";
-import { services, liturgicalDays, readings, musicSlots, hymns, anthems, performanceLogs } from "@/lib/db/schema";
+import { services, liturgicalDays, readings, performanceLogs } from "@/lib/db/schema";
 import { eq, and, gte, desc } from "drizzle-orm";
 import { format, subWeeks } from "date-fns";
 import type { SuggestionContext } from "@/lib/ai/types";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const body = await request.json();
   const { serviceId, slotType } = body;
 
@@ -39,6 +33,10 @@ export async function POST(request: Request) {
     }
 
     const { service, day } = serviceResult[0];
+
+    // Verify the user is a member of this church
+    const { error: authError } = await requireChurchRole(service.churchId, "MEMBER");
+    if (authError) return authError;
 
     // Get readings for the day
     const dayReadings = await db
@@ -90,7 +88,7 @@ export async function POST(request: Request) {
   } catch (error) {
     logger.error("AI suggestion failed", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Suggestion failed" },
+      { error: "Suggestion failed" },
       { status: 500 }
     );
   }

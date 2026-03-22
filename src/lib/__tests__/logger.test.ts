@@ -14,7 +14,7 @@ describe("logger", () => {
   });
 
   afterEach(() => {
-    process.env.NODE_ENV = originalEnv;
+    (process.env as Record<string, string | undefined>).NODE_ENV = originalEnv;
     vi.restoreAllMocks();
     vi.resetModules();
   });
@@ -70,7 +70,7 @@ describe("logger", () => {
   });
 
   it("development format uses bracketed level prefix", async () => {
-    process.env.NODE_ENV = "development";
+    (process.env as Record<string, string | undefined>).NODE_ENV = "development";
     vi.resetModules();
     const { logger } = await import("@/lib/logger");
     logger.info("dev message");
@@ -79,7 +79,7 @@ describe("logger", () => {
   });
 
   it("production format outputs valid JSON", async () => {
-    process.env.NODE_ENV = "production";
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
     vi.resetModules();
     const { logger } = await import("@/lib/logger");
     logger.info("prod message", { key: "value" });

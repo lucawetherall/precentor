@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
-  const offset = parseInt(searchParams.get("offset") || "0", 10);
+  const rawOffset = parseInt(searchParams.get("offset") || "0", 10);
+  const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? Math.min(rawOffset, 1000) : 0;
 
   try {
     const results = await searchHymns(q, book || undefined, offset);
