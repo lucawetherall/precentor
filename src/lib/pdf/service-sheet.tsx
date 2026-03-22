@@ -5,8 +5,27 @@ import {
   Text,
   View,
   StyleSheet,
-  Font,
 } from "@react-pdf/renderer";
+
+/** Map liturgical colour names to hex values for PDF accents */
+const COLOUR_HEX: Record<string, string> = {
+  PURPLE: "#5B2C6F",
+  WHITE: "#8B7D6B",
+  GOLD: "#D4AF37",
+  GREEN: "#4A6741",
+  RED: "#8B2500",
+  ROSE: "#C48A9F",
+  Purple: "#5B2C6F",
+  White: "#8B7D6B",
+  Gold: "#D4AF37",
+  Green: "#4A6741",
+  Red: "#8B2500",
+  Rose: "#C48A9F",
+};
+
+function accentColour(colour: string): string {
+  return COLOUR_HEX[colour] ?? "#D4C5B2";
+}
 
 const styles = StyleSheet.create({
   page: {
@@ -26,8 +45,6 @@ const styles = StyleSheet.create({
   header: {
     textAlign: "center",
     marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#D4C5B2",
     paddingBottom: 12,
   },
   churchName: {
@@ -50,6 +67,10 @@ const styles = StyleSheet.create({
     color: "#6B5D4D",
     marginTop: 4,
   },
+  colourStripe: {
+    height: 3,
+    marginTop: 8,
+  },
   section: {
     marginBottom: 12,
   },
@@ -57,8 +78,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Times-Bold",
     marginBottom: 6,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#D4C5B2",
     paddingBottom: 3,
   },
   slotRow: {
@@ -74,6 +93,16 @@ const styles = StyleSheet.create({
   slotValue: {
     flex: 1,
     fontSize: 10,
+  },
+  slotHymnNumber: {
+    fontSize: 9,
+    color: "#6B5D4D",
+    fontFamily: "Times-Italic",
+  },
+  slotNotes: {
+    fontSize: 9,
+    color: "#6B5D4D",
+    fontFamily: "Times-Italic",
   },
   readingRow: {
     flexDirection: "row",
@@ -123,25 +152,27 @@ export interface ServiceSheetData {
     label: string;
     value: string;
     notes?: string;
+    hymnNumber?: string;
   }[];
   format?: "A4" | "A5";
   logoUrl?: string;
 }
 
+export const SERVICE_TYPE_DISPLAY: Record<string, string> = {
+  SUNG_EUCHARIST: "Sung Eucharist",
+  CHORAL_EVENSONG: "Choral Evensong",
+  SAID_EUCHARIST: "Said Eucharist",
+  CHORAL_MATINS: "Choral Matins",
+  FAMILY_SERVICE: "Family Service",
+  COMPLINE: "Compline",
+  CUSTOM: "Service",
+};
+
 export function ServiceSheetDocument({ data }: { data: ServiceSheetData }) {
   const isA5 = data.format === "A5";
   const pageSize = isA5 ? "A5" : "A4";
   const pageStyle = isA5 ? styles.pageA5 : styles.page;
-
-  const serviceTypeLabel: Record<string, string> = {
-    SUNG_EUCHARIST: "Sung Eucharist",
-    CHORAL_EVENSONG: "Choral Evensong",
-    SAID_EUCHARIST: "Said Eucharist",
-    CHORAL_MATINS: "Choral Matins",
-    FAMILY_SERVICE: "Family Service",
-    COMPLINE: "Compline",
-    CUSTOM: "Service",
-  };
+  const accent = accentColour(data.colour);
 
   return (
     <Document>
@@ -149,25 +180,30 @@ export function ServiceSheetDocument({ data }: { data: ServiceSheetData }) {
         <View style={styles.header}>
           <Text style={styles.churchName}>{data.churchName}</Text>
           <Text style={styles.serviceTitle}>
-            {serviceTypeLabel[data.serviceType] || data.serviceType}
+            {SERVICE_TYPE_DISPLAY[data.serviceType] || data.serviceType}
           </Text>
           <Text style={styles.dateText}>{data.liturgicalName}</Text>
           <Text style={styles.dateText}>{data.date}</Text>
           <Text style={styles.seasonBadge}>
             {data.season} — {data.colour}
           </Text>
+          <View style={[styles.colourStripe, { backgroundColor: accent }]} />
         </View>
 
         {data.collect && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Collect</Text>
+            <Text style={[styles.sectionTitle, { borderBottomWidth: 0.5, borderBottomColor: accent }]}>
+              Collect
+            </Text>
             <Text style={styles.collectText}>{data.collect}</Text>
           </View>
         )}
 
         {data.readings.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Readings</Text>
+            <Text style={[styles.sectionTitle, { borderBottomWidth: 0.5, borderBottomColor: accent }]}>
+              Readings
+            </Text>
             {data.readings.map((r, i) => (
               <View key={i} style={styles.readingRow}>
                 <Text style={styles.readingLabel}>{r.position}</Text>
@@ -179,13 +215,20 @@ export function ServiceSheetDocument({ data }: { data: ServiceSheetData }) {
 
         {data.musicSlots.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Music</Text>
+            <Text style={[styles.sectionTitle, { borderBottomWidth: 0.5, borderBottomColor: accent }]}>
+              Music
+            </Text>
             {data.musicSlots.map((slot, i) => (
               <View key={i} style={styles.slotRow}>
                 <Text style={styles.slotLabel}>{slot.label}</Text>
                 <Text style={styles.slotValue}>
                   {slot.value}
-                  {slot.notes ? ` (${slot.notes})` : ""}
+                  {slot.hymnNumber ? (
+                    <Text style={styles.slotHymnNumber}>{` [${slot.hymnNumber}]`}</Text>
+                  ) : null}
+                  {slot.notes ? (
+                    <Text style={styles.slotNotes}>{` (${slot.notes})`}</Text>
+                  ) : null}
                 </Text>
               </View>
             ))}
@@ -196,6 +239,86 @@ export function ServiceSheetDocument({ data }: { data: ServiceSheetData }) {
           Generated by Precentor — Church Music Planner
         </Text>
       </Page>
+    </Document>
+  );
+}
+
+/** Render multiple services into a single multi-page PDF document */
+export function MultiServiceSheetDocument({ sheets }: { sheets: ServiceSheetData[] }) {
+  return (
+    <Document>
+      {sheets.map((data, idx) => {
+        const isA5 = data.format === "A5";
+        const pageSize = isA5 ? "A5" : "A4";
+        const pageStyle = isA5 ? styles.pageA5 : styles.page;
+        const accent = accentColour(data.colour);
+
+        return (
+          <Page key={idx} size={pageSize} style={pageStyle}>
+            <View style={styles.header}>
+              <Text style={styles.churchName}>{data.churchName}</Text>
+              <Text style={styles.serviceTitle}>
+                {SERVICE_TYPE_DISPLAY[data.serviceType] || data.serviceType}
+              </Text>
+              <Text style={styles.dateText}>{data.liturgicalName}</Text>
+              <Text style={styles.dateText}>{data.date}</Text>
+              <Text style={styles.seasonBadge}>
+                {data.season} — {data.colour}
+              </Text>
+              <View style={[styles.colourStripe, { backgroundColor: accent }]} />
+            </View>
+
+            {data.collect && (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { borderBottomWidth: 0.5, borderBottomColor: accent }]}>
+                  Collect
+                </Text>
+                <Text style={styles.collectText}>{data.collect}</Text>
+              </View>
+            )}
+
+            {data.readings.length > 0 && (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { borderBottomWidth: 0.5, borderBottomColor: accent }]}>
+                  Readings
+                </Text>
+                {data.readings.map((r, i) => (
+                  <View key={i} style={styles.readingRow}>
+                    <Text style={styles.readingLabel}>{r.position}</Text>
+                    <Text style={styles.readingValue}>{r.reference}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {data.musicSlots.length > 0 && (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { borderBottomWidth: 0.5, borderBottomColor: accent }]}>
+                  Music
+                </Text>
+                {data.musicSlots.map((slot, i) => (
+                  <View key={i} style={styles.slotRow}>
+                    <Text style={styles.slotLabel}>{slot.label}</Text>
+                    <Text style={styles.slotValue}>
+                      {slot.value}
+                      {slot.hymnNumber ? (
+                        <Text style={styles.slotHymnNumber}>{` [${slot.hymnNumber}]`}</Text>
+                      ) : null}
+                      {slot.notes ? (
+                        <Text style={styles.slotNotes}>{` (${slot.notes})`}</Text>
+                      ) : null}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <Text style={styles.footer}>
+              Generated by Precentor — Church Music Planner
+            </Text>
+          </Page>
+        );
+      })}
     </Document>
   );
 }
