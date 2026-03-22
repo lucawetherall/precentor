@@ -1,15 +1,16 @@
 # Precentor Site Audit Report
 
 **Date:** 2026-03-22
-**Status:** In Progress
+**Status:** Complete
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 18/20
-- Cross-cutting reviews: 4/6 (layouts, API routes, middleware/proxy, shared components)
+- Pages reviewed: 20/20
+- Cross-cutting reviews: 6/6 (layouts, API routes, middleware/proxy, shared components, test coverage, CI/CD)
 - Quick wins fixed: 84
 - Medium issues: 30
 - Major issues: 1
+- Critical security findings: 2 (unauthenticated API routes — fixed; .env with production secrets in git — requires rotation)
 
 ---
 
@@ -773,3 +774,521 @@ Findings:
 - **Total quick wins fixed: 84**
 - Medium issues (Phase 5 new): 8
 - Major issues (Phase 5 new): 0 (critical search route auth issue resolved as quick win)
+
+---
+
+## Phase 6: Test Coverage Gap Analysis
+
+**Date:** 2026-03-22
+**Frameworks in use:** Vitest (unit/integration, jsdom environment), Playwright (e2e, Chromium only)
+**Test scripts:** `npm test` (vitest run), `npm run test:e2e` (playwright test)
+**Setup file:** `src/test/setup.ts` — imports `@testing-library/jest-dom/vitest` matchers only
+
+---
+
+### 6.1 Current Test Inventory
+
+#### Vitest unit tests (15 files, ~200 assertions)
+
+| File | What it tests |
+|---|---|
+| `src/app/api/__tests__/cron-auth.test.ts` | Cron HMAC auth logic, email regex, invite expiry, role allowlist — all as pure function duplicates (logic copied out of source, not imported) |
+| `src/app/api/__tests__/members-utils.test.ts` | `escapeHtml` (duplicated inline), `slugify` (duplicated inline) — neither function is exported from the production module |
+| `src/data/liturgy/__tests__/bcp-evensong.test.ts` | BCP Evensong liturgy data shape assertions |
+| `src/data/liturgy/__tests__/eucharistic-prayers.test.ts` | Eucharistic prayers data shape assertions |
+| `src/lib/__tests__/logger.test.ts` | Logger formatting in dev vs production mode |
+| `src/lib/auth/__tests__/permissions.test.ts` | `hasMinRole` role hierarchy logic (uses vi.mock to stub Supabase and DB) |
+| `src/lib/lectionary/__tests__/bible-books.test.ts` | `parseBookName` reference parsing |
+| `src/lib/lectionary/__tests__/calendar.test.ts` | `computeEasterDate`, `computeAdventStart`, `getChurchYear`, `getLectionaryYear` |
+| `src/lib/pdf/__tests__/build-sheet-data.test.ts` | `resolveSheetMode`, `resolveServiceTemplate`, `resolveEucharisticPrayer` |
+| `src/lib/pdf/__tests__/create-styles.test.ts` | PDF style generation |
+| `src/lib/pdf/__tests__/resolve-template.test.ts` | Template resolution logic |
+| `src/lib/pdf/__tests__/service-sheet-docx.test.ts` | DOCX generation helpers |
+| `src/lib/pdf/__tests__/slot-to-section-map.test.ts` | Music slot to PDF section mapping |
+| `src/lib/pdf/__tests__/theme.test.ts` | PDF theme configuration |
+| `src/types/__tests__/index.test.ts` | `EUCHARIST_SLOTS`, `EVENSONG_SLOTS`, `MUSIC_SLOT_LABELS`, `SERVICE_TYPE_LABELS` constants |
+
+#### Playwright e2e tests (4 files, ~25 test cases)
+
+| File | What it covers |
+|---|---|
+| `e2e/landing.spec.ts` | Landing page hero, feature count, navigation links, skip link, meta tags, footer |
+| `e2e/auth.spec.ts` | Login/signup/forgot-password form rendering, link presence, HTML5 validation attributes |
+| `e2e/accessibility.spec.ts` | Heading hierarchy, `lang` attribute, `aria-hidden` on icons, form labels, `role="alert"` on errors |
+| `e2e/navigation.spec.ts` | Middleware auth redirect (unauthenticated to /login), inter-auth-page navigation |
+
+---
+
+### 6.2 Coverage Map by Area
+
+| Area | Files | Tested? | Notes |
+|---|---|---|---|
+| **API routes — auth/invites** | `api/invites/[token]/route.ts`, `api/invites/[token]/accept/route.ts` | No | No route-level tests at all |
+| **API routes — churches** | `api/churches/route.ts`, `api/churches/[churchId]/route.ts` | No | No route-level tests |
+| **API routes — members** | `api/churches/[churchId]/members/route.ts`, `.../members/[memberId]/route.ts` | No | `escapeHtml` tested as a duplicate copy only; route handler auth, validation, email send not tested |
+| **API routes — services/slots** | `api/churches/[churchId]/services/route.ts`, `.../slots/route.ts`, `.../sheet/route.ts`, `.../sheets/route.ts` | No | Zero tests for service creation, music slot save, sheet generation |
+| **API routes — availability/rota** | `api/churches/[churchId]/availability/route.ts`, `.../rota/route.ts` | No | No tests for availability cycle or rota toggle logic |
+| **API routes — search** | `api/search/hymns/route.ts`, `api/search/anthems/route.ts` | No | Previously had no auth; auth fix has no regression test |
+| **API routes — AI** | `api/ai/suggest-music/route.ts` | No | No tests |
+| **API routes — cron** | `api/cron/log-performances/route.ts`, `api/cron/sync-lectionary/route.ts` | Partial | Auth logic tested as pure function duplicate only; actual sync pipeline (`mapper.ts`) untested |
+| **Page components — auth** | `(auth)/login`, `signup`, `forgot-password`, `reset-password` | Partial | E2e covers form presence and basic navigation; no test for password-mismatch state, empty-submit guard, reset-token guard |
+| **Page components — app** | All 12 `(app)/**/page.tsx` files | No | Zero unit or e2e tests for any authenticated page |
+| **Page components — invite** | `(auth)/invite/[token]/page.tsx` (client) | No | Critical loading bug fix (middleware, JSON parse) has no regression test |
+| **Shared components** | `church-sidebar.tsx`, `error-boundary.tsx`, `sign-out-button.tsx`, `ui/dialog.tsx`, `ui/sheet.tsx`, `ui/toast.tsx` | No | Zero component tests; custom dialog/sheet lack ARIA modal tests |
+| **Library — auth/permissions** | `lib/auth/permissions.ts` | Partial | `hasMinRole` tested; `getAuthUser`, `requireAuth`, `requireChurchRole` untested (require DB + Supabase mocks) |
+| **Library — lectionary** | `lib/lectionary/calendar.ts`, `bible-books.ts` | Good | Easter algorithm, Advent, church year, lectionary year rotation well-covered |
+| **Library — lectionary mapper** | `lib/lectionary/mapper.ts` | No | `syncLectionaryForYear`, `buildReadingRows`, `syncCurrentYear` — zero tests; this is the cron sync pipeline |
+| **Library — PDF** | `lib/pdf/*.ts` | Good | Six test files covering the main PDF/DOCX utilities |
+| **Library — search** | `lib/search/hymns.ts`, `lib/search/anthems.ts` | No | No tests for search query construction or result formatting |
+| **Library — email** | `lib/email/send.ts` | No | No tests for email template construction |
+| **Library — AI** | `lib/ai/provider.ts`, `lib/ai/gemini.ts` | No | No tests |
+| **Database schema** | `lib/db/schema.ts` | No | Enum values tested indirectly via constants; no schema migration or constraint tests |
+| **Middleware/proxy** | `src/proxy.ts`, `lib/supabase/middleware.ts` | Partial | E2e `navigation.spec.ts` tests unauthenticated redirect; `isPublicPath` logic and `AUTH_ONLY_PATHS` redirect not unit-tested |
+
+**Overall vitest coverage estimate: ~15% of production code paths**
+**Overall e2e coverage estimate: ~10% of user journeys (public pages only, no authenticated flows)**
+
+---
+
+### 6.3 Critical Gaps Ranked by Risk
+
+#### Risk 1 — CRITICAL: No regression test for the invite page loading bug fix
+
+The bug (middleware not whitelisting `/api/invites/`, causing infinite loading on `/invite/[token]`) was fixed during this audit. There is currently no test that would catch a regression — if `isPublicPath()` in `src/lib/supabase/middleware.ts` is accidentally modified, the invite page will silently break again in production. This is the highest-risk untested path because the breakage is user-invisible (loading spinner) and affects the entire invite onboarding flow.
+
+#### Risk 2 — CRITICAL: No tests for search endpoint authentication
+
+`GET /api/search/hymns` and `GET /api/search/anthems` were previously fully unauthenticated (any internet user could query the hymn DB). The auth check was added during this audit. There is no test that verifies the 401 path, meaning a future refactor could silently remove the auth guard.
+
+#### Risk 3 — HIGH: No tests for `requireChurchRole` (the central authorization primitive)
+
+Every API route mutation (member management, availability, rota, services, slots, settings) is gated by `requireChurchRole`. The `hasMinRole` function within it is tested, but `requireChurchRole` itself — which performs both the Supabase session check and the DB membership lookup — is completely untested. An incorrect mock or import path change could leave the auth gate silently broken.
+
+#### Risk 4 — HIGH: No tests for API input validation (enum coercion without guards)
+
+Three routes were identified in the API routes review with enum validation gaps:
+- `POST /api/churches/[churchId]/services` — `serviceType` cast without validation (now fixed with guard)
+- `POST /api/churches/[churchId]/availability` — `status` cast without validation against `availabilityStatusEnum`
+- `PUT /api/churches/[churchId]/services/[serviceId]/slots` — `slotType` cast without validation
+
+No tests verify that these guards return 400 (not 500) for invalid enum values, or that valid values pass through correctly.
+
+#### Risk 5 — HIGH: No e2e tests for any authenticated user journey
+
+All 12 authenticated pages (`/dashboard`, `/churches`, `/onboarding`, all church sub-pages) have zero e2e coverage. The entire choir planning workflow — creating a service, adding music slots, managing members, generating service sheets, toggling rota availability — has never been exercised by an automated test. A breaking change in any server component data fetch, layout auth gate, or client component interaction would go undetected until manual QA.
+
+#### Risk 6 — MEDIUM: No tests for the lectionary sync pipeline
+
+`syncLectionaryForYear` in `src/lib/lectionary/mapper.ts` is the longest and most complex function in the codebase. It orchestrates calendar computation, DB upserts, reading row construction, Oremus API calls, and error tracking. The calendar functions it calls are well-tested, but the orchestration logic — including the `buildReadingRows` helper, enum validation within the loop, transaction retry on conflict, and the `fetchText` conditional path — is completely untested.
+
+#### Risk 7 — MEDIUM: No tests for custom dialog/sheet ARIA modal behaviour
+
+`src/components/ui/dialog.tsx` and `src/components/ui/sheet.tsx` are custom implementations. The audit found they lack focus trapping, focus return on close, `role="dialog"`, `aria-modal="true"`, and `aria-labelledby`. Without component tests, any ARIA fixes applied to these components have no regression guard, and existing failures will not be caught in CI.
+
+#### Risk 8 — MEDIUM: No tests for error boundary behaviour
+
+`src/components/error-boundary.tsx` has no `componentDidCatch` logging (identified as a medium gap). There are no tests that verify the component renders the fallback UI on a React rendering error, nor any test that would catch if the "Try again" reset mechanism breaks.
+
+#### Risk 9 — MEDIUM: No tests for the `onboarding` duplicate-church guard (or its absence)
+
+The audit identified that `/onboarding` and `/churches/new` have no server-side guard against creating a second church. No test currently verifies either the current (absent) guard behaviour or any future guard implementation.
+
+#### Risk 10 — LOW: Duplicate-copy test pattern for `escapeHtml` and cron auth
+
+`src/app/api/__tests__/cron-auth.test.ts` and `src/app/api/__tests__/members-utils.test.ts` test logic by duplicating the production code rather than importing it. If the production implementation changes, these tests continue to pass (false green). The `escapeHtml` function in `members/route.ts` is not exported, so it cannot be imported directly — but this is a solvable design issue.
+
+---
+
+### 6.4 Proposed Test Plan
+
+#### Area A: Middleware / proxy route logic (unit tests)
+**Priority:** Critical | **Effort:** Small (2–3 hours) | **Type:** Unit (Vitest, no browser)
+
+Test cases for `src/lib/supabase/middleware.ts` — `isPublicPath()` and `updateSession()`:
+
+1. `isPublicPath("/")` returns `true`
+2. `isPublicPath("/login")` returns `true`
+3. `isPublicPath("/dashboard")` returns `false`
+4. `isPublicPath("/api/invites/abc123")` returns `true` (regression guard for the invite bug fix)
+5. `isPublicPath("/api/invites/")` returns `true`
+6. `isPublicPath("/api/churches/abc/members")` returns `false`
+7. `isPublicPath("/invite/some-token")` returns `true`
+8. `isPublicPath("/auth/callback")` returns `true`
+9. `updateSession` — unauthenticated user on `/dashboard` redirected to `/login` (mock Supabase `getUser()` to return `null`)
+10. `updateSession` — authenticated user on `/login` redirected to `/dashboard` (mock `getUser()` to return a user object)
+11. `updateSession` — authenticated user on `/dashboard` returns `NextResponse.next()` with no redirect
+12. `updateSession` — unauthenticated user on `/` returns `NextResponse.next()` (public path, no redirect)
+
+**Note:** `isPublicPath` must be exported from `src/lib/supabase/middleware.ts` for unit testing; currently it is module-private.
+
+#### Area B: `requireChurchRole` integration (unit tests with mocks)
+**Priority:** Critical | **Effort:** Medium (4–5 hours) | **Type:** Unit (Vitest with vi.mock)
+
+Test cases for `src/lib/auth/permissions.ts` — `requireChurchRole`:
+
+1. Returns 401 when Supabase `getUser()` returns `null` (unauthenticated)
+2. Returns 401 when DB `users` lookup finds no matching user
+3. Returns 403 when user has no membership in the requested church
+4. Returns 403 when user has `MEMBER` role but `ADMIN` is required
+5. Returns 403 when user has `EDITOR` role but `ADMIN` is required
+6. Returns `{ user, membership, error: null }` when user has exact required role (`MEMBER` requires `MEMBER`)
+7. Returns `{ user, membership, error: null }` when user has higher role than required (`ADMIN` with `MEMBER` requirement)
+8. `getAuthUser` returns `null` when `getUser()` succeeds but no matching DB user is found
+
+#### Area C: API route input validation (unit tests)
+**Priority:** High | **Effort:** Medium (5–6 hours) | **Type:** Unit (Vitest, mock DB and auth)
+
+Test cases targeting the validation gaps identified in the API audit:
+
+For `POST /api/churches/[churchId]/services`:
+1. Returns 400 with descriptive message when `serviceType` is not a known enum value
+2. Returns 400 when `liturgicalDayId` is missing
+3. Returns 201 with correct body when both fields are valid
+
+For `POST /api/churches/[churchId]/availability`:
+1. Returns 400 when `status` is not `AVAILABLE`, `UNAVAILABLE`, or `TENTATIVE`
+2. Returns 200 on valid status update
+3. Returns 403 when requesting user is not a member of the church
+
+For `PUT /api/churches/[churchId]/services/[serviceId]/slots`:
+1. Returns 400 when `slotType` contains an invalid enum value
+2. Returns 400 when `slots` is not an array
+3. Returns 200 on a valid slot array
+
+For `GET /api/search/hymns` and `GET /api/search/anthems`:
+1. Returns 401 for an unauthenticated request (regression guard for auth fix)
+2. Returns 200 with results for an authenticated request
+
+For `GET /api/invites/[token]`:
+1. Returns 404 for an expired token
+2. Returns 404 for a token with a non-null `acceptedAt` (already used)
+3. Returns 200 with `{ email, role, churchName }` for a valid token
+
+#### Area D: Lectionary sync pipeline (unit tests with mocks)
+**Priority:** High | **Effort:** Large (8–10 hours) | **Type:** Unit (Vitest, mock DB and Oremus API)
+
+Test cases for `src/lib/lectionary/mapper.ts`:
+
+`buildReadingRows` helper (must be exported for testability — currently private):
+1. Returns empty array for an empty `ServiceReadings` input
+2. Skips rows where `position` is not in `VALID_POSITIONS`
+3. Returns correct `lectionary` value for PRINCIPAL / SECOND / THIRD services
+4. Calls `parseBookName` and stores result in `bookName`
+
+`syncLectionaryForYear`:
+1. Returns `{ imported: 0, errors: 0, total: 0 }` when calendar is empty (mock `computeLiturgicalCalendar` to return `[]`)
+2. Skips a date when `sundayData` is not found in the lectionary JSON
+3. Skips a date when `yearReadings` is absent for the computed lectionary year
+4. Skips a date when `entry.season` is not a valid enum value
+5. Skips a date when `entry.colour` is not a valid enum value
+6. Increments `errors` counter when the DB upsert throws
+7. Calls `fetchReadingText` for each reading row when `fetchText: true`
+8. Does not call `fetchReadingText` when `fetchText: false` (default)
+9. Sleeps 200ms between Oremus API calls (test with fake timers)
+10. Returns correct `lectionaryYear` and `churchYear` strings in the result
+
+#### Area E: Auth form client-side validation (e2e)
+**Priority:** High | **Effort:** Small (3–4 hours) | **Type:** E2e (Playwright)
+
+Additional test cases extending the existing e2e auth suite:
+
+For `/signup`:
+1. Submitting with mismatched passwords renders `role="alert"` error containing "Passwords do not match"
+2. Submitting with password shorter than 8 characters renders an inline error
+3. Name and email fields have the `required` attribute (native validation guard)
+
+For `/reset-password`:
+1. Page renders the "Set New Password" form when visited directly without a token in the URL (confirms no redirect — the current no-guard behaviour documented in the audit)
+2. Submitting an empty form renders `role="alert"` error "Password must be at least 8 characters."
+3. Submitting mismatched passwords renders `role="alert"` error "Passwords do not match."
+
+For `/invite/[token]` (using a non-existent token to trigger the error state):
+1. Invalid token renders "Invalid Invite" heading with a `role="alert"` error paragraph — page does not hang (regression guard for the loading bug fix)
+2. The loading state renders an `h1` with `className="sr-only"` containing "Loading Invite"
+
+#### Area F: Authenticated user journeys (e2e)
+**Priority:** High | **Effort:** Large (12–16 hours) | **Type:** E2e (Playwright, requires test user seeding)
+
+These tests require a dedicated test Supabase account with credentials stored as environment variables (`E2E_TEST_EMAIL`, `E2E_TEST_PASSWORD`) and a `beforeAll` fixture that logs in and stores the auth cookie via `storageState`.
+
+Critical user journeys to cover:
+
+1. **Onboarding flow:** New user visits `/onboarding` → fills church name → submits → is redirected to `/dashboard`
+2. **Dashboard:** Authenticated user sees "Welcome, [name]" h1; quick-action cards link to correct `/churches/[id]/...` URLs
+3. **Church list:** `/churches` renders church card with correct name; "Add Church" navigates to `/churches/new`
+4. **Service calendar:** `/churches/[id]/sundays` renders upcoming liturgical days; clicking a day card navigates to the service editor page
+5. **Service creation:** On `/churches/[id]/sundays/[date]`, clicking "Add" with a valid service type and time creates a new service tab with the correct number of music slots (12 for Sung Eucharist)
+6. **Music slot save:** Filling in a hymn title in a music slot and clicking "Save Music" produces a "Music saved" toast
+7. **Member management (admin):** `/churches/[id]/members` — role select per member row has `aria-label` containing the member name; changing the role triggers the PATCH API call
+8. **Rota availability cycle:** `/churches/[id]/rota` — clicking the availability button changes the status from AVAILABLE to UNAVAILABLE; the optimistic update is visible immediately without a page reload
+9. **Service sheet download:** `/churches/[id]/service-sheets` — clicking the "PDF" button triggers a file download (or blob URL in a new tab)
+10. **Church settings save:** `/churches/[id]/settings` — changing the church name and saving produces the "Settings saved." `role="alert"` message
+
+#### Area G: Custom dialog/sheet ARIA (component tests)
+**Priority:** Medium | **Effort:** Medium (4–5 hours) | **Type:** Unit (Vitest + Testing Library + jsdom)
+
+Test cases for `src/components/ui/dialog.tsx` and `src/components/ui/sheet.tsx`:
+
+1. Renders with `role="dialog"` and `aria-modal="true"` when open
+2. Associates a title via `aria-labelledby` pointing to the dialog heading element
+3. Focus is trapped within the dialog (Tab key does not move focus outside)
+4. Pressing Escape closes the dialog and returns focus to the trigger element
+5. Clicking the close button closes the dialog and returns focus to the trigger element
+6. Content is not rendered (or is hidden) when `open={false}`
+7. `Sheet` mobile navigation trigger has `aria-label="Open navigation menu"`
+
+#### Area H: ErrorBoundary component (component tests)
+**Priority:** Medium | **Effort:** Small (2 hours) | **Type:** Unit (Vitest + Testing Library + jsdom)
+
+Test cases for `src/components/error-boundary.tsx`:
+
+1. Renders children normally when no error is thrown
+2. Renders the fallback UI (error heading and "Try again" button) when a child component throws during render
+3. Clicking "Try again" resets the error state and re-renders children
+4. After adding `componentDidCatch`: verify it calls `logger.error` with the caught error and error info
+
+#### Area I: Search library utilities (unit tests)
+**Priority:** Low | **Effort:** Small (2 hours) | **Type:** Unit (Vitest)
+
+Test cases for `src/lib/search/hymns.ts` and `src/lib/search/anthems.ts`:
+
+1. Searching with an empty query returns the full result set (or a correct default subset)
+2. Searching by hymn number returns the matching entry
+3. Searching by text substring matches correctly (case-insensitive)
+4. Searching for a query with no matches returns an empty array
+5. Anthem search filters by the correct fields (title, composer, as applicable)
+
+---
+
+### 6.5 Estimated Effort Summary
+
+| Area | Priority | Type | Effort |
+|---|---|---|---|
+| A: Middleware route logic | Critical | Unit | 2–3 h |
+| B: `requireChurchRole` integration | Critical | Unit | 4–5 h |
+| C: API input validation | High | Unit | 5–6 h |
+| D: Lectionary sync pipeline | High | Unit | 8–10 h |
+| E: Auth form client-side validation | High | E2e | 3–4 h |
+| F: Authenticated user journeys | High | E2e | 12–16 h |
+| G: Custom dialog/sheet ARIA | Medium | Component | 4–5 h |
+| H: ErrorBoundary component | Medium | Component | 2 h |
+| I: Search library utilities | Low | Unit | 2 h |
+| **Total** | | | **42–53 h** |
+
+**Recommended sequencing:**
+
+1. Areas A and B first — Critical priority, pure unit tests, no browser or DB required; can be merged to CI immediately.
+2. Areas C and E — High priority; C is unit-testable with vi.mock; E extends the existing Playwright suite with no new infrastructure.
+3. Area D — High priority but requires careful mocking of the DB and Oremus API; plan for one full sprint.
+4. Area F — High visibility, highest effort; requires a seeded test user and Playwright `storageState` fixture; plan for a dedicated E2e sprint.
+5. Areas G, H, and I — Queue for a component testing sprint after the critical and high-priority areas are covered.
+
+**Quick wins that unblock Areas A–C without additional infrastructure:**
+
+- Export `isPublicPath` from `src/lib/supabase/middleware.ts` so it can be unit-tested without constructing a full Next.js `NextRequest` object.
+- Move `escapeHtml` out of `src/app/api/churches/[churchId]/members/route.ts` into `src/lib/utils.ts` and export it — this removes the duplicate-copy test pattern in `members-utils.test.ts` and lets the test import from the real module.
+- Export `buildReadingRows` from `src/lib/lectionary/mapper.ts` (currently module-private) to enable isolated unit testing of reading row construction without triggering the full sync pipeline and its DB dependencies.
+
+## Phase 7: CI/CD Pipeline Review
+
+**Date:** 2026-03-22
+**Files reviewed:** `.github/workflows/ci.yml`, `.env`, `package.json`, `eslint.config.mjs`, `tsconfig.json`, `vitest.config.ts`, `playwright.config.ts`, `e2e/*.spec.ts`, `src/**/__tests__/*.test.ts`
+
+---
+
+### Current State
+
+#### Pipeline structure
+
+The project has a single workflow file at `.github/workflows/ci.yml` with three parallel jobs that gate on `push` and `pull_request` to `main`.
+
+| Job | Name | Steps |
+|-----|------|-------|
+| `lint-and-typecheck` | Lint & Typecheck | `npm ci` → `npm run lint` → `npm run typecheck` |
+| `test` | Unit Tests | `npm ci` → `npm run test` |
+| `e2e` | E2E Tests | depends on the two above → Playwright (chromium only) → uploads report artifact |
+
+Concurrency is configured correctly: runs on the same ref cancel in progress, which prevents queue pile-up on fast-moving branches.
+
+#### What each step actually runs
+
+- `npm run lint` → `eslint` with `eslint-config-next/core-web-vitals` + `eslint-config-next/typescript`. No accessibility-specific plugin (`eslint-plugin-jsx-a11y`) is included.
+- `npm run typecheck` → `tsc --noEmit` with `"strict": true`. TypeScript strict mode is on, but `noUnusedLocals` and `noUnusedParameters` are not set — dead code is not caught at the type-check stage.
+- `npm run test` → `vitest run` over 15 unit-test files covering permissions, PDF generation, lectionary utilities, API auth helpers, and type definitions. No coverage threshold is configured.
+- `npm run test:e2e` → Playwright against a live `npm run dev` server (chromium only). Four spec files cover landing page, auth forms, navigation/routing, and a small accessibility spec. The E2E job injects `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321` and `NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-for-ci` — the app never contacts the real Supabase in CI.
+
+#### Deployment
+
+No `vercel.json`, `netlify.toml`, Dockerfile, or `docker-compose.yml` is present. Deployment is likely handled by Vercel's automatic Git integration (deploy-on-push), which operates entirely outside this workflow. There is no explicit build step (`npm run build`) in the CI pipeline — the pipeline does not verify that the production build succeeds before a PR can be merged.
+
+#### Environment / secrets management
+
+**Critical finding:** `.env` is committed to the repository. The file contains live production credentials:
+
+- `DATABASE_URL` — production Supabase Postgres connection string with password in the URL
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` — production Supabase project credentials
+- `SUPABASE_SERVICE_ROLE_KEY` — a full-privilege JWT; any holder can bypass Row-Level Security
+- `GEMINI_API_KEY` — Google AI billing key
+- `RESEND_API_KEY` — transactional email billing key
+- `CRON_SECRET` — CRON endpoint authentication token
+
+The `.gitignore` entry `.env*` should exclude `.env` from tracking, but the file is currently tracked (it appears in `git status`). Either it was committed before the `.gitignore` rule was added, or the rule was added after the file was already staged. Any clone of this repository — including CI runners, forks, and historical mirrors — now holds these secrets. All credentials in this file must be rotated immediately.
+
+No `.env.example` exists to document required variables for new contributors.
+
+---
+
+### Gap analysis — would CI catch the issues found in the audit?
+
+#### Unauthenticated API routes
+
+The audit found that the `GET /api/search/hymns` and `GET /api/search/anthems` routes were missing authentication checks (subsequently fixed). The unit-test suite includes `src/app/api/__tests__/cron-auth.test.ts` which tests CRON authentication, but there are no unit or integration tests for the search routes specifically. The E2E navigation spec only checks that unauthenticated users are redirected from `/dashboard` — it does not exercise the API routes directly. **CI would not have caught this class of bug before the fix.**
+
+#### Hardcoded colours (`hover:bg-[#6B4423]`, `bg-white`, etc.)
+
+ESLint with `eslint-config-next` does not include any rule that detects hardcoded CSS colour values in Tailwind class strings. TypeScript type-checking has no visibility into Tailwind classes. The E2E and unit tests make no assertions about CSS class names (with the narrow exception of a `disabled:cursor-not-allowed` class check in `accessibility.spec.ts`). **CI would not catch hardcoded colour regressions.**
+
+#### axe-core / WCAG violations
+
+The E2E accessibility spec (`e2e/accessibility.spec.ts`) contains five hand-written checks: heading hierarchy, `lang` attribute, `aria-hidden` on icons, form labels, and `role=alert` on error messages. It does not integrate `@axe-core/playwright` or any automated ARIA rule engine. The issues found in the audit — missing focus traps in modals, `aria-modal` absent from dialogs, `aria-labelledby` not wired, colour contrast below 4.5:1 — would all pass the current E2E suite undetected. **CI would not catch axe-core class violations.**
+
+#### Focus-trap and modal accessibility failures
+
+The `dialog.tsx` and `sheet.tsx` components lack focus trapping, `role="dialog"`, `aria-modal="true"`, and `aria-labelledby`. None of the existing tests open a modal and assert on keyboard navigation or ARIA attributes. **CI would not catch these regressions.**
+
+#### Build breakage
+
+The pipeline has no `npm run build` step. A PR that introduces a Next.js build error (e.g. a missing required prop on a Server Component, a dynamic import that breaks static analysis) could pass all three CI jobs and still deploy a broken build via Vercel's auto-deploy. **CI would not catch build failures before merge.**
+
+---
+
+### Recommendations
+
+#### Critical (fix immediately)
+
+1. **Rotate all credentials in `.env` and remove the file from git history.** Run `git rm --cached .env` and use `git filter-repo` or BFG Repo Cleaner to purge the file from all history. Add `.env.example` with placeholder values and document required variables.
+2. **Add `.env.example`.** Document every variable the app needs so new contributors and CI environments can be set up without accessing production secrets.
+
+#### High priority
+
+3. **Add a build step to CI.** Insert `npm run build` as a required step — either in the `lint-and-typecheck` job or as a dedicated `build` job — so a broken production build cannot reach Vercel.
+
+   ```yaml
+   - run: npm run build
+     env:
+       NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+       NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-for-ci
+   ```
+
+4. **Add axe-core automated accessibility scanning to E2E.** Install `@axe-core/playwright` and add a scan for each authenticated and unauthenticated page. A single shared helper is sufficient:
+
+   ```ts
+   import AxeBuilder from "@axe-core/playwright";
+   const results = await new AxeBuilder({ page }).analyze();
+   expect(results.violations).toEqual([]);
+   ```
+
+   This would have caught the modal ARIA failures, missing `aria-labelledby`, and contrast issues automatically.
+
+5. **Add a coverage threshold to vitest.** Configure `coverage.thresholds` in `vitest.config.ts` (e.g. 70% lines/branches) and add `--coverage` to `npm run test`. Without a threshold, new code can be merged with zero test coverage and the pipeline stays green.
+
+6. **Configure branch protection rules on `main`.** Require all three CI jobs to pass before merge. Currently the workflow exists but there is no evidence of GitHub branch protection enforcing it — Vercel's auto-deploy could trigger from a direct push that bypasses all checks.
+
+#### Medium priority
+
+7. **Add `eslint-plugin-jsx-a11y` to the ESLint config.** This would statically catch missing `alt` attributes, interactive elements without accessible names, and incorrect ARIA role usage at lint time — before any code runs in a browser.
+
+   ```bash
+   npm install -D eslint-plugin-jsx-a11y
+   ```
+
+   Add to `eslint.config.mjs`:
+   ```js
+   import jsxA11y from "eslint-plugin-jsx-a11y";
+   // ...spread jsxA11y.flatConfigs.recommended
+   ```
+
+8. **Enable `noUnusedLocals` and `noUnusedParameters` in `tsconfig.json`.** Strict mode is on but unused symbol detection is off. Enabling these two flags would have flagged the dead code found during the audit (unused imports, unused function parameters) at compile time.
+
+9. **Add a Tailwind class linting rule or custom ESLint rule for hardcoded hex colours.** A simple regex-based ESLint rule (`no-restricted-syntax` or a custom plugin rule) matching `bg-\[#`, `text-\[#`, `border-\[#` in JSX `className` strings would prevent hardcoded colour regressions from merging.
+
+10. **Expand E2E test coverage to authenticated flows.** The current E2E suite only tests public pages. Authenticated routes (churches list, members, rota, service sheets) are exercised only by the Playwright config's dev-server setup but no specs exist for them. Adding even smoke tests for the app shell behind authentication would dramatically increase confidence that deployments work end-to-end.
+
+11. **Add `noUnusedLocals` and expand unit test coverage to API route handlers.** Specifically: search routes, invite route, AI suggestion route, and the DOCX/PDF generation routes. These are the highest-risk paths identified in the audit and currently have no unit-level auth or input-validation assertions.
+
+12. **Pin Node.js version across environments.** The CI workflow specifies `node-version: 20` but `package.json` has no `engines` field. Add `"engines": { "node": ">=20" }` and consider adding a `.nvmrc` or `volta` field to ensure local developer environments match CI.
+
+---
+
+### Summary table
+
+| Area | Current state | Gap | Priority |
+|------|--------------|-----|----------|
+| Lint | ESLint with Next.js config | No a11y plugin; no hardcoded-colour rule | High |
+| Type check | `tsc --noEmit` with `strict: true` | `noUnusedLocals`/`noUnusedParameters` off | Medium |
+| Unit tests | 15 files, no coverage threshold | No API route auth tests; no threshold enforcement | High |
+| E2E tests | 4 specs, chromium only | No axe-core; no authenticated flows | High |
+| Build verification | Absent | Build errors reach Vercel undetected | High |
+| Secret management | `.env` committed with live credentials | All secrets exposed; no `.env.example` | Critical |
+| Branch protection | No evidence | Direct pushes bypass CI | High |
+| Deployment | Vercel auto-deploy (inferred) | No explicit build gate before deploy | High |
+| Accessibility CI | 5 hand-written checks | axe-core violations not caught | High |
+
+---
+
+## Executive Summary & Prioritised Action Plan
+
+### What was done
+
+A systematic review of every page (20), API route, layout file, middleware, shared component, test suite, and CI pipeline in the Precentor application. Each page was tested at 3 viewport sizes, run through axe-core accessibility scanning, checked for console errors and failed network requests, inspected for design system compliance, and had its source code reviewed for security and correctness.
+
+### What was fixed (84 quick wins)
+
+| Category | Count | Examples |
+|----------|-------|---------|
+| Accessibility (axe violations) | 28 | Skip-link targets, missing labels on selects/inputs, ARIA roles on tabs, `role="alert"` on error messages |
+| Design system compliance | 34 | `hover:bg-[#6B4423]` → `hover:bg-primary-hover`, `bg-white` → `bg-background`, hardcoded hex → tokens |
+| Security | 4 | Auth guards on 2 search API routes, input validation on service creation, try/catch on JSON parsing |
+| UX / correctness | 12 | `autocomplete` attributes, season label formatting (`HOLY_WEEK` → `Holy Week`), decorative icons `aria-hidden` |
+| CSS tokens | 6 | `--success`, `--warning` token definitions in globals.css, applied to rota/toast/service-sheets |
+
+### What needs attention (prioritised)
+
+**P0 — Do immediately:**
+1. Rotate all secrets in `.env` (Supabase service role key, Postgres password, Gemini key, Resend key, CRON secret). Purge `.env` from git history. Create `.env.example`.
+
+**P1 — This week:**
+2. Darken `--muted-foreground` from `#7a6e5d` to meet WCAG AA 4.5:1 contrast ratio (affects sidebar on every authenticated page)
+3. Add `npm run build` step to CI pipeline
+4. Enable GitHub branch protection requiring CI to pass
+5. Fix the rota data-fetch bug: `availability` query only loads `serviceIds[0]`, so multi-service grids show false "Available" for all other columns
+6. Fix the lectionary sync form to pass the `Authorization` header (currently all UI-triggered syncs fail with "Server misconfigured")
+
+**P2 — This sprint:**
+7. Add focus trapping, `role="dialog"`, `aria-modal`, and focus-return to `dialog.tsx` and `sheet.tsx`
+8. Add `eslint-plugin-jsx-a11y` and a custom ESLint rule blocking `bg-[#...]` / `text-[#...]` classes
+9. Write unit tests for `requireChurchRole`, search endpoint auth, and invite middleware path matching
+10. Add `@axe-core/playwright` to the E2E suite
+11. Add server-side ADMIN check on `/churches/[churchId]/settings` page load
+12. Add duplicate-church creation guard
+
+**P3 — Next sprint:**
+13. Refactor readings grid to semantic `<table>` in service editor
+14. Add `generateMetadata` to all pages for descriptive `<title>` tags
+15. Add error logging to `ErrorBoundary.componentDidCatch` and avoid rendering raw `error.message` in production
+16. Expand E2E coverage to authenticated flows (church creation, service planning, member management)
+17. Add API rate limiting on search and AI endpoints
+18. Prevent last ADMIN from removing themselves from a church
+
+### Metrics
+
+| Metric | Value |
+|--------|-------|
+| Pages reviewed | 20/20 |
+| API routes reviewed | 14 |
+| axe-core violations found | 12 unique violation types |
+| axe-core violations fixed | 10 (2 remaining: colour-contrast cross-cutting, region dev-only) |
+| Quick wins fixed | 84 |
+| Medium issues logged | 30 |
+| Critical security issues | 2 (1 fixed, 1 requires secret rotation) |
+| Commits made | ~20 (one per page or review batch) |
