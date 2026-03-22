@@ -11,7 +11,8 @@ export default async function ChurchesPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  let userChurches: any[] = [];
+  interface UserChurch { id: string; name: string; slug: string; diocese: string | null; role: string; }
+  let userChurches: UserChurch[] = [];
   try {
     const dbUser = await db.select().from(users).where(eq(users.supabaseId, user.id)).limit(1);
     if (dbUser.length > 0) {
@@ -55,7 +56,7 @@ export default async function ChurchesPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {userChurches.map((church: any) => (
+          {userChurches.map((church: UserChurch) => (
             <Link
               key={church.id}
               href={`/churches/${church.id}/sundays`}

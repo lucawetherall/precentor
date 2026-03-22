@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createLLMProvider } from "@/lib/ai/provider";
+import { logger } from "@/lib/logger";
 import { db } from "@/lib/db";
 import { services, liturgicalDays, readings, musicSlots, hymns, anthems, performanceLogs } from "@/lib/db/schema";
 import { eq, and, gte, desc } from "drizzle-orm";
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ suggestions });
   } catch (error) {
-    console.error("AI suggestion failed:", error);
+    logger.error("AI suggestion failed", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Suggestion failed" },
       { status: 500 }

@@ -9,6 +9,7 @@
  */
 
 import { addDays, format, eachDayOfInterval, isSunday, getDay } from "date-fns";
+import { logger } from "@/lib/logger";
 import type { LiturgicalDateEntry } from "./types";
 import lectionaryData from "../../data/lectionary-coe.json";
 
@@ -134,7 +135,7 @@ async function fetchLiturgicalDate(
       }
       return null;
     } catch (err) {
-      console.warn(`Liturgical API fetch failed for ${date}:`, err);
+      logger.warn("Liturgical API fetch failed", { error: String(err), date });
       if (attempt < retries) {
         await sleep(500 * (attempt + 1));
         continue;
@@ -561,10 +562,10 @@ export async function computeLiturgicalCalendar(
   options?: { useApi?: boolean },
 ): Promise<LiturgicalDateEntry[]> {
   const entries = computeLocalCalendar(churchYear);
-  console.log(`Computed ${entries.length} liturgical date entries locally`);
+  logger.info("Computed liturgical date entries locally", { count: entries.length });
 
   if (options?.useApi) {
-    console.log("Enriching with api.liturgical.uk data...");
+    logger.info("Enriching with api.liturgical.uk data");
     let apiFailures = 0;
     for (let idx = 0; idx < entries.length; idx++) {
       if (apiFailures >= 3) break;

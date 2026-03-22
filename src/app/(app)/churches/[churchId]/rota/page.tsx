@@ -18,10 +18,14 @@ export default async function RotaPage({ params }: Props) {
 
   const today = format(new Date(), "yyyy-MM-dd");
 
-  let upcomingServices: any[] = [];
-  let members: any[] = [];
-  let availabilityData: any[] = [];
-  let rotaData: any[] = [];
+  interface ServiceRow { serviceId: string; serviceType: string; time: string | null; date: string; cwName: string; }
+  interface MemberRow { userId: string; name: string | null; email: string; voicePart: string | null; role: string; }
+  interface AvailabilityRow { id: string; userId: string; serviceId: string; status: string; }
+  interface RotaRow { id: string; serviceId: string; userId: string; confirmed: boolean; }
+  let upcomingServices: ServiceRow[] = [];
+  let members: MemberRow[] = [];
+  let availabilityData: AvailabilityRow[] = [];
+  let rotaData: RotaRow[] = [];
 
   try {
     upcomingServices = await db

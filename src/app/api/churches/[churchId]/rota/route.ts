@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { rotaEntries, services, churchMemberships } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 
@@ -73,7 +74,7 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Failed to update rota:", error);
+    logger.error("Failed to update rota", error);
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
   }
 }

@@ -10,9 +10,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
+  const offset = parseInt(searchParams.get("offset") || "0", 10);
+
   try {
-    const results = await searchHymns(q, book || undefined);
-    return NextResponse.json(results);
+    const results = await searchHymns(q, book || undefined, offset);
+    return NextResponse.json({ results, hasMore: results.length === 20 });
   } catch (error) {
     return NextResponse.json([], { status: 200 });
   }

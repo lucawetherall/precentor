@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { invites, churches } from "@/lib/db/schema";
 import { eq, and, isNull, gt } from "drizzle-orm";
 
@@ -33,7 +34,7 @@ export async function GET(
 
     return NextResponse.json(result[0]);
   } catch (error) {
-    console.error("Failed to fetch invite:", error);
+    logger.error("Failed to fetch invite", error);
     return NextResponse.json({ error: "Failed to fetch invite" }, { status: 500 });
   }
 }

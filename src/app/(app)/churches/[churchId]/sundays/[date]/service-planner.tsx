@@ -69,7 +69,7 @@ export function ServicePlanner({
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {(SERVICE_TYPE_LABELS as any)[s.serviceType] || s.serviceType}
+            {SERVICE_TYPE_LABELS[s.serviceType as ServiceType] || s.serviceType}
             {s.time && <span className="ml-1 text-xs text-muted-foreground">({s.time})</span>}
           </button>
         ))}

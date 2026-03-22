@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { invites } from "@/lib/db/schema";
 import { randomBytes } from "crypto";
 
@@ -70,7 +71,7 @@ export async function POST(
           `,
         });
       } catch (emailError) {
-        console.error("Failed to send invite email:", emailError);
+        logger.error("Failed to send invite email", emailError);
         // Don't fail the request if email fails — the link still works
       }
     }
@@ -81,7 +82,7 @@ export async function POST(
       inviteId: invite.id,
     }, { status: 201 });
   } catch (error) {
-    console.error("Failed to create invite:", error);
+    logger.error("Failed to create invite", error);
     return NextResponse.json({ error: "Failed to create invite" }, { status: 500 });
   }
 }

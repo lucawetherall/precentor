@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Check, X, Minus } from "lucide-react";
 
 interface Service {
@@ -19,6 +19,9 @@ interface Member {
   role: string;
 }
 
+interface AvailabilityEntry { id: string; userId: string; serviceId: string; status: string; }
+interface RotaEntry { id: string; serviceId: string; userId: string; confirmed: boolean; }
+
 type AvailabilityStatus = "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE";
 
 export function RotaGrid({
@@ -31,13 +34,23 @@ export function RotaGrid({
   churchId: string;
   services: Service[];
   members: Member[];
-  availabilityData: any[];
-  rotaData: any[];
+  availabilityData: AvailabilityEntry[];
+  rotaData: RotaEntry[];
 }) {
-  const [avail, setAvail] = useState<Record<string, AvailabilityStatus>>({});
-  const [rota, setRota] = useState<Record<string, boolean>>({});
-  const [saving, setSaving] = useState(false);
-
+  const [avail, setAvail] = useState<Record<string, AvailabilityStatus>>(() => {
+    const initial: Record<string, AvailabilityStatus> = {};
+    for (const a of availabilityData) {
+      initial[`${a.userId}-${a.serviceId}`] = a.status as AvailabilityStatus;
+    }
+    return initial;
+  });
+  const [rota, setRota] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const r of rotaData) {
+      initial[`${r.userId}-${r.serviceId}`] = r.confirmed;
+    }
+    return initial;
+  });
   const getAvailKey = (userId: string, serviceId: string) => `${userId}-${serviceId}`;
 
   const cycleAvailability = async (userId: string, serviceId: string) => {
@@ -49,11 +62,18 @@ export function RotaGrid({
 
     setAvail((prev) => ({ ...prev, [key]: next }));
 
-    await fetch(`/api/churches/${churchId}/availability`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, serviceId, status: next }),
-    });
+    try {
+      const res = await fetch(`/api/churches/${churchId}/availability`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, serviceId, status: next }),
+      });
+      if (!res.ok) {
+        setAvail((prev) => ({ ...prev, [key]: current }));
+      }
+    } catch {
+      setAvail((prev) => ({ ...prev, [key]: current }));
+    }
   };
 
   const toggleRota = async (userId: string, serviceId: string) => {
@@ -61,11 +81,18 @@ export function RotaGrid({
     const current = rota[key] || false;
     setRota((prev) => ({ ...prev, [key]: !current }));
 
-    await fetch(`/api/churches/${churchId}/rota`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, serviceId, confirmed: !current }),
-    });
+    try {
+      const res = await fetch(`/api/churches/${churchId}/rota`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, serviceId, confirmed: !current }),
+      });
+      if (!res.ok) {
+        setRota((prev) => ({ ...prev, [key]: current }));
+      }
+    } catch {
+      setRota((prev) => ({ ...prev, [key]: current }));
+    }
   };
 
   // Group members by voice part
@@ -100,8 +127,8 @@ export function RotaGrid({
         </thead>
         <tbody>
           {Object.entries(grouped).map(([part, partMembers]) => (
-            <>
-              <tr key={part}>
+            <Fragment key={part}>
+              <tr>
                 <td colSpan={services.length + 1} className="px-3 py-1 text-xs font-heading font-semibold bg-muted">
                   {part}
                 </td>
@@ -128,15 +155,21 @@ export function RotaGrid({
                                 ? "border-destructive text-destructive"
                                 : "border-[#D4AF37] text-[#D4AF37]"
                             }`}
-                            title={status}
+                            aria-label={`${member.name || member.email}: ${
+                              status === "AVAILABLE" ? "Available" :
+                              status === "UNAVAILABLE" ? "Unavailable" : "Tentative"
+                            } for ${s.cwName} on ${s.date}. Click to change.`}
                           >
                             {status === "AVAILABLE" ? (
-                              <Check className="h-3 w-3" strokeWidth={2} />
+                              <Check className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
                             ) : status === "UNAVAILABLE" ? (
-                              <X className="h-3 w-3" strokeWidth={2} />
+                              <X className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
                             ) : (
-                              <Minus className="h-3 w-3" strokeWidth={2} />
+                              <Minus className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
                             )}
+                            <span className="sr-only">
+                              {status === "AVAILABLE" ? "Available" : status === "UNAVAILABLE" ? "Unavailable" : "Tentative"}
+                            </span>
                           </button>
                           <button
                             onClick={() => toggleRota(member.userId, s.serviceId)}
@@ -145,9 +178,9 @@ export function RotaGrid({
                                 ? "bg-primary text-primary-foreground border-primary"
                                 : "border-border text-muted-foreground"
                             }`}
-                            title={onRota ? "On rota" : "Not on rota"}
+                            aria-label={`${onRota ? "Remove" : "Add"} ${member.name || member.email} ${onRota ? "from" : "to"} rota for ${s.cwName}`}
                           >
-                            R
+                            <span aria-hidden="true">R</span>
                           </button>
                         </div>
                       </td>
@@ -155,7 +188,7 @@ export function RotaGrid({
                   })}
                 </tr>
               ))}
-            </>
+            </Fragment>
           ))}
         </tbody>
       </table>

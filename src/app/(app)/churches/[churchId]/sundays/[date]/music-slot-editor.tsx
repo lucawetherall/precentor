@@ -103,13 +103,24 @@ export function MusicSlotEditor({
     );
   };
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const handleSave = async () => {
     setSaving(true);
-    await fetch(`/api/churches/${churchId}/services/${serviceId}/slots`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slots }),
-    });
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/churches/${churchId}/services/${serviceId}/slots`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slots }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSaveError(data.error || "Failed to save music slots");
+      }
+    } catch {
+      setSaveError("Network error — could not save");
+    }
     setSaving(false);
   };
 
@@ -157,7 +168,7 @@ export function MusicSlotEditor({
     <div>
       <div className="space-y-2">
         {slots.map((slot, i) => {
-          const label = (MUSIC_SLOT_LABELS as any)[slot.slotType] || slot.slotType;
+          const label = MUSIC_SLOT_LABELS[slot.slotType as MusicSlotType] || slot.slotType;
           const slotSuggestions = suggestions[i];
 
           return (
@@ -213,6 +224,10 @@ export function MusicSlotEditor({
           );
         })}
       </div>
+
+      {saveError && (
+        <p className="mt-2 text-sm text-destructive">{saveError}</p>
+      )}
 
       <div className="mt-4 flex justify-end">
         <button

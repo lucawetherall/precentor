@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { syncCurrentYear, syncLectionaryForYear } from "@/lib/lectionary/mapper";
 import { getChurchYear } from "@/lib/lectionary/calendar";
 
@@ -6,7 +7,7 @@ export async function GET(request: Request) {
   // Verify cron secret — required in production, optional in development
   const authHeader = request.headers.get("authorization");
   if (!process.env.CRON_SECRET && process.env.NODE_ENV === "production") {
-    console.error("CRON_SECRET is not set in production");
+    logger.error("CRON_SECRET is not set in production");
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
   }
   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
       ...result,
     });
   } catch (error) {
-    console.error("Lectionary sync failed:", error);
+    logger.error("Lectionary sync failed", error);
     return NextResponse.json(
       { error: "Lectionary sync failed" },
       { status: 500 },

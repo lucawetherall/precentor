@@ -9,7 +9,8 @@ interface Props {
 export default async function RepertoirePage({ params }: Props) {
   const { churchId } = await params;
 
-  let logs: any[] = [];
+  interface PerformanceLogRow { id: string; date: string; freeText: string | null; createdAt: Date; }
+  let logs: PerformanceLogRow[] = [];
   try {
     logs = await db
       .select({
@@ -78,7 +79,7 @@ export default async function RepertoirePage({ params }: Props) {
           <div>
             <h2 className="text-xl font-heading font-semibold mb-4">Recent Performances</h2>
             <div className="space-y-1">
-              {logs.slice(0, 30).map((log: any) => (
+              {logs.slice(0, 30).map((log: PerformanceLogRow) => (
                 <div key={log.id} className="flex items-center gap-3 text-sm border-b border-border py-1">
                   <span className="font-mono text-xs text-muted-foreground w-24">{log.date}</span>
                   <span>{log.freeText || "—"}</span>

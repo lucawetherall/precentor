@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { liturgicalDays } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 import { LectionarySync } from "./sync-form";
@@ -12,7 +13,7 @@ export default async function LectionaryPage() {
       .orderBy(desc(liturgicalDays.date))
       .limit(60); // ~1 church year of Sundays + feasts
   } catch (err) {
-    console.warn("Failed to load liturgical days:", err);
+    logger.warn("Failed to load liturgical days", { error: String(err) });
   }
 
   return (

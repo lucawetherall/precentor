@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { churches, churchMemberships, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(church, { status: 201 });
   } catch (error) {
-    console.error("Failed to create church:", error);
+    logger.error("Failed to create church", error);
     return NextResponse.json({ error: "Failed to create church" }, { status: 500 });
   }
 }

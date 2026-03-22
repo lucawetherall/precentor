@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
-import { services } from "@/lib/db/schema";
+import { logger } from "@/lib/logger";
+import { services, serviceTypeEnum } from "@/lib/db/schema";
 
 export async function POST(
   request: Request,
@@ -23,13 +24,13 @@ export async function POST(
     const [service] = await db.insert(services).values({
       churchId,
       liturgicalDayId,
-      serviceType: serviceType as any,
+      serviceType: serviceType as (typeof serviceTypeEnum.enumValues)[number],
       time: time || null,
     }).returning();
 
     return NextResponse.json(service, { status: 201 });
   } catch (error) {
-    console.error("Failed to create service:", error);
+    logger.error("Failed to create service", error);
     return NextResponse.json({ error: "Failed to create service" }, { status: 500 });
   }
 }
