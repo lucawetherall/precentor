@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { services, liturgicalDays, availability, rotaEntries, churchMemberships, users } from "@/lib/db/schema";
-import { eq, and, gte, asc } from "drizzle-orm";
+import { eq, and, gte, asc, inArray } from "drizzle-orm";
 import { format } from "date-fns";
 import { RotaGrid } from "./rota-grid";
 
@@ -59,12 +59,12 @@ export default async function RotaPage({ params }: Props) {
       availabilityData = await db
         .select()
         .from(availability)
-        .where(eq(availability.serviceId, serviceIds[0])); // simplified - would need inArray
+        .where(inArray(availability.serviceId, serviceIds));
 
       rotaData = await db
         .select()
         .from(rotaEntries)
-        .where(eq(rotaEntries.serviceId, serviceIds[0])); // simplified
+        .where(inArray(rotaEntries.serviceId, serviceIds));
     }
   } catch { /* DB not available */ }
 

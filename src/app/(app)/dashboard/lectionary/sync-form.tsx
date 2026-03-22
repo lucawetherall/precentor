@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { syncLectionaryAction } from "./actions";
 
 export function LectionarySync() {
   const [loading, setLoading] = useState(false);
@@ -20,12 +21,7 @@ export function LectionarySync() {
     setLoading(true);
     setResult(null);
     try {
-      const params = new URLSearchParams();
-      if (fetchText) params.set("fetchText", "true");
-      if (version !== "NRSVAE") params.set("version", version);
-
-      const res = await fetch(`/api/cron/sync-lectionary?${params}`);
-      const data = await res.json();
+      const data = await syncLectionaryAction(fetchText, version);
       setResult(data);
     } catch (err) {
       setResult({ success: false, error: `Sync failed: ${err instanceof Error ? err.message : "Network error"}` });
