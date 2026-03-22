@@ -107,12 +107,12 @@ export async function syncLectionaryForYear(
           postCommunion: sundayData.postCommunion ?? null,
         })
         .onConflictDoUpdate({
-          target: liturgicalDays.date,
+          target: liturgicalDays.icalUid,
           set: {
+            date: entry.date,
             cwName: sundayData.name || entry.name,
             season,
             colour,
-            icalUid: entry.sundayKey,
             lectionaryYear: year,
             collect: sundayData.collect ?? null,
             postCommunion: sundayData.postCommunion ?? null,

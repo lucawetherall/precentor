@@ -41,9 +41,21 @@ function Sheet({
 function SheetTrigger({
   children,
   className,
+  asChild,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }) {
   const { onOpenChange } = React.useContext(SheetContext)
+
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
+      onClick: (e: React.MouseEvent) => {
+        onOpenChange(true);
+        const childOnClick = (children as React.ReactElement<Record<string, unknown>>).props?.onClick;
+        if (typeof childOnClick === "function") childOnClick(e);
+      },
+    })
+  }
+
   return (
     <button
       type="button"
