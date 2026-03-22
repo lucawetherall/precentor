@@ -107,6 +107,10 @@ export const services = pgTable("services", {
   time: text("time"),
   status: serviceStatusEnum("status").default("DRAFT").notNull(),
   notes: text("notes"),
+  eucharisticPrayer: text("eucharistic_prayer"),
+  includeReadingText: boolean("include_reading_text").default(true).notNull(),
+  sheetMode: text("sheet_mode").default("summary").notNull(),
+  liturgicalOverrides: json("liturgical_overrides").default({}).$type<Record<string, string>>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [
