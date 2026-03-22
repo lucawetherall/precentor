@@ -5,10 +5,10 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 9/20
+- Pages reviewed: 10/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 25
-- Medium issues: 10
+- Quick wins fixed: 29
+- Medium issues: 12
 - Major issues: 1
 
 ---
@@ -295,3 +295,40 @@ Details:
 - **CSS inspection**: `h1` — Cormorant Garamond (via `font-heading`), 30px, weight 600, color `rgb(44, 36, 22)` (design token `--foreground`). Quick-action card links — `border-border`, `bg-card` (white), `shadow-sm`, `hover:border-primary` (correct design token, no hardcoded colours). "Manage" link — `text-primary` (`rgb(139, 69, 19)`), `hover:underline`, weight 400. Note: "Manage" has no underline at rest — this is acceptable for a standalone navigation link (not an in-text link), so WCAG 1.4.1 does not apply (the link is not embedded within a run of text).
 - **Interactions**: "Plan Services" card → `/churches/[id]/sundays` (confirmed by eval, navigation successful). Church card → `/churches/[id]/sundays` (confirmed). "Manage" → `/churches` (confirmed by click + href eval). All navigations use Next.js `<Link>` (client-side routing, auth cookies preserved).
 - **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Authentication checked via `supabase.auth.getUser()` (server-side, secure) with immediate redirect if unauthenticated. DB queries use Drizzle ORM with parameterised queries — no SQL injection risk. `userChurches.slice(0, 5)` limits the loop for upcoming services (guards against excessive DB calls for users with many churches). `upcomingServices.slice(0, 6)` caps the rendered list. `format(parseISO(s.date), ...)` — safe (date-fns, no DOM injection). `LITURGICAL_COLOURS[s.colour as LiturgicalColour]` with `|| "#4A6741"` fallback — defensive. TypeScript: all types correctly inferred. No stray `console.log`.
+
+---
+
+### /dashboard/lectionary (Lectionary Sync & Calendar)
+**Visual**: ✅ Pass (desktop)
+**Responsive**: ⚠️ Table overflows viewport on mobile and tablet — "Colour" column clipped, no horizontal scroll wrapper
+**Accessibility**: ⚠️ Two axe-core violations (moderate); both fixed
+**Runtime**: ✅ Pass (no console errors; one pre-navigation abort — expected)
+**Design System**: ⚠️ Hardcoded `hover:bg-[#6B4423]` on sync button (fixed); two hardcoded `#4A6741` values in result message (fixed)
+**Interactions**: ✅ Pass (sync not triggered per protocol — known bug logged)
+**Source Code**: ⚠️ Missing `id="main-content"` on `<main>` in both `page.tsx` and `loading.tsx` (fixed)
+**Performance**: ✅ Pass (463ms load, 401ms TTFB, 484ms FCP — normal for server-rendered page with DB query)
+
+Findings:
+- [QUICK WIN] **Fixed**: Replaced `hover:bg-[#6B4423]` with `hover:bg-primary-hover` on the "Sync Current Year" button in `src/app/(app)/dashboard/lectionary/sync-form.tsx` (line 69). Consistent with design token `--primary-hover: #6B4423` established in globals.css.
+- [QUICK WIN] **Fixed**: Added `id="main-content"` to the `<main>` element in `src/app/(app)/dashboard/lectionary/page.tsx`. The layout skip link (`href="#main-content"`) now has a reachable focusable target. Resolves axe-core `skip-link` violation (moderate).
+- [QUICK WIN] **Fixed**: Added `id="main-content"` to the `<main>` element in `src/app/(app)/dashboard/lectionary/loading.tsx` for consistency — the skip link is present during the loading skeleton state and would otherwise have no target while the page streams in.
+- [QUICK WIN] **Fixed**: Replaced `border-[#4A6741]` and `text-[#4A6741]` in the sync result success message (`sync-form.tsx` line 76) with `border-secondary text-secondary`. The value `#4A6741` is already `--secondary` in globals.css, so this consolidates usage under the design token.
+- [MODERATE – A11Y] `skip-link` violation (axe-core): Skip link `href="#main-content"` had no focusable target because `<main>` lacked `id="main-content"`. Fixed (see quick win above). Confirmed 0 axe violations after fixes.
+- [MODERATE – A11Y] `region` violation (axe-core): One content node outside any landmark — the Next.js dev-tools button renders outside `<main>`. Dev-only overlay, low priority.
+- [MEDIUM – RESPONSIVE] Table has no horizontal scroll wrapper at mobile (375px) or tablet (768px). At 375px the "Colour" column is clipped off-screen; at 768px the "Year" and "Colour" columns are outside the visible area. The `<div className="border border-border">` wrapping the table has no `overflow-x-auto`. Fix: add `overflow-x-auto` to the wrapper div in `page.tsx` so the table scrolls horizontally on narrow viewports instead of overflowing silently.
+- [MEDIUM – KNOWN BUG] The sync form (`sync-form.tsx`) calls `GET /api/cron/sync-lectionary` without an `Authorization: Bearer <CRON_SECRET>` header. Clicking "Sync Current Year" returns "Server misconfigured". This is a known issue from the auth transition — the cron endpoint requires the secret header but the client-facing form does not include it. The sync functionality is effectively broken for manual use from the UI.
+- [INFO] Colour dot `<span>` (the coloured circle in the Colour column) has no `aria-label` or `aria-hidden="true"`. It is a purely decorative visual indicator — the colour name text node immediately follows it in the same cell (e.g., "GREEN", "WHITE"), so screen readers will read the text label. However, best practice is to add `aria-hidden="true"` to the decorative dot span to prevent it from being announced as an empty interactive element. No axe violation triggered because the span has no role and no text content.
+- [INFO] The "Christ the King" entry (2026-11-22) has season `KINGDOM` — this is correct Church of England usage (the Sunday is in the Kingdom season, not Ordinary Time). The colour dot for this entry is rendered white (`#F5F0E8`) against the white table row background — the dot is invisible. Consider adding a `border border-border` to the dot when colour is WHITE or KINGDOM so it remains visible against a light background.
+- [INFO] The `loading.tsx` skeleton renders one block for the form area (`h-10 w-48`) and one block for the table area (`h-64 w-full`). No header skeleton, no table-row skeleton — the loading state is minimal. Low priority.
+- [INFO] The page `<title>` remains "Precentor — Church Music Planner" — there is no per-page `metadata` export in `page.tsx`. Adding `export const metadata = { title: "Lectionary Calendar — Precentor" }` would give screen reader users and browser tab users a more descriptive page title.
+
+Details:
+- **Visual (desktop 1280×800)**: Clean two-section layout. "Lectionary Calendar" h1 (Cormorant Garamond 30px). Muted subtitle. Sync form: labelled select (Bible version), checkbox (Fetch reading text from Oremus), "Sync Current Year" button. Table with dark header row (foreground background, background text) and 60 rows. Colour dots visible for green/purple/red entries; white dot invisible against white background (see INFO above). Season/Year/Colour columns well-proportioned. Overall consistent with design system.
+- **Responsive (mobile 375×812)**: Sync form stacks correctly — select full-width, checkbox and label inline, button full-width. Table rows wrap text naturally in Name and Date columns. "Colour" column is clipped off the right edge of the viewport with no horizontal scroll affordance (MEDIUM finding). The table is navigable via horizontal swipe in some browsers but there is no visual indicator of overflow.
+- **Responsive (tablet 768×1024)**: Sync form elements are side-by-side (flex-wrap). Table header shows Date/Name/Season but "Year" and "Colour" are cut off at the viewport right edge. Same overflow issue as mobile.
+- **Accessibility snapshot**: `h1` "Lectionary Calendar" present. `h2` "Imported Days (60)" present — correct hierarchy. `combobox` ("Bible version") correctly associated via `htmlFor`/`id="bible-version"`. `checkbox` ("Fetch reading text from Oremus") correctly labelled. `button` "Sync Current Year" present. `table` with `columnheader` cells (Date, Name, Season, Year, Colour) and 60 data rows — fully semantic table structure (no `role="table"` hack needed, uses native `<table>`). Skip link present (`href="#main-content"`) — target missing before fix.
+- **Runtime**: No JS console errors. One failed network request (`GET http://localhost:3000/ [FAILED: net::ERR_ABORTED]`) — pre-navigation abort, expected. No actual runtime failures.
+- **Performance**: domContentLoaded 463ms, loadComplete 471ms, FCP 484ms, TTFB 401ms. The response time reflects the server-side DB query (`SELECT … FROM liturgical_days ORDER BY date DESC LIMIT 60`) in the page component. 60 rows is well within normal DB performance bounds.
+- **CSS inspection**: `h1` — Cormorant Garamond, 30px, weight 600, `rgb(44, 36, 22)`. Sync button — `bg-primary` (`rgb(139, 69, 19)`), `text-primary-foreground` (`rgb(250, 246, 241)`), `hover:bg-primary-hover` (after fix). `<main>` — `p-8 max-w-4xl`, `id="main-content"` (after fix). Table colour dot (green row) — `background-color: rgb(74, 103, 65)` (= `#4A6741` = `--liturgical-green` / `--secondary` — correct).
+- **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. DB query uses Drizzle ORM with no raw SQL — no injection risk. `day.colour` from DB is rendered in a hardcoded switch-style expression (safe — output is a CSS hex string, not HTML). The `try/catch` around the DB call silently continues with `days = []` on failure and logs a warning via `logger.warn` — appropriate defensive pattern. `loading` state on the button uses `disabled={loading}` with `disabled:opacity-50` — correct. TypeScript: all types correctly inferred via `typeof liturgicalDays.$inferSelect`. No stray `console.log`.
+- **Interactions**: Sync not triggered (known bug — `GET /api/cron/sync-lectionary` without auth header returns error). Day table rendered correctly with 60 rows showing Date, Name, Season, Year, Colour for each imported liturgical day. All data appears semantically correct for the 2025/2026 Church of England lectionary (Year A, Ordinary Time weeks, correct seasons).

@@ -66,14 +66,14 @@ export function LectionarySync() {
           type="button"
           onClick={handleSync}
           disabled={loading}
-          className="px-4 py-1.5 text-sm bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
+          className="px-4 py-1.5 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
         >
           {loading ? "Syncing..." : "Sync Current Year"}
         </button>
       </div>
 
       {result && (
-        <div className={`text-sm p-3 border ${result.success ? "border-[#4A6741] text-[#4A6741]" : "border-destructive text-destructive"}`}>
+        <div className={`text-sm p-3 border ${result.success ? "border-secondary text-secondary" : "border-destructive text-destructive"}`}>
           {result.success
             ? `Synced ${result.imported}/${result.total} days for ${result.churchYear} (Year ${result.lectionaryYear})${result.errors ? `, ${result.errors} errors` : ""}`
             : result.error || "Sync failed"}
