@@ -126,7 +126,7 @@ export function ServiceSettings({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50 ml-auto"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50 ml-auto"
         >
           {saving ? (
             <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />

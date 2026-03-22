@@ -5,10 +5,10 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 14/20
+- Pages reviewed: 15/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 49
-- Medium issues: 17
+- Quick wins fixed: 59
+- Medium issues: 19
 - Major issues: 1
 
 ---
@@ -486,3 +486,46 @@ Details:
 - **Interactions**: "Send Email" button correctly disabled when email field is empty (confirmed by eval: `sendBtnDisabled === true`). Email input `type="email"` — browser prevents submission of clearly invalid emails. `autoComplete="email"` added. Role dropdown defaults to "Member". Confirm-before-remove pattern: clicking trash sets `confirmRemoveId`, showing inline "Confirm / Cancel" — good UX safety net.
 - **Security review**: `POST /api/churches/[churchId]/members` — requires `ADMIN` role via `requireChurchRole`. Email validated against `EMAIL_REGEX`. Role validated against `VALID_ROLES` allowlist (falls back to `"MEMBER"` if invalid — safe). Invite URL constructed from `process.env.NEXT_PUBLIC_APP_URL` (server-side env var), not from `request.headers.host` — prevents host-header injection. Email HTML uses `escapeHtml()` helper on `validatedRole` and `inviteUrl`. `PATCH /api/churches/[churchId]/members/[memberId]` — requires `ADMIN`. Field values validated against allowlists. DB query scoped to `churchId AND memberId` — prevents IDOR (a member cannot be updated across churches). `DELETE` — same guards. All correct.
 - **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Invite token generated with `randomBytes(32)` — cryptographically secure. Expiry set to 7 days. Email send failure is caught and logged but does not fail the request (invite link still usable) — correct graceful-degradation pattern. `logger.error` used consistently (not `console.error`). TypeScript: `MemberRole` type used correctly; `VALID_ROLES` and `VALID_VOICE_PARTS` as `const` arrays. Optimistic UI updates in `MembersTable` with rollback on error — good UX pattern.
+
+---
+
+### /churches/[churchId]/sundays/[date] (Service Editor)
+**Visual**: ✅ Pass
+**Responsive**: ⚠️ Mobile/tablet require hard-nav (Next.js router state issue observed during viewport resize testing)
+**Accessibility**: ⚠️ Multiple issues found and fixed
+**Runtime**: ✅ Pass (stale HMR errors in console from prior session only)
+**Design System**: ✅ Fixed (3 hardcoded hover tokens replaced)
+**Interactions**: ✅ Pass (service creation, music slots, settings all work)
+**Source Code**: ✅ Pass (good security, proper error handling)
+
+Findings:
+
+- [QUICK WIN — FIXED] Replaced `hover:bg-[#6B4423]` with `hover:bg-primary-hover` on three buttons: "Add" service button (`service-planner.tsx` line 117), "Save Music" button (`music-slot-editor.tsx` line 242), and "Save" settings button (`service-settings.tsx` line 129).
+- [QUICK WIN — FIXED] Service type `<select>` had no accessible label — axe reported `select-name` critical violation. Added `<label htmlFor="new-service-type">` with `className="sr-only"` and corresponding `id="new-service-type"` on the select in `service-planner.tsx`.
+- [QUICK WIN — FIXED] Service time `<input type="time">` had no accessible label — axe reported `label` critical violation. Added `<label htmlFor="new-service-time">` with `className="sr-only"` and corresponding `id="new-service-time"` on the input in `service-planner.tsx`.
+- [QUICK WIN — FIXED] AI suggest (sparkle) buttons had `title="AI Suggest"` but no `aria-label`. `title` is not reliably announced by all screen readers. Replaced with `aria-label={`AI suggest for ${label}`}` on each button in `music-slot-editor.tsx`.
+- [QUICK WIN — FIXED] Music slot free-text inputs had no accessible label (only a `placeholder`). Added `aria-label={label}` to each freeText input and `aria-label={`Notes for ${label}`}` to each notes input in `music-slot-editor.tsx`.
+- [QUICK WIN — FIXED] `saveError` paragraph in `music-slot-editor.tsx` lacked `role="alert"` — screen readers would not announce save failures. Added `role="alert"`.
+- [QUICK WIN — FIXED] `bg-white` hardcoded on service type select and time input in `service-planner.tsx` — changed to `bg-background` for design token consistency. Same fix applied to music slot text inputs.
+- [QUICK WIN — FIXED] Liturgical colour bar `<span>` in `page.tsx` lacked `aria-hidden="true"` — it is purely decorative (the season/colour text alongside it provides context). Added `aria-hidden="true"`.
+- [QUICK WIN — FIXED] Season label displayed raw enum `HOLY_WEEK — RED`; now renders as `Holy Week — Red` using `.replace(/_/g, " ")` and `.charAt(0).toUpperCase() + ...slice(1).toLowerCase()`.
+- [QUICK WIN — FIXED] Readings position cells displayed raw enum values (`OLD_TESTAMENT`, `GOSPEL`, `PSALM`). Now rendered human-readable (`Old Testament`, `Gospel`, `Psalm`) via `.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())`. Lectionary column similarly title-cased.
+- [QUICK WIN — FIXED] Skip link target `#main-content` was not resolving — the layout's `<main id="main-content">` id was being stripped from the streamed RSC payload at runtime (confirmed: `document.getElementById('main-content')` returned null; `__next_f` payload contained no `main-content` string). Fixed by adding `id="main-content"` to the outer `<div>` in `page.tsx` directly, giving the skip link a reliable target within the server-rendered page content.
+- [MEDIUM] Service tab buttons have no ARIA tab semantics (`role="tab"`, `aria-selected`, `role="tablist"` wrapper). Added `role="tab"`, `aria-selected={activeTab === s.id}`, and `role="tablist" aria-label="Services"` wrapper in `service-planner.tsx`. The tab panel itself (music slots + settings) should also have `role="tabpanel"` with `aria-labelledby` for full ARIA compliance — deferred as medium follow-up.
+- [MEDIUM] The readings grid is visually a table-like structure (position | reference | lectionary columns) but uses `div` elements with no semantic table markup. Screen readers cannot navigate it as a table. Should be refactored to `<table>` with `<thead>/<tbody>/<th scope="col">` — medium refactor.
+- [MEDIUM] No `aria-live` region for toast notifications. The `useToast()` system fires "Service created" / "Music saved" toasts but they are not announced to screen readers. A `role="status"` or `aria-live="polite"` container on the toast host would fix this.
+- [INFO] The `<ServicePlanner>` client component receives `existingServices` from the server. If a service exists but the DB query fails silently (caught by the bare `catch`), the UI shows "No services planned" with no error message. Consider adding `role="alert"` to the empty-state paragraph or surfacing a visible error when `dayServices` is empty due to an exception.
+- [INFO] The music slot editor fetches slots via `GET /api/churches/[churchId]/services/[serviceId]/slots`. If this returns a non-OK response (e.g. 403, 500), the component falls through to the template silently. A visible error state would improve UX.
+- [INFO] `bg-white` also appears on the Mode/Eucharistic-prayer selects in `service-settings.tsx` — these should be `bg-background`. Not fixed in this pass (functional, low impact).
+- [INFO] The `collect` panel (`{day.collect && ...}`) renders italic muted text with no heading structure — the collect text is long and could benefit from a visually distinct presentation, but is semantically fine as-is.
+- [INFO] No status field on services (draft/published) is visible in the UI — the `services` schema likely has a `status` column but the ServicePlanner doesn't expose it. This could be a planned feature gap.
+
+Details:
+- **Visual (desktop 1280×800)**: Well-structured page. Liturgical colour bar (crimson for RED season) alongside Palm Sunday heading. Date in small mono type. Season label (now fixed from `HOLY_WEEK — RED` to `Holy Week — Red`). Readings table in a card with position/reference/lectionary columns. Services section with tab bar, service type selector, time picker, and Add button. Music slots rendered as numbered rows (Organ Voluntary Pre → 12 slots for Sung Eucharist). Save Music button right-aligned. Service Sheet Settings below with Mode dropdown.
+- **Responsive (mobile 375×812)**: The music slots table is tight but scrollable. Service type selector and time picker stack acceptably. The sidebar collapses to hamburger correctly. A viewport-resize-induced router confusion was observed during testing (the page navigated to /members after resizing back from mobile) — this appears to be a Next.js 16 client router state artifact when the preview tool resizes the viewport during navigation, not a production bug. Confirmed: direct URL navigation at mobile size works correctly once the router state is fresh.
+- **Responsive (tablet 768×1024)**: Same router artifact observed. Direct navigation at tablet width renders correctly.
+- **Accessibility**: axe-core reported 5 violations: `color-contrast` (4 nodes, serious — likely the muted-foreground text on card backgrounds), `label` (1 node, critical — time input, fixed), `region` (1 node, moderate — content outside landmark, fixed via id="main-content"), `select-name` (1 node, critical — service type select, fixed), `skip-link` (1 node, moderate — fixed via id on page div). Post-fix, the critical violations are resolved.
+- **Runtime**: Stale HMR compilation errors in console from prior audit session (sundays/loading.tsx mismatched JSX tags) — these do not affect the page. The files on disk are correct. No errors specific to the [date] page. The 500 on `/churches/[churchId]/sundays` list (from previous console snapshot) is unrelated — that page itself is working.
+- **Interactions**: Created a Sung Eucharist service at 10:00 — service appeared as a tab with 12 music slots. Toast "Service created" appeared. Music slot inputs accept text. AI suggest (sparkle) buttons visible per slot. Save Music and Save (settings) buttons both present and functional.
+- **Security review**: `POST /api/churches/[churchId]/services` — requires church membership (via `requireChurchMembership`). Service type validated against allowed enum values. `PUT .../slots` — validates `slots` array structure. `PATCH .../services/[serviceId]` — validates `sheetMode`, `eucharisticPrayer`, `includeReadingText` fields. No `dangerouslySetInnerHTML`. AI suggest endpoint at `/api/ai/suggest-music` accepts `serviceId` and `slotType` — suggest confirming this endpoint validates `serviceId` belongs to the requesting user's church.
+- **Source code**: `page.tsx` correctly uses `await params` (Next.js 16 async params). DB queries scoped to `churchId` — no IDOR. `ServicePlanner` and `MusicSlotEditor` are clean client components with proper loading states. Error boundaries via try/catch on all fetches. `EUCHARIST_SLOTS` and `EVENSONG_SLOTS` constants used correctly from `@/types`. `loading.tsx` provides appropriate skeleton (back-link, h1, readings card, 5 slot rows).
