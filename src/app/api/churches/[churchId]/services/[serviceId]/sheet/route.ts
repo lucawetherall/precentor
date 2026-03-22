@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { services, liturgicalDays, readings, musicSlots, churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -16,11 +16,8 @@ export async function GET(
   const { churchId, serviceId } = await params;
   const format = request.nextUrl.searchParams.get("format") || "pdf";
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { error } = await requireChurchRole(churchId, "MEMBER");
+  if (error) return error;
 
   try {
     // Fetch service data

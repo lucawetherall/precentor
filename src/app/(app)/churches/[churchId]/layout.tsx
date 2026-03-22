@@ -5,6 +5,9 @@ import { churches, churchMemberships, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import Link from "next/link";
 import { Calendar, Music, Users, FileText, Settings, ChevronLeft } from "lucide-react";
+import { hasMinRole } from "@/lib/auth/permissions";
+import type { MemberRole } from "@/types";
+import { SignOutButton } from "@/components/sign-out-button";
 
 interface Props {
   children: React.ReactNode;
@@ -49,13 +52,17 @@ export default async function ChurchLayout({ children, params }: Props) {
     redirect("/churches");
   }
 
+  const userRole = membership.role as MemberRole;
+  const isEditor = hasMinRole(userRole, "EDITOR");
+  const isAdmin = hasMinRole(userRole, "ADMIN");
+
   const navItems = [
-    { href: `/churches/${churchId}/sundays`, label: "Sundays", icon: Calendar },
-    { href: `/churches/${churchId}/rota`, label: "Rota", icon: Users },
-    { href: `/churches/${churchId}/repertoire`, label: "Repertoire", icon: Music },
-    { href: `/churches/${churchId}/service-sheets`, label: "Service Sheets", icon: FileText },
-    { href: `/churches/${churchId}/members`, label: "Members", icon: Users },
-    { href: `/churches/${churchId}/settings`, label: "Settings", icon: Settings },
+    { href: `/churches/${churchId}/sundays`, label: "Sundays", icon: Calendar, show: true },
+    { href: `/churches/${churchId}/rota`, label: "Rota", icon: Users, show: true },
+    { href: `/churches/${churchId}/repertoire`, label: "Repertoire", icon: Music, show: true },
+    { href: `/churches/${churchId}/service-sheets`, label: "Service Sheets", icon: FileText, show: true },
+    { href: `/churches/${churchId}/members`, label: "Members", icon: Users, show: isAdmin },
+    { href: `/churches/${churchId}/settings`, label: "Settings", icon: Settings, show: isAdmin },
   ];
 
   return (
@@ -69,8 +76,8 @@ export default async function ChurchLayout({ children, params }: Props) {
         <h2 className="font-heading text-lg font-semibold mb-1 truncate">{church.name}</h2>
         <p className="text-xs text-muted-foreground mb-6">{membership.role}</p>
 
-        <nav className="flex flex-col gap-1">
-          {navItems.map((item) => (
+        <nav className="flex flex-col gap-1 flex-1">
+          {navItems.filter(item => item.show).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -81,6 +88,11 @@ export default async function ChurchLayout({ children, params }: Props) {
             </Link>
           ))}
         </nav>
+
+        <div className="mt-auto pt-4 border-t border-border">
+          <p className="text-xs text-muted-foreground mb-2 truncate">{user.email}</p>
+          <SignOutButton />
+        </div>
       </aside>
 
       <main className="flex-1">{children}</main>

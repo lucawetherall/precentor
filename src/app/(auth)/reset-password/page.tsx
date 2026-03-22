@@ -3,32 +3,36 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
 
-    if (signInError) {
-      setError("Invalid email or password.");
+    setLoading(true);
+    const supabase = createClient();
+    const { error: updateError } = await supabase.auth.updateUser({ password });
+
+    if (updateError) {
+      setError(updateError.message);
       setLoading(false);
     } else {
       router.push("/dashboard");
-      router.refresh();
     }
   };
 
@@ -36,42 +40,37 @@ export default function LoginPage() {
     <main className="flex flex-col items-center justify-center min-h-screen p-8">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-heading font-semibold">Sign In</h1>
+          <h1 className="text-3xl font-heading font-semibold">Set New Password</h1>
           <p className="text-sm text-muted-foreground">
-            Enter your email and password
+            Enter your new password below.
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-body">
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="director@parish.org.uk"
-              required
-              className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="text-sm font-body">Password</label>
-              <Link href="/forgot-password" className="text-xs text-primary hover:underline">
-                Forgot password?
-              </Link>
-            </div>
+            <label htmlFor="password" className="text-sm font-body">New password</label>
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder="Min. 8 characters"
               required
+              minLength={8}
+              className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="confirm-password" className="text-sm font-body">Confirm new password</label>
+            <input
+              id="confirm-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm your password"
+              required
+              minLength={8}
               className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
             />
           </div>
@@ -83,14 +82,9 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? "Updating..." : "Update Password"}
           </button>
         </form>
-
-        <p className="text-sm text-center text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-primary hover:underline">Create one</Link>
-        </p>
       </div>
     </main>
   );

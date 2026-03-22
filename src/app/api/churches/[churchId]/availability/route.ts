@@ -1,27 +1,70 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireChurchRole, hasMinRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
-import { availability } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { availability, services, churchMemberships } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+import type { MemberRole } from "@/types";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ churchId: string }> }
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { churchId } = await params;
+  const { user, membership, error } = await requireChurchRole(churchId, "MEMBER");
+  if (error) return error;
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const { userId, serviceId, status } = body;
 
+  if (!serviceId || !status) {
+    return NextResponse.json({ error: "serviceId and status are required" }, { status: 400 });
+  }
+
+  // Members can only set their own availability; editors+ can set for anyone
+  const targetUserId = userId || user!.id;
+  if (targetUserId !== user!.id && !hasMinRole(membership!.role as MemberRole, "EDITOR")) {
+    return NextResponse.json({ error: "You can only update your own availability" }, { status: 403 });
+  }
+
   try {
+    // Verify service belongs to this church
+    const service = await db
+      .select()
+      .from(services)
+      .where(and(eq(services.id, serviceId), eq(services.churchId, churchId)))
+      .limit(1);
+
+    if (service.length === 0) {
+      return NextResponse.json({ error: "Service not found in this church" }, { status: 404 });
+    }
+
+    // Verify target user is a member of this church
+    if (targetUserId !== user!.id) {
+      const targetMembership = await db
+        .select()
+        .from(churchMemberships)
+        .where(
+          and(
+            eq(churchMemberships.userId, targetUserId),
+            eq(churchMemberships.churchId, churchId)
+          )
+        )
+        .limit(1);
+
+      if (targetMembership.length === 0) {
+        return NextResponse.json({ error: "User is not a member of this church" }, { status: 400 });
+      }
+    }
+
     await db
       .insert(availability)
       .values({
-        userId,
+        userId: targetUserId,
         serviceId,
         status: status as any,
       })

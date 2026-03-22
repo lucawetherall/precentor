@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { musicSlots } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -8,7 +8,9 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ churchId: string; serviceId: string }> }
 ) {
-  const { serviceId } = await params;
+  const { churchId, serviceId } = await params;
+  const { error } = await requireChurchRole(churchId, "MEMBER");
+  if (error) return error;
 
   try {
     const slots = await db
@@ -27,18 +29,19 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ churchId: string; serviceId: string }> }
 ) {
-  const { serviceId } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { churchId, serviceId } = await params;
+  const { error } = await requireChurchRole(churchId, "EDITOR");
+  if (error) return error;
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const { slots } = body;
 
   try {
-    // Delete existing slots and re-insert
     await db.delete(musicSlots).where(eq(musicSlots.serviceId, serviceId));
 
     if (slots && slots.length > 0) {

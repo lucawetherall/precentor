@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Church } from "lucide-react";
+import { db } from "@/lib/db";
+import { users, churchMemberships } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -11,6 +14,29 @@ export default async function DashboardPage() {
 
   if (!user) {
     redirect("/login");
+  }
+
+  // Check if user needs onboarding
+  try {
+    const dbUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.supabaseId, user.id))
+      .limit(1);
+
+    if (dbUser.length > 0) {
+      const memberships = await db
+        .select()
+        .from(churchMemberships)
+        .where(eq(churchMemberships.userId, dbUser[0].id))
+        .limit(1);
+
+      if (memberships.length === 0) {
+        redirect("/onboarding");
+      }
+    }
+  } catch {
+    // DB not available, continue
   }
 
   return (

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -9,13 +9,15 @@ export async function PATCH(
   { params }: { params: Promise<{ churchId: string }> }
 ) {
   const { churchId } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { error } = await requireChurchRole(churchId, "ADMIN");
+  if (error) return error;
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
   try {
     const [updated] = await db
