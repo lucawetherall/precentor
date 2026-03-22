@@ -5,10 +5,10 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 12/20
+- Pages reviewed: 13/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 39
-- Medium issues: 15
+- Quick wins fixed: 44
+- Medium issues: 16
 - Major issues: 1
 
 ---
@@ -368,6 +368,44 @@ Details:
 - **Interactions**: Click church card → navigates to `/churches/a0426f52-a3c0-4a07-a264-c3a73764cdcd/sundays` (confirmed by eval). Click "Add Church" button → navigates to `/churches/new` (confirmed by eval). Both work correctly.
 - **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Two sequential Drizzle ORM DB queries (user lookup, then membership join) in a `try/catch` — silently falls back to empty list on DB failure (correct defensive pattern). Auth gate via `supabase.auth.getUser()` + `redirect("/login")` — correct. TypeScript: inline `interface UserChurch` defined inside the async function component (valid but conventionally defined at module level). No stray `console.log`. `loading.tsx` provides a skeleton for the two expected skeleton cards — minimal but functional.
 - **Interactions**: Sync not triggered (known bug — `GET /api/cron/sync-lectionary` without auth header returns error). Day table rendered correctly with 60 rows showing Date, Name, Season, Year, Colour for each imported liturgical day. All data appears semantically correct for the 2025/2026 Church of England lectionary (Year A, Ordinary Time weeks, correct seasons).
+
+---
+
+### /churches/[churchId]/sundays (Service Calendar)
+**Visual**: ✅ Pass
+**Responsive**: ⚠️ Season label truncates at tablet (768px) — no `flex-shrink-0`/`whitespace-nowrap` (fixed)
+**Accessibility**: ⚠️ Three axe-core violations — skip-link target missing (fixed in layout), colour swatches lacked `aria-hidden` (fixed), `region` dev-only
+**Runtime**: ✅ Pass (no console errors, no failed network requests)
+**Design System**: ⚠️ Six hardcoded hex colour literals in inline `style` for liturgical colour swatches (fixed — now uses `LITURGICAL_COLOURS` constant from `@/types`)
+**Interactions**: ✅ Pass — clicking a Sunday card correctly navigates to `/churches/[churchId]/sundays/[date]` service editor
+**Source Code**: ✅ Pass (auth gate in layout, DB query with Drizzle ORM, no XSS vectors)
+**Performance**: ✅ Pass
+
+Findings:
+- [QUICK WIN] **Fixed**: Added `id="main-content"` to the `<main>` element in `src/app/(app)/churches/[churchId]/layout.tsx`. This is the shared layout wrapping all church sub-pages. The skip link (`href="#main-content"`) in the global layout now has a focusable target on every church page. Resolves the axe-core `skip-link` violation (moderate) for the entire church sub-tree. Note: page-level files (`sundays/page.tsx`, `[date]/page.tsx` etc.) render into the layout's `<main>` as children — they correctly use `<div>` wrappers, not nested `<main>`, avoiding invalid HTML.
+- [QUICK WIN] **Fixed**: Added `aria-hidden="true"` to the liturgical colour swatch `<span>` in `src/app/(app)/churches/[churchId]/sundays/page.tsx`. The coloured bar is purely decorative — the season text label (e.g. "LENT", "HOLY WEEK") immediately follows and provides equivalent information to screen readers. Without `aria-hidden`, the span was announced as an empty unlabelled element.
+- [QUICK WIN] **Fixed**: Replaced six inline hardcoded hex colour literals in `sundays/page.tsx` with `LITURGICAL_COLOURS[day.colour as LiturgicalColour] ?? "#4A6741"`. The `LITURGICAL_COLOURS` constant is already defined in `src/types/index.ts` and used in `[date]/page.tsx` — this fix makes the colour mapping consistent across both files.
+- [QUICK WIN] **Fixed**: Added `whitespace-nowrap flex-shrink-0` to the season label `<span>` in `sundays/page.tsx`. Previously the label could be clipped at tablet/narrow viewports (observed as "HC..." for "HOLY_WEEK" at 768px). The `flex-1` on the day name div already allows the centre column to absorb width; the season label should never shrink or wrap.
+- [QUICK WIN] **Fixed**: Season label now renders with underscores replaced by spaces (`day.season.replace(/_/g, " ")`). Raw DB enum values like `HOLY_WEEK`, `ORDINARY` are now displayed as `HOLY WEEK`, `ORDINARY` for readability. Values without underscores (LENT, EASTER, PENTECOST, TRINITY, ASCENSION) are unaffected.
+- [SERIOUS – A11Y] `color-contrast` violation (axe-core, 4 nodes): Four elements in the `ChurchSidebar` component render `text-muted-foreground` (`#7a6e5d`) on the page background (`#f5f0e8`) at a contrast ratio of 4.39:1 — just below the WCAG AA 4.5:1 threshold. Affected elements: the "All Churches" back link (14px, normal weight), the "Admin" role label (12px), the user email address (12px), and the "Sign out" button (12px). The 12px elements require 4.5:1 (normal text < 18px), the 14px link also requires 4.5:1. The `--muted-foreground` CSS variable needs to be slightly darkened (e.g. from `#7a6e5d` to approximately `#6e6254`) to achieve 4.5:1 on `#f5f0e8`. This affects all church sub-pages via the shared sidebar. Deferred — requires a design token change in `globals.css` and re-audit of all other uses of `text-muted-foreground`.
+- [MODERATE – A11Y] `skip-link` violation (axe-core): Skip link `href="#main-content"` had no focusable target — the church layout `<main>` lacked `id="main-content"`. Fixed in `layout.tsx` (see quick win above).
+- [MODERATE – A11Y] `region` violation (axe-core, 1 node): The Next.js dev-tools button renders outside any landmark. Dev-only overlay, low priority, not actionable.
+- [MEDIUM – UX] The page title is the generic "Precentor — Church Music Planner". Adding `export const metadata = { title: "Upcoming Sundays — Precentor" }` to `sundays/page.tsx` would give screen reader users and browser tab users a more descriptive title. Same applies to `[date]/page.tsx` (could use `day.cwName` in a generateMetadata export).
+- [INFO] The page fetches the 20 nearest upcoming liturgical days (`.limit(20)`) — this covers approximately 5 months of Sundays. The DB query has no churchId filter because liturgical days are global (not per-church). This is intentional and correct architecture.
+- [INFO] Maundy Thursday (Thu 2 Apr) and Good Friday (Fri 3 Apr) appear in the list because `gte(liturgicalDays.date, today)` returns all future days, not just Sundays. The page is titled "Upcoming Sundays" but includes weekday feasts. This is liturgically correct (these are principal feasts that require music planning) but may surprise users expecting only Sundays. No code change required, but the page heading could say "Upcoming Services" or "Upcoming Principal Days" for clarity.
+- [INFO] The colour swatch for "WHITE" days (e.g. Easter Eve) renders as `#F5F0E8` — the same colour as the page background (`--background`). The swatch is invisible on white-background cards. A `border border-border` on the swatch when `colour === "WHITE"` would maintain visual affordance. Same as noted in the lectionary audit for the table dot. Deferred.
+- [INFO] No loading state skeleton for the colour swatches — `loading.tsx` shows generic grey bars with no colour swatch placeholder. Low priority.
+
+Details:
+- **Visual (desktop 1280×800)**: Clean list layout. "Upcoming Sundays" h1 (Cormorant Garamond 30px). Each row: coloured swatch (8px×32px), date in mono text, liturgical name in heading font, season label right-aligned. Sidebar shows church name, role, nav links, user email, sign-out. No visual regressions. Liturgical colours: PURPLE (Lent/Advent) renders as `rgb(91, 44, 111)` ✓, RED (Holy Week) as `rgb(139, 37, 0)` ✓, WHITE (Easter Eve) invisible against background ⚠️, GREEN (Ordinary) correct ✓.
+- **Responsive (mobile 375×812)**: Sidebar collapses to hamburger menu. Page content full-width. Season labels readable, no truncation. Day name wraps gracefully. Cards have adequate touch target (full card is a link, approximately 72px tall). Pass.
+- **Responsive (tablet 768×1024)**: Sidebar visible at fixed width (~200px). Season label was truncating at "HC..." for "HOLY_WEEK" before fix. After fix (`whitespace-nowrap flex-shrink-0`), label displays fully. Overall layout correct. Pass after fix.
+- **Accessibility snapshot**: `h1` "Upcoming Sundays" present. Each card is a `link` with accessible name concatenating date, liturgical name, and season (e.g. "Sun 22 Mar 2026 The Fifth Sunday of Lent LENT"). Swatch span has `aria-hidden="true"` (after fix). Skip link present in sidebar, target `#main-content` now resolves to the layout `<main>`. Sidebar uses `role="complementary"` (rendered as `<aside>`). Navigation uses `<nav>`. Heading hierarchy: `h1` (page) only — no sub-headings needed for a list page.
+- **Runtime**: No JS console errors. No failed network requests (beyond pre-navigation aborts). DB query succeeds, returning 20 upcoming days. Pass.
+- **Performance**: Server-side DB query (`SELECT … FROM liturgical_days WHERE date >= today ORDER BY date ASC LIMIT 20`) — fast, well-indexed by date. Page renders immediately without client-side data fetching. No hydration warnings.
+- **CSS inspection**: `h1` — Cormorant Garamond, 30px, weight 600, `rgb(44, 36, 22)`. Card link — `bg-card` (white), `border-border`, `shadow-sm`, `hover:border-primary`. Colour swatch — 8px wide, 32px tall, `background-color` set inline via `LITURGICAL_COLOURS` constant (after fix). Season label — `text-xs text-muted-foreground`, `whitespace-nowrap flex-shrink-0` (after fix). Date — `font-mono text-xs text-muted-foreground`. Day name — `font-heading text-lg`.
+- **Interactions**: Clicking "The Fifth Sunday of Lent" card navigates to `/churches/a0426f52-a3c0-4a07-a264-c3a73764cdcd/sundays/2026-03-22` — service editor page loads with readings, collect, and service planner. Navigation confirmed by eval (`h1: "The Fifth Sunday of Lent"` on destination page). Pass.
+- **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Auth gate in `layout.tsx`: `supabase.auth.getUser()` → `redirect("/login")` if unauthenticated; DB membership check → `redirect("/churches")` if user is not a member of the requested church. This is correct — IDOR protection via membership join. Drizzle ORM query with no raw SQL. `try/catch` silently continues with empty array on DB failure (correct defensive pattern). `limit(20)` prevents unbounded result sets. TypeScript: `InferSelectModel<typeof liturgicalDays>` correctly typed. No stray `console.log`. `LITURGICAL_COLOURS` and `LiturgicalColour` imported from `@/types` (after fix) — consistent with `[date]/page.tsx`.
 
 ---
 
