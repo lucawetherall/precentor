@@ -5,10 +5,10 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 16/20
+- Pages reviewed: 17/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 64
-- Medium issues: 19
+- Quick wins fixed: 69
+- Medium issues: 21
 - Major issues: 1
 
 ---
@@ -563,3 +563,41 @@ Details:
 - **Runtime**: No JS console errors. Network failures are all stale `ERR_ABORTED` HMR chunk requests from a prior session (dev-only, not page-specific). No API calls made by this page at rest (server-rendered, no client fetch).
 - **Source code**: `page.tsx` uses `await params` correctly (Next.js 16 async params pattern). DB query scoped to `eq(performanceLogs.churchId, churchId)` — no IDOR risk. Church membership verified in `[churchId]/layout.tsx` (inner join on `churchMemberships` + redirect if not a member). No `dangerouslySetInnerHTML`. No XSS vectors. `loading.tsx` provides a two-element pulse skeleton (h1 + content block). Client component `RepertoireList` uses `useMemo` correctly for filtered/sorted state. "Show more" pagination implemented via local `showCount` state — no unnecessary re-fetches.
 - **Interactions**: Page is in empty state (no archived services). Search input, sort select, table, and load-more button are only rendered when `pieces.length > 0`. Untestable with current data. Source review confirms search filters by piece name (case-insensitive substring), sort toggles between count/date/alpha, and load-more increments `showCount` by 30.
+
+---
+
+### /churches/[churchId]/rota (Choir Rota Grid)
+**Visual**: ✅ Pass
+**Responsive**: ✅ Pass (desktop table view with overflow-x-auto; mobile switches to card layout)
+**Accessibility**: ⚠️ Legend icon spans lacked `aria-hidden`; legend wrapper lacked `aria-label` (both fixed); 4 contrast violations in shared sidebar (pre-existing)
+**Runtime**: ✅ Pass (no console errors; network failures are all pre-navigation aborts)
+**Design System**: ⚠️ Hardcoded `#4A6741` (available green) and `#D4AF37` (tentative amber) used in 4 places; `bg-white` on alternating rows — all fixed
+**Interactions**: ✅ Availability cycle (AVAILABLE → UNAVAILABLE → TENTATIVE) functional with optimistic UI and rollback; rota toggle functional
+**Source Code**: ⚠️ Data fetching only loads availability/rota for first service (`serviceIds[0]`); unset cells default to AVAILABLE silently
+**Security**: ✅ Strong — members can only update their own availability; EDITOR+ required for rota changes; IDOR prevention via `churchId` scoping
+
+Findings:
+
+- [QUICK WIN — FIXED] Replaced hardcoded `border-[#4A6741] text-[#4A6741]` with `border-success text-success` (×2: desktop button + mobile button) and `border-[#D4AF37] text-[#D4AF37]` with `border-warning text-warning` (×2: desktop button + mobile button) in `rota-grid.tsx`. Added `--success: #4A6741`, `--success-foreground: #FAF6F1`, `--warning: #D4AF37`, `--warning-foreground: #2C2416` tokens to `globals.css` (both `:root` and `@theme inline`). Consistent with the design system values already used in `--secondary` (`#4A6741`) and `--color-liturgical-gold` (`#D4AF37`).
+- [QUICK WIN — FIXED] Replaced `bg-white` on even-indexed table rows (desktop view, `rota-grid.tsx` line 181) with `bg-card`, consistent with other pages in the audit. `bg-background` continues to be used for odd rows — the alternating pattern is preserved using design tokens.
+- [QUICK WIN — FIXED] Added `aria-hidden="true"` to legend icon `<span>` elements in `rota-grid.tsx` (the coloured box swatches). They are decorative — the text label alongside each swatch provides the accessible name.
+- [QUICK WIN — FIXED] Added `aria-label="Legend"` to the legend container `<div>` in `rota-grid.tsx`. This gives the group a semantic label for screen readers navigating by landmark/region.
+- [QUICK WIN — FIXED] Added `aria-hidden="true"` to the "Legend:" text `<span>` in `rota-grid.tsx`. The label is visually redundant with the `aria-label="Legend"` on the container — hiding it from the accessibility tree prevents a double announcement.
+- [MEDIUM — DATA] The server data fetch in `page.tsx` (lines 59–67) only loads `availabilityData` and `rotaData` for `serviceIds[0]` (the first upcoming service). When there are multiple upcoming services in the rota grid, availability and rota status for services 2–12 are never fetched from the DB, so their cells all default to the unset state and are treated as "AVAILABLE". This is a **correctness bug** for multi-service rotas. The comment `// simplified - would need inArray` confirms this is a known stub. Fix: replace the two `eq(availability.serviceId, serviceIds[0])` queries with `inArray(availability.serviceId, serviceIds)` (Drizzle supports this). The current test church has only one upcoming service, so this is not visible in the test environment.
+- [MEDIUM — UX] Unset availability cells default to `"AVAILABLE"` (line 67: `const current = avail[key] || "AVAILABLE"` and line 187: `const status = avail[key] || "AVAILABLE"`). A member who has never touched their availability is shown as green "Available" rather than a neutral "Not set" state. This could mislead choir directors into thinking all members are confirmed available when none have responded. Consider adding an `"UNSET"` state displayed as a grey empty cell, distinct from a confirmed "AVAILABLE".
+- [SERIOUS — A11Y] `color-contrast` (4 nodes, axe-core): `text-muted-foreground` elements in the shared church sidebar have contrast ratio 4.39:1 against `bg-sidebar` (target: 4.5:1). Affects "All Churches" link, "Admin" role label, user email, and "Sign out" button. These are shared layout elements — the issue is cross-cutting (seen on /members, /sundays, /repertoire, and now /rota). Not fixed in this pass as it requires a design token value change for `--muted-foreground`.
+- [INFO] The `loading.tsx` skeleton (h1 pulse + full-width rectangle) does not reflect the actual legend + table/card structure. Cosmetic, functional, low priority.
+- [INFO] The `cycleAvailability` cycle order is AVAILABLE → UNAVAILABLE → TENTATIVE → AVAILABLE. This means a user can never directly set their own status back to "unset". Once any status is set, cycling only moves between the three states. This is by design (the server uses `onConflictDoUpdate`), but worth documenting.
+- [INFO] The `rota/route.ts` API correctly requires `EDITOR` role to modify rota entries (i.e. members cannot add themselves to the rota — only editors/admins can). The availability API allows members to update their own availability only, with editors+ able to update others. This is correct and well-documented in the code comment.
+- [INFO] The page `<title>` is "Precentor — Church Music Planner" (inherited from root layout). Adding `export const metadata = { title: "Choir Rota — Precentor" }` in `page.tsx` would give a more descriptive page title.
+
+Details:
+- **Visual (desktop 1280×800)**: Clean layout. "Choir Rota" h1 (Cormorant Garamond 30px). Legend row with four icon+label pairs. Table with dark header (`bg-foreground text-background`), sticky "Member" column, date columns (d MMM + service type). Voice-part group row in `bg-muted`. Member rows alternating `bg-card` / `bg-background`. Availability cell: small square button (availability status) + smaller square button (rota toggle). One service (29 Mar Palm Sunday), one voice part (TENOR), one member (Audit Tester — Available). Visually correct, no design regressions.
+- **Responsive (mobile 375×812)**: Switches to card-per-service layout (`md:hidden` block). Service header in dark band with date and liturgical name. Voice-part group dividers. Member row: name left, availability badge + rota toggle right. Layout is clean, touch targets adequate. No overflow. Confirmed by screenshot at mobile viewport.
+- **Responsive (tablet 768×1024)**: Shows sidebar + desktop table layout. Table visible with overflow-x-auto wrapper. At 768px with one service column, there is no horizontal overflow — grid fits comfortably. With 12 services (limit), horizontal scroll would be required and is correctly handled by the `overflow-x-auto` wrapper.
+- **Accessibility snapshot**: `<table>` with correct `<thead>/<tbody>`. `columnheader` "Member" and "29 Mar SUNG EUCHARIST" present. Voice-part group row as `<td colSpan>`. Member `<td>` with name. Availability button aria-label: "Audit Tester: Available for Palm Sunday. Click to change." — excellent. Rota button aria-label: "Add Audit Tester to rota for Palm Sunday" — excellent. `<main id="main-content">` present in church layout. Skip link target resolvable.
+- **Axe-core**: 1 violation group (`color-contrast`, serious, 4 nodes — all in shared sidebar). Zero violations specific to the rota page content. Availability and rota buttons pass contrast checks (dark foreground colours on white/card background).
+- **Runtime**: No JS console errors. Network failures are all `ERR_ABORTED` HMR chunk requests from a prior navigation session — not related to this page. No failed API calls on the rota page itself.
+- **Interactions**: Clicking the availability button cycles through AVAILABLE → UNAVAILABLE → TENTATIVE. Optimistic update fires immediately (UI updates before API response). If the API fails, state rolls back with a toast error — tested by reviewing the source `cycleAvailability` and `toggleRota` implementations. Rota toggle (UserCheck button) toggles on/off, also with optimistic update + rollback. Both API routes (`/api/churches/[churchId]/availability` and `/api/churches/[churchId]/rota`) are correctly implemented with auth guards.
+- **Security review**: `POST /api/churches/[churchId]/availability` — requires `MEMBER` role via `requireChurchRole`. Members can only update their own `userId`; editors+ can update others. Service ownership verified (`services.churchId === churchId`). Target user membership verified (if updating another user). `onConflictDoUpdate` used correctly — no duplicate rows possible. `POST /api/churches/[churchId]/rota` — requires `EDITOR` role. Service and user membership verified. Delete-on-false correctly removes row. No `dangerouslySetInnerHTML`. `logger.error` used for server errors. Strong IDOR protection throughout.
+- **Source code**: `page.tsx` uses `await params` correctly (Next.js 16 async params). Auth gate: `supabase.auth.getUser()` → redirect if unauthenticated. `try/catch` with silent continuation on DB failure (consistent pattern). `limit(12)` on services prevents unbounded result. `rota-grid.tsx` uses optimistic updates with rollback on both availability and rota mutations. Grouped members by voice part using a plain object accumulator — correct. `Fragment` key used for voice-part groups — correct. Known stub: `availabilityData`/`rotaData` only fetched for `serviceIds[0]` (see medium finding above).
