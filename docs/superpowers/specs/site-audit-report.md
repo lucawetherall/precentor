@@ -5,10 +5,10 @@
 **Branch:** claude/awesome-colden
 
 ## Summary
-- Pages reviewed: 8/20
+- Pages reviewed: 9/20
 - Cross-cutting reviews: 0/6
-- Quick wins fixed: 23
-- Medium issues: 9
+- Quick wins fixed: 25
+- Medium issues: 10
 - Major issues: 1
 
 ---
@@ -261,3 +261,37 @@ Details:
 - **CSS inspection**: Submit button: `bg-primary` (`rgb(139, 69, 19)`), `text-primary-foreground` (`rgb(250, 246, 241)`), height 38px (bounding box 20px text; full height 38px with `py-2`). `hover:bg-primary-hover` after fix. Form `max-w-md` (448px — slightly wider than auth pages' `max-w-sm`). No border-radius on inputs (consistent flat ecclesiastical aesthetic).
 - **Interactions**: Empty submit (dispatched form event) → "Church name is required." error renders with `role="alert"`. The `required` attribute on the church-name input means native browser validation fires for the HTML5 `submit` event path, but `handleSubmit` also has an explicit `if (!name.trim())` guard — dual protection is correct.
 - **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Form data sent as JSON to `/api/churches` (POST). Church name trimmed before submission (`name.trim()`) — correct. `loading` state disables button and changes label to "Creating..." to prevent double-submit. `useRouter` from `next/navigation` (correct for App Router). TypeScript: all types correctly inferred. No stray `console.log`. Error state cleared at start of each submit attempt (`setError("")` before Supabase call) — correct.
+
+---
+
+### /dashboard (Main Dashboard)
+**Visual**: ✅ Pass
+**Responsive**: ✅ Pass (mobile stacks correctly; tablet: Repertoire card partially clipped at 768px — minor, content remains accessible via scroll)
+**Accessibility**: ✅ Pass (0 violations after fix; 2 pre-fix)
+**Runtime**: ✅ Pass
+**Design System**: ✅ Pass (no hardcoded hover colours; cards use `hover:border-primary` token correctly)
+**Interactions**: ✅ Pass — all three quick-action cards, church card, and "Manage" link navigate correctly
+**Source Code**: ⚠️ Minor code quality issue (3× redundant `.map()` over same slice); silent DB catch with no logging
+**Performance**: ✅ Pass (347ms load, 215ms responseStart)
+
+Findings:
+- [QUICK WIN] **Fixed**: Added `id="main-content"` to the `<main>` element in `src/app/(app)/dashboard/page.tsx`. The layout skip link (`href="#main-content"`) now has a reachable focusable target. Resolves axe-core `skip-link` violation (moderate). Confirmed 0 violations post-fix.
+- [QUICK WIN] **Fixed**: Added `id="main-content"` to the `<main>` element in `src/app/(app)/dashboard/loading.tsx` for consistency — the skip link is also present during the loading skeleton state and would otherwise have no target while the page streams in.
+- [MODERATE – A11Y] `region` violation (axe-core, pre-fix): One content node outside any landmark — the Next.js dev-tools button renders outside `<main>`. Dev-only overlay, low priority. Resolves to 0 violations after the `id="main-content"` fix (confirmed by re-run).
+- [MODERATE – A11Y] `skip-link` violation (axe-core, pre-fix): Skip link `href="#main-content"` had no focusable target because `<main>` lacked `id="main-content"`. Fixed.
+- [MEDIUM – CODE QUALITY] The three quick-action cards (Plan Services, Choir Rota, Repertoire) are each rendered via a separate `.map()` over the same `userChurches.slice(0, 1)` array. This means three separate map iterations over a one-element array, three separate `<Link>` definitions, and three near-identical JSX blocks. The pattern inflates the component and adds cognitive overhead. Refactor to a single map or a pre-computed `primaryChurch = userChurches[0]` constant used to render all three cards directly, eliminating the map pattern entirely (since the slice always produces at most one element, iteration semantics are misleading).
+- [MEDIUM – RESILIENCE] Both `try/catch` blocks in the data-fetching section have empty catch bodies (`catch { // DB not available, continue }`). DB errors are silently swallowed with no logging. If the DB connection fails for a reason other than "not available in dev" (e.g., a schema migration error in production), the page renders as if the user has no churches — silently redirecting to onboarding would be incorrect. Add at minimum `console.error(error)` in the catch blocks so production error tracking (e.g., Sentry) can capture the failure.
+- [INFO] The `userName` derivation uses `user.user_metadata?.name || user.email?.split("@")[0] || "there"`. The email prefix fallback may produce unexpected values (e.g., "audit.tester+church1" becomes "audit.tester+church1"). Consider using the display name from the DB `users` table (already fetched as `dbUser[0]`) rather than relying on `user_metadata`, which is only populated if the user set a name at signup.
+- [INFO] `loading.tsx` renders only a title skeleton (`h-8 w-48`) and a subtitle skeleton (`h-4 w-96`). The quick-action cards and sections have no skeleton — the loading state is very minimal and could feel jarring when the full page appears. A more complete skeleton (card outlines, section headings) would improve perceived performance. Low priority.
+- [INFO] Tablet viewport (768px): the quick-action card grid uses `sm:grid-cols-3`. At exactly 768px the cards are horizontally tight and the church name text in the Repertoire card is partially clipped at the viewport edge. This is due to the outer padding (`p-8` = 32px each side = 64px total) combined with 3 equal columns in 768px — each card is ~234px wide, and the third card's right edge sits at ~766px (within bounds). The visual clip is a screenshot artefact (the viewport cuts off at 768px). No real overflow — confirmed by inspect (no `overflow: hidden` on the grid, no scroll suppression).
+
+Details:
+- **Visual**: Clean overview layout. "Welcome, [name]" h1 in Cormorant Garamond. Muted subtitle. Three quick-action cards in a 3-column grid (sm+). Upcoming Services section with empty state (calendar icon + underlined "Plan your first service" link). Your Churches section with church card and "Manage" link. All consistent with design system.
+- **Responsive (mobile 375×812)**: Cards stack vertically (single column). All card text visible, no truncation. Upcoming Services empty state centred and readable. "Your Churches" section and "Manage" link both visible on scroll.
+- **Responsive (tablet 768×1024)**: Cards in 3-column grid as expected. Repertoire card's church name text is truncated with `…` (has `truncate` class — intentional, not a bug). "Manage" link visible, aligned right. No layout overflow.
+- **Accessibility snapshot**: `h1` "Welcome, Audit Tester" present. `h2` "Upcoming Services" and `h2` "Your Churches" both present — correct hierarchy (h1 → h2). All six links have descriptive text (card links include both action name and church name). "Skip to content" link present with correct target after fix.
+- **Runtime**: No JS console errors. One failed network request (`GET http://localhost:3000/ [FAILED: net::ERR_ABORTED]`) — this is a pre-navigation abort from the redirect to `/dashboard`, not a runtime error. No actual failures.
+- **Performance**: 347ms load (navigation entry). DOMInteractive 347ms. responseStart 215ms. 29 resource requests (includes HMR chunks, fonts, previously injected axe script). All within normal dev-server ranges for a server-rendered page with two Supabase + DB calls.
+- **CSS inspection**: `h1` — Cormorant Garamond (via `font-heading`), 30px, weight 600, color `rgb(44, 36, 22)` (design token `--foreground`). Quick-action card links — `border-border`, `bg-card` (white), `shadow-sm`, `hover:border-primary` (correct design token, no hardcoded colours). "Manage" link — `text-primary` (`rgb(139, 69, 19)`), `hover:underline`, weight 400. Note: "Manage" has no underline at rest — this is acceptable for a standalone navigation link (not an in-text link), so WCAG 1.4.1 does not apply (the link is not embedded within a run of text).
+- **Interactions**: "Plan Services" card → `/churches/[id]/sundays` (confirmed by eval, navigation successful). Church card → `/churches/[id]/sundays` (confirmed). "Manage" → `/churches` (confirmed by click + href eval). All navigations use Next.js `<Link>` (client-side routing, auth cookies preserved).
+- **Source code**: No XSS vectors. No `dangerouslySetInnerHTML`. Authentication checked via `supabase.auth.getUser()` (server-side, secure) with immediate redirect if unauthenticated. DB queries use Drizzle ORM with parameterised queries — no SQL injection risk. `userChurches.slice(0, 5)` limits the loop for upcoming services (guards against excessive DB calls for users with many churches). `upcomingServices.slice(0, 6)` caps the rendered list. `format(parseISO(s.date), ...)` — safe (date-fns, no DOM injection). `LITURGICAL_COLOURS[s.colour as LiturgicalColour]` with `|| "#4A6741"` fallback — defensive. TypeScript: all types correctly inferred. No stray `console.log`.
