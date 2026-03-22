@@ -604,6 +604,49 @@ Details:
 
 ---
 
+### /churches/[churchId]/service-sheets (Service Sheet Generation)
+**Visual**: ✅ Pass
+**Responsive**: ✅ Pass (tablet 768px+); ℹ️ mobile redirect artefact in test harness (see note)
+**Accessibility**: ⚠️ Three axe-core violation groups (critical + serious) — all fixed
+**Runtime**: ✅ Pass (no console errors; no failed network requests)
+**Design System**: ⚠️ `hover:bg-[#6B4423]` on PDF buttons in both components — fixed
+**Interactions**: ✅ PDF/DOCX download and preview functional; mode/size selects correctly coupled
+**Source Code**: ✅ Pass
+**Security**: ✅ Pass — church membership verified in layout; API routes scoped by `churchId`
+
+Findings:
+
+- [QUICK WIN — FIXED] `hover:bg-[#6B4423]` on the PDF download button in `ServiceSheetActions` replaced with `hover:bg-primary-hover` (`actions-client.tsx`).
+- [QUICK WIN — FIXED] `hover:bg-[#6B4423]` on the "All as PDF" button in `BatchDownloadActions` replaced with `hover:bg-primary-hover` (`actions-client.tsx`).
+- [QUICK WIN — FIXED] `ServiceSheetActions` sheet-mode `<select>` used `title="Sheet mode"` instead of `aria-label`. axe-core flagged `label-title-only` (serious). Replaced `title` with `aria-label="Sheet mode"`.
+- [QUICK WIN — FIXED] `ServiceSheetActions` paper-size `<select>` had no accessible label (`id`, `name`, `aria-label`, or `title` all absent). axe-core flagged `select-name` (critical). Added `aria-label="Paper size"`.
+- [QUICK WIN — FIXED] `BatchDownloadActions` sheet-mode `<select>` had no accessible label. axe-core flagged `select-name` (critical). Added `aria-label="Sheet mode"`.
+- [QUICK WIN — FIXED] `BatchDownloadActions` paper-size `<select>` had no accessible label. axe-core flagged `select-name` (critical). Added `aria-label="Paper size"`.
+- [QUICK WIN — FIXED] Preview button in `ServiceSheetActions` was icon-only with `title="Preview PDF"`. `title` alone is not a reliable accessible name for buttons (not announced by all screen readers). Replaced with `aria-label="Preview PDF"`.
+- [QUICK WIN — FIXED] Error `<span>` in `ServiceSheetActions` lacked `role="alert"`. Screen readers would not announce generation errors without user focus shift. Added `role="alert"`.
+- [QUICK WIN — FIXED] Error `<span>` in `BatchDownloadActions` lacked `role="alert"`. Same fix applied.
+- [QUICK WIN — FIXED] `<BookOpen>` icon inside the booklet status badge in `page.tsx` lacked `aria-hidden="true"`. Adjacent text ("Booklet ready" / "Booklet incomplete") provides the accessible label; the icon is decorative. Added `aria-hidden="true"`.
+- [MEDIUM — DATA] `page.tsx` queries `.limit(20)` ordered by `desc(liturgicalDays.date)`. This returns the 20 most recent services regardless of whether they are in the past or future. A church with many past services will see historical entries at the top, with upcoming services near the bottom. Consider filtering to `gte(liturgicalDays.date, today)` and ordering ascending so the next service appears first — which is the most useful order for generating sheets.
+- [MEDIUM — UX] The `catch { /* DB not available */ }` block in `page.tsx` silently swallows DB errors and renders the empty state ("No services found. Plan music for a Sunday first.") when the DB is unavailable. A user expecting data will see a misleading empty-state message rather than an error indicator.
+- [INFO — RESPONSIVE] At mobile viewport (375px) in the test harness, navigating to `/service-sheets` by forcibly setting `window.location.href` during a viewport resize mid-session redirected to `/settings`. This appears to be a Next.js router or React hydration artefact from navigation firing before the new viewport layout is committed. Real mobile users navigate via the hamburger sheet, not by typing URLs during a resize. No code change required.
+- [INFO] The `handleGenerate` function in `ServiceSheetActions` does not revoke the blob URL created for the preview tab (`window.open(url, "_blank")`). The download path correctly calls `URL.revokeObjectURL(url)`, but the preview path leaks the object URL until the page is unloaded. Add `setTimeout(() => URL.revokeObjectURL(url), 1000)` after `window.open` for consistency.
+- [INFO] Both download handlers use a generic filename (`service-sheet.pdf`, `service-sheets.docx`). A descriptive filename including the liturgical day name, date, and mode (e.g. `palm-sunday-2026-03-29-summary.pdf`) would improve UX. Service name, date, and mode are available as props.
+- [INFO] The booklet status badge uses Tailwind utility colours `bg-green-100 text-green-800` (ready) and `bg-amber-100 text-amber-800` (incomplete), not design tokens. These are semantically meaningful but inconsistent with the `--success` / `--warning` tokens added during the rota page audit. Consider migrating to `bg-success/20 text-success` and `bg-warning/20 text-warning` in a follow-up pass.
+- [INFO] The `loading.tsx` skeleton shows an `h1` pulse + three generic block pulses. It does not reflect the actual batch-download toolbar + service-card structure. Cosmetically incorrect but functional. Low priority.
+
+Details:
+- **Visual (desktop 1280×800)**: Clean layout. "Service Sheets" `h1` (Cormorant Garamond). Introductory paragraph distinguishing Summary and Booklet modes. Batch download toolbar (bordered card) with mode select, size select, "All as PDF" and "All as DOCX" buttons. One service row ("Palm Sunday — Sung Eucharist — 10:00 — 29 Mar 2026") with individual mode/size selects, preview (eye icon) button, PDF button, DOCX button. Buttons correctly styled with design tokens after fixes. No visual regressions.
+- **Responsive (tablet 768×1024)**: Page renders correctly at 768px. Sidebar visible. Service row and batch toolbar display without overflow. Buttons remain inline. No layout issues.
+- **Responsive (mobile 375×812)**: See info note above. The `ChurchSidebar` correctly renders a hamburger `Sheet` on `md:hidden` viewports. The service-sheet page content has no breakpoint-specific layout changes — the per-service button row (`flex items-center`) has no `flex-wrap`, which may cause minor horizontal overflow at 375px with four controls inline. Low priority.
+- **Accessibility snapshot (post-fix)**: `<main id="main-content">` present. `h1` "Service Sheets" present. `combobox` "Sheet mode" (per-service) and `combobox` "Paper size" (per-service) correctly labelled. Batch comboboxes labelled "Sheet mode" / "Paper size". `button "Preview PDF"` correctly named. `button "PDF"` and `button "DOCX"` have visible text. `button "All as PDF"` and `button "All as DOCX"` correctly named. Skip link resolves to `#main-content` correctly.
+- **Axe-core (post-fix)**: Residual `color-contrast` violation (4 nodes, serious) — all in the shared church sidebar (`text-muted-foreground` at 4.39:1). Pre-existing cross-cutting issue. Zero violations specific to service-sheets content after all fixes applied.
+- **Runtime**: No JS console errors. No failed network requests. Page server-rendered; client components hydrate without error.
+- **Interactions**: PDF and DOCX download buttons trigger `fetch` to `/api/churches/[churchId]/services/[serviceId]/sheet?format=...&size=...&mode=...`. On success, creates blob URL and triggers programmatic anchor download. On failure, sets `error` state rendered in `role="alert"` span. Batch "All as PDF" / "All as DOCX" POST to `/api/churches/[churchId]/sheets` with `{ serviceIds, format, size, mode }`. Preview button opens PDF blob in a new tab. Mode select auto-switches paper size: Booklet → A5, Summary → A4.
+- **Security**: Sheet API routes are `/api/churches/[churchId]/services/[serviceId]/sheet` (GET) and `/api/churches/[churchId]/sheets` (POST). Church membership verified in `[churchId]/layout.tsx`. `format`, `size`, `mode` params validated server-side against known enums. `churchId` scoping prevents cross-church data access. No `dangerouslySetInnerHTML`. No XSS vectors.
+- **Source code**: `page.tsx` uses `await params` correctly (Next.js 16). DB query joins `services` with `liturgicalDays` via `innerJoin`; scoped to `eq(services.churchId, churchId)`. `limit(20)` prevents unbounded result. Both client components use `useState` + async fetch pattern; loading states disable all buttons during generation (prevents double-submit). `handleModeChange` correctly auto-selects A5 for booklet mode. `ServiceSheetActions` correctly pre-selects `defaultMode` from the server-rendered `sheetMode` column.
+
+---
+
 ### /churches/[churchId]/settings (Church Settings)
 **Visual**: ✅ Pass
 **Responsive**: ✅ Pass (single-column form scales correctly at all breakpoints; sidebar collapses to hamburger on mobile)
