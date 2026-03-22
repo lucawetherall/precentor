@@ -24,18 +24,27 @@ export default function InviteAcceptPage() {
 
   useEffect(() => {
     async function loadInvite() {
-      const res = await fetch(`/api/invites/${token}`);
-      if (!res.ok) {
+      try {
+        const res = await fetch(`/api/invites/${token}`);
+        if (!res.ok) {
+          let message = "Invalid or expired invite.";
+          const contentType = res.headers.get("content-type") ?? "";
+          if (contentType.includes("application/json")) {
+            const data = await res.json();
+            message = data.error || message;
+          }
+          setPageError(message);
+          return;
+        }
         const data = await res.json();
-        setPageError(data.error || "Invalid or expired invite.");
-        return;
-      }
-      const data = await res.json();
-      setInvite(data);
+        setInvite(data);
 
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsAuthenticated(!!user);
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        setIsAuthenticated(!!user);
+      } catch {
+        setPageError("Invalid or expired invite.");
+      }
     }
     loadInvite();
   }, [token]);
@@ -106,11 +115,11 @@ export default function InviteAcceptPage() {
 
   if (pageError) {
     return (
-      <main className="flex flex-col items-center justify-center min-h-screen p-8">
+      <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-8">
         <div className="w-full max-w-sm text-center space-y-4">
           <h1 className="text-3xl font-heading font-semibold">Invalid Invite</h1>
-          <p className="text-sm text-muted-foreground">{pageError}</p>
-          <a href="/login" className="text-sm text-primary hover:underline">Go to sign in</a>
+          <p role="alert" className="text-sm text-muted-foreground">{pageError}</p>
+          <a href="/login" className="text-sm text-primary underline hover:no-underline">Go to sign in</a>
         </div>
       </main>
     );
@@ -118,14 +127,15 @@ export default function InviteAcceptPage() {
 
   if (!invite || isAuthenticated === null) {
     return (
-      <main className="flex flex-col items-center justify-center min-h-screen p-8">
+      <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-8">
+        <h1 className="sr-only">Loading Invite</h1>
         <p className="text-sm text-muted-foreground">Loading invite...</p>
       </main>
     );
   }
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-8">
+    <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-8">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-heading font-semibold">You&apos;re Invited</h1>
@@ -136,11 +146,11 @@ export default function InviteAcceptPage() {
 
         {isAuthenticated ? (
           <div className="space-y-4">
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
             <button
               onClick={handleAcceptOnly}
               disabled={loading}
-              className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
+              className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
             >
               {loading ? "Accepting..." : "Accept Invite"}
             </button>
@@ -156,16 +166,19 @@ export default function InviteAcceptPage() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Smith"
                 required
+                autoComplete="name"
                 className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-body">Email</label>
+              <label htmlFor="invite-email" className="text-sm font-body">Email</label>
               <input
+                id="invite-email"
                 type="email"
                 value={invite.email}
                 disabled
+                autoComplete="email"
                 className="w-full px-3 py-2 text-sm border border-border bg-muted text-muted-foreground"
               />
             </div>
@@ -180,6 +193,7 @@ export default function InviteAcceptPage() {
                 placeholder="Min. 8 characters"
                 required
                 minLength={8}
+                autoComplete="new-password"
                 className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
               />
             </div>
@@ -194,16 +208,17 @@ export default function InviteAcceptPage() {
                 placeholder="Confirm your password"
                 required
                 minLength={8}
+                autoComplete="new-password"
                 className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
               />
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
+              className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
             >
               {loading ? "Creating account..." : "Create Account & Join"}
             </button>

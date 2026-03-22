@@ -66,7 +66,7 @@ export function ServiceSheetActions({
         value={mode}
         onChange={(e) => handleModeChange(e.target.value as SheetMode)}
         className="px-2 py-1 text-xs border border-border bg-background"
-        title="Sheet mode"
+        aria-label="Sheet mode"
       >
         <option value="summary">Summary</option>
         <option value="booklet">Booklet</option>
@@ -76,6 +76,7 @@ export function ServiceSheetActions({
         value={size}
         onChange={(e) => setSize(e.target.value as "A4" | "A5")}
         className="px-2 py-1 text-xs border border-border bg-background"
+        aria-label="Paper size"
       >
         <option value="A4">A4</option>
         <option value="A5">A5</option>
@@ -84,7 +85,7 @@ export function ServiceSheetActions({
       <button
         onClick={() => handleGenerate("pdf", true)}
         disabled={generating !== null}
-        title="Preview PDF"
+        aria-label="Preview PDF"
         className="flex items-center gap-1 px-2 py-1.5 text-xs bg-transparent text-muted-foreground border border-border hover:bg-muted transition-colors disabled:opacity-50"
       >
         {generating === "preview" ? (
@@ -97,7 +98,7 @@ export function ServiceSheetActions({
       <button
         onClick={() => handleGenerate("pdf")}
         disabled={generating !== null}
-        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
+        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
       >
         {generating === "pdf" ? (
           <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
@@ -122,7 +123,7 @@ export function ServiceSheetActions({
       </button>
 
       {error && (
-        <span className="text-xs text-destructive">{error}</span>
+        <span role="alert" className="text-xs text-destructive">{error}</span>
       )}
     </div>
   );
@@ -188,6 +189,7 @@ export function BatchDownloadActions({
         value={mode}
         onChange={(e) => handleModeChange(e.target.value as SheetMode)}
         className="px-2 py-1.5 text-xs border border-border bg-background"
+        aria-label="Sheet mode"
       >
         <option value="summary">Summary</option>
         <option value="booklet">Booklet</option>
@@ -197,6 +199,7 @@ export function BatchDownloadActions({
         value={size}
         onChange={(e) => setSize(e.target.value as "A4" | "A5")}
         className="px-2 py-1.5 text-xs border border-border bg-background"
+        aria-label="Paper size"
       >
         <option value="A4">A4</option>
         <option value="A5">A5</option>
@@ -205,7 +208,7 @@ export function BatchDownloadActions({
       <button
         onClick={() => handleBatch("pdf")}
         disabled={generating !== null}
-        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
+        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
       >
         {generating === "pdf" ? (
           <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
@@ -228,7 +231,7 @@ export function BatchDownloadActions({
       </button>
 
       {error && (
-        <span className="text-xs text-destructive">{error}</span>
+        <span role="alert" className="text-xs text-destructive">{error}</span>
       )}
     </div>
   );

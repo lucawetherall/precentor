@@ -51,7 +51,8 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
           name="name"
           defaultValue={church.name}
           required
-          className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+          autoComplete="organization"
+          className="w-full px-3 py-2 text-sm border border-border bg-background focus:border-primary focus:outline-none"
         />
       </div>
       <div className="space-y-1">
@@ -60,7 +61,8 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
           id="diocese"
           name="diocese"
           defaultValue={church.diocese || ""}
-          className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+          autoComplete="off"
+          className="w-full px-3 py-2 text-sm border border-border bg-background focus:border-primary focus:outline-none"
         />
       </div>
       <div className="space-y-1">
@@ -70,7 +72,8 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
           name="address"
           defaultValue={church.address || ""}
           rows={2}
-          className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none resize-y"
+          autoComplete="street-address"
+          className="w-full px-3 py-2 text-sm border border-border bg-background focus:border-primary focus:outline-none resize-y"
         />
       </div>
       <div className="space-y-1">
@@ -79,16 +82,17 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
           id="ccliNumber"
           name="ccliNumber"
           defaultValue={church.ccliNumber || ""}
-          className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+          autoComplete="off"
+          className="w-full px-3 py-2 text-sm border border-border bg-background focus:border-primary focus:outline-none"
         />
       </div>
 
-      {message && <p className="text-sm text-muted-foreground">{message}</p>}
+      {message && <p role="alert" className="text-sm text-muted-foreground">{message}</p>}
 
       <button
         type="submit"
         disabled={loading}
-        className="px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
+        className="px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
       >
         {loading ? "Saving..." : "Save Settings"}
       </button>

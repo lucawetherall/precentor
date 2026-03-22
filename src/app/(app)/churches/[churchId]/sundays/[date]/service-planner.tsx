@@ -80,41 +80,49 @@ export function ServicePlanner({
 
       {/* Service tabs */}
       <div className="flex items-center gap-1 border-b border-border mb-4">
-        {services.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => setActiveTab(s.id)}
-            className={`px-3 py-2 text-sm border-b-2 transition-colors ${
-              activeTab === s.id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {SERVICE_TYPE_LABELS[s.serviceType as ServiceType] || s.serviceType}
-            {s.time && <span className="ml-1 text-xs text-muted-foreground">({s.time})</span>}
-          </button>
-        ))}
+        <div role="tablist" aria-label="Services" className="flex items-center gap-1">
+          {services.map((s) => (
+            <button
+              key={s.id}
+              role="tab"
+              aria-selected={activeTab === s.id}
+              onClick={() => setActiveTab(s.id)}
+              className={`px-3 py-2 text-sm border-b-2 transition-colors ${
+                activeTab === s.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {SERVICE_TYPE_LABELS[s.serviceType as ServiceType] || s.serviceType}
+              {s.time && <span className="ml-1 text-xs text-muted-foreground">({s.time})</span>}
+            </button>
+          ))}
+        </div>
 
         <div className="ml-auto flex items-center gap-2">
+          <label htmlFor="new-service-type" className="sr-only">Service type</label>
           <select
+            id="new-service-type"
             value={newType}
             onChange={(e) => setNewType(e.target.value as ServiceType)}
-            className="text-xs border border-border px-2 py-1 bg-white"
+            className="text-xs border border-border px-2 py-1 bg-background"
           >
             {Object.entries(SERVICE_TYPE_LABELS).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
+          <label htmlFor="new-service-time" className="sr-only">Service time</label>
           <input
+            id="new-service-time"
             type="time"
             value={newTime}
             onChange={(e) => setNewTime(e.target.value)}
-            className="text-xs border border-border px-2 py-1 bg-white"
+            className="text-xs border border-border px-2 py-1 bg-background"
           />
           <button
             onClick={handleCreateService}
             disabled={creating}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-primary text-primary-foreground border border-primary hover:bg-primary-hover disabled:opacity-50"
           >
             {creating ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <Plus className="h-3 w-3" strokeWidth={1.5} />}
             Add

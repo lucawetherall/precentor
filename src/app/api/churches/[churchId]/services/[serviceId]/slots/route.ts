@@ -22,7 +22,8 @@ export async function GET(
 
     return NextResponse.json(slots);
   } catch (error) {
-    return NextResponse.json([], { status: 200 });
+    logger.error("Failed to fetch music slots", error);
+    return NextResponse.json({ error: "Failed to fetch slots" }, { status: 500 });
   }
 }
 

@@ -9,7 +9,12 @@ import { format, subWeeks } from "date-fns";
 import type { SuggestionContext } from "@/lib/ai/types";
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const { serviceId, slotType } = body;
 
   if (!serviceId || !slotType) {
@@ -34,7 +39,7 @@ export async function POST(request: Request) {
 
     const { service, day } = serviceResult[0];
 
-    // Verify the user is a member of this church
+    // Verify the user is a member of this church (auth check scoped to the resolved churchId)
     const { error: authError } = await requireChurchRole(service.churchId, "MEMBER");
     if (authError) return authError;
 

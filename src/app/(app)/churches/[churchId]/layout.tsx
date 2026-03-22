@@ -74,7 +74,7 @@ export default async function ChurchLayout({ children, params }: Props) {
         userEmail={user.email || ""}
         navItems={navItems}
       />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">{children}</main>
     </div>
   );
 }

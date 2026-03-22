@@ -22,7 +22,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center px-8 py-3 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors shadow-md"
+              className="inline-flex items-center justify-center px-8 py-3 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors shadow-md"
             >
               Get Started Free
               <ArrowRight className="ml-2 h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
@@ -146,7 +146,7 @@ export default function Home() {
           </p>
           <Link
             href="/signup"
-            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors"
+            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors"
           >
             Create Your Church
             <ArrowRight className="ml-2 h-4 w-4" strokeWidth={1.5} aria-hidden="true" />

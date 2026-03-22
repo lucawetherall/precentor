@@ -48,7 +48,7 @@ export default async function SundayDetailPage({ params }: Props) {
   const colour = LITURGICAL_COLOURS[day.colour as LiturgicalColour] || "#4A6741";
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div id="main-content" className="p-8 max-w-5xl">
       <Link
         href={`/churches/${churchId}/sundays`}
         className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
@@ -58,11 +58,11 @@ export default async function SundayDetailPage({ params }: Props) {
       </Link>
 
       <div className="flex items-start gap-4 mb-6">
-        <span className="w-3 h-12 flex-shrink-0 mt-1" style={{ backgroundColor: colour }} />
+        <span aria-hidden="true" className="w-3 h-12 flex-shrink-0 mt-1" style={{ backgroundColor: colour }} />
         <div>
           <h1 className="text-3xl font-heading font-semibold">{day.cwName}</h1>
           <p className="text-sm text-muted-foreground font-mono">{format(parseISO(day.date), "EEEE d MMMM yyyy")}</p>
-          <p className="text-sm text-muted-foreground">{day.season} — {day.colour}</p>
+          <p className="text-sm text-muted-foreground">{day.season.replace(/_/g, " ")} — {day.colour.charAt(0).toUpperCase() + day.colour.slice(1).toLowerCase()}</p>
         </div>
       </div>
 
@@ -73,9 +73,9 @@ export default async function SundayDetailPage({ params }: Props) {
           <div className="space-y-1">
             {dayReadings.map((r) => (
               <div key={r.id} className="flex gap-3 text-sm">
-                <span className="text-muted-foreground w-24 flex-shrink-0">{r.position}</span>
+                <span className="text-muted-foreground w-24 flex-shrink-0">{r.position.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</span>
                 <span>{r.reference}</span>
-                <span className="text-xs text-muted-foreground ml-auto">{r.lectionary}</span>
+                <span className="text-xs text-muted-foreground ml-auto">{r.lectionary.charAt(0).toUpperCase() + r.lectionary.slice(1).toLowerCase()}</span>
               </div>
             ))}
           </div>

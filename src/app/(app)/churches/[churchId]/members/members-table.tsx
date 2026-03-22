@@ -96,7 +96,7 @@ export function MembersTable({
             <th className="px-3 py-2 text-left font-body font-normal hidden sm:table-cell">Email</th>
             <th className="px-3 py-2 text-left font-body font-normal">Role</th>
             <th className="px-3 py-2 text-left font-body font-normal">Voice Part</th>
-            {isAdmin && <th className="px-3 py-2 w-10"></th>}
+            {isAdmin && <th className="px-3 py-2 w-10" aria-label="Actions"></th>}
           </tr>
         </thead>
         <tbody>
@@ -112,6 +112,7 @@ export function MembersTable({
                   <select
                     value={m.role}
                     onChange={(e) => updateMember(m.id, "role", e.target.value)}
+                    aria-label={`Role for ${m.userName || m.userEmail}`}
                     className="text-xs border border-border px-1.5 py-1 bg-white focus:border-primary focus:outline-none"
                   >
                     {ROLES.map((r) => (
@@ -127,6 +128,7 @@ export function MembersTable({
                   <select
                     value={m.voicePart || ""}
                     onChange={(e) => updateMember(m.id, "voicePart", e.target.value || null)}
+                    aria-label={`Voice part for ${m.userName || m.userEmail}`}
                     className="text-xs border border-border px-1.5 py-1 bg-white focus:border-primary focus:outline-none"
                   >
                     <option value="">—</option>

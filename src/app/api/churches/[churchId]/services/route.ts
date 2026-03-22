@@ -20,6 +20,16 @@ export async function POST(
   }
   const { liturgicalDayId, serviceType, time } = body;
 
+  if (!liturgicalDayId || typeof liturgicalDayId !== "string") {
+    return NextResponse.json({ error: "liturgicalDayId is required" }, { status: 400 });
+  }
+  if (!serviceType || !(serviceTypeEnum.enumValues as readonly string[]).includes(serviceType)) {
+    return NextResponse.json(
+      { error: `serviceType must be one of: ${serviceTypeEnum.enumValues.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
   try {
     const [service] = await db.insert(services).values({
       churchId,

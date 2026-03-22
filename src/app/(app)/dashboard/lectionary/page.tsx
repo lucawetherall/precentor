@@ -17,7 +17,7 @@ export default async function LectionaryPage() {
   }
 
   return (
-    <main className="p-8 max-w-4xl">
+    <main id="main-content" className="p-8 max-w-4xl">
       <h1 className="text-3xl font-heading font-semibold mb-2">Lectionary Calendar</h1>
       <p className="text-sm text-muted-foreground mb-6">
         Syncs the Church of England Common Worship Lectionary. Readings are sourced
