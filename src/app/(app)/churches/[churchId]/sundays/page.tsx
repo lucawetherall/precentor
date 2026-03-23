@@ -32,10 +32,7 @@ export default async function SundaysPage({ params }: Props) {
       {upcomingDays.length === 0 ? (
         <div className="border border-border bg-card p-8 text-center">
           <p className="text-muted-foreground">
-            No liturgical calendar data. Sync the lectionary from the{" "}
-            <Link href="/dashboard/lectionary" className="text-primary underline">
-              Lectionary page
-            </Link>.
+            No liturgical calendar data available. Run the database seed to populate the calendar.
           </p>
         </div>
       ) : (

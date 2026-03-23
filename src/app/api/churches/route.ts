@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { churches, churchMemberships, users } from "@/lib/db/schema";
+import { churches, churchMemberships, users, liturgicalDays, services } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 function slugify(text: string): string {
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { name, diocese, address, ccliNumber } = body;
+  const { name, diocese, address, ccliNumber, defaultServices } = body;
 
   if (!name || typeof name !== "string" || name.trim().length === 0) {
     return NextResponse.json({ error: "Church name is required" }, { status: 400 });
@@ -48,6 +48,36 @@ export async function POST(request: Request) {
       churchId: church.id,
       role: "ADMIN",
     });
+
+    if (defaultServices && Array.isArray(defaultServices) && defaultServices.length > 0) {
+      await db
+        .update(churches)
+        .set({ settings: { defaultServices } })
+        .where(eq(churches.id, church.id));
+
+      const allDays = await db
+        .select({ id: liturgicalDays.id })
+        .from(liturgicalDays);
+
+      for (const day of allDays) {
+        for (const svc of defaultServices) {
+          try {
+            await db
+              .insert(services)
+              .values({
+                churchId: church.id,
+                liturgicalDayId: day.id,
+                serviceType: svc.type,
+                time: svc.time,
+                status: "DRAFT",
+              })
+              .onConflictDoNothing();
+          } catch {
+            // Skip constraint violations
+          }
+        }
+      }
+    }
 
     return NextResponse.json(church, { status: 201 });
   } catch (error) {
