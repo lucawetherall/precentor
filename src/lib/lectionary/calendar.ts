@@ -1,8 +1,7 @@
 /**
  * Liturgical calendar engine.
  *
- * Primary source: api.liturgical.uk (C of E liturgical calendar API)
- * Fallback: local Easter computation (Oudin's method per oremus.org/easter/computus)
+ * Local Easter computation (Oudin's method per oremus.org/easter/computus).
  *
  * Computes all Sundays and major feasts for a given church year,
  * returning entries that map to keys in lectionary-coe.json.
@@ -93,178 +92,7 @@ export function getLectionaryYear(
   return (["A", "B", "C"] as const)[mod];
 }
 
-// ─── Liturgical API integration ─────────────────────────────────
-
-const LITURGICAL_API = "https://api.liturgical.uk";
-
-interface LiturgicalApiResponse {
-  date: string;
-  name: string;
-  season: string;
-  colour: string;
-  colourcode: string;
-  week: string;
-  type: string;
-  prec: number;
-  ember: number;
-}
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * Fetch liturgical data for a single date from api.liturgical.uk.
- * Includes retry logic for transient failures.
- */
-async function fetchLiturgicalDate(
-  date: string,
-  retries = 2,
-): Promise<LiturgicalApiResponse | null> {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const res = await fetch(`${LITURGICAL_API}/${date}`, {
-        headers: { "Accept": "application/json" },
-        signal: AbortSignal.timeout(10_000),
-      });
-      if (res.ok) {
-        return (await res.json()) as LiturgicalApiResponse;
-      }
-      if (res.status === 429) {
-        // Rate limited - wait longer
-        await sleep(1000 * (attempt + 1));
-        continue;
-      }
-      return null;
-    } catch (err) {
-      logger.warn("Liturgical API fetch failed", { error: String(err), date });
-      if (attempt < retries) {
-        await sleep(500 * (attempt + 1));
-        continue;
-      }
-      return null;
-    }
-  }
-  return null;
-}
-
-/**
- * Map a liturgical API name to a key in our lectionary JSON.
- * The API returns names like "Advent 1", "Lent 5", "Easter 3"
- * while our JSON uses "the-first-sunday-of-advent", "the-fifth-sunday-of-lent", etc.
- */
-function apiNameToSundayKey(
-  apiData: LiturgicalApiResponse,
-): string | null {
-  const { name, season, type, week } = apiData;
-  const nameLower = name.toLowerCase();
-
-  // Direct name mapping for special days
-  const DIRECT_MAP: Record<string, string> = {
-    "christmas": "christmas-day",
-    "epiphany": "the-epiphany",
-    "candlemas": "candlemas",
-    "ash wednesday": "ash-wednesday",
-    "mothering sunday": "mothering-sunday",
-    "palm sunday": "palm-sunday",
-    "maundy thursday": "maundy-thursday",
-    "good friday": "good-friday",
-    "easter eve": "easter-eve",
-    "holy saturday": "easter-eve",
-    "easter": "easter-day",
-    "ascension": "ascension-day",
-    "pentecost": "day-of-pentecost-whit-sunday",
-    "trinity": "trinity-sunday",
-    "bible sunday": "bible-sunday",
-    "christ the king": "christ-the-king",
-    // Traditional names for numbered Sundays
-    "advent sunday": "the-first-sunday-of-advent",
-    "gaudete sunday": "the-third-sunday-of-advent",
-    "laetare sunday": "the-fourth-sunday-of-lent",
-    // Festivals
-    "the naming and circumcision of jesus": "the-naming-and-circumcision-of-jesus",
-    "the conversion of paul": "the-conversion-of-paul",
-    "joseph of nazareth": "joseph-of-nazareth",
-    "the annunciation of our lord": "the-annunciation-of-our-lord",
-    "george": "george",
-    "mark": "mark",
-    "philip and james": "philip-and-james",
-    "matthias": "matthias",
-    "the visit of the blessed virgin mary to elizabeth": "the-visit-of-the-blessed-virgin-mary-to-elizabeth",
-    "barnabas": "barnabas",
-    "the birth of john the baptist": "the-birth-of-john-the-baptist",
-    "peter and paul": "peter-and-paul",
-    "thomas": "thomas",
-    "mary magdalene": "mary-magdalene",
-    "james": "james",
-    "the transfiguration of our lord": "the-transfiguration-of-our-lord",
-    "the blessed virgin mary": "the-blessed-virgin-mary",
-    "bartholomew": "bartholomew",
-    "holy cross day": "holy-cross-day",
-    "matthew": "matthew",
-    "michael and all angels": "michael-and-all-angels",
-    "luke": "luke",
-    "simon and jude": "simon-and-jude",
-    "andrew": "andrew",
-    "stephen": "stephen",
-    "john": "john",
-    "the holy innocents": "the-holy-innocents",
-    "all saints": "all-saints-day",
-    "all saints' day": "all-saints-day",
-    "harvest thanksgiving": "harvest-thanksgiving",
-  };
-
-  if (DIRECT_MAP[nameLower]) return DIRECT_MAP[nameLower];
-
-  // "Advent 1" -> "the-first-sunday-of-advent"
-  const ordinals = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh"];
-
-  // Season + number pattern (e.g., "Advent 1", "Lent 2", "Easter 3")
-  const seasonNumMatch = name.match(/^(\w+)\s+(\d+)$/);
-  if (seasonNumMatch) {
-    const [, seasonName, numStr] = seasonNumMatch;
-    const num = parseInt(numStr, 10);
-    const ordinal = ordinals[num - 1];
-
-    if (seasonName === "Advent" && ordinal) {
-      return `the-${ordinal}-sunday-of-advent`;
-    }
-    if (seasonName === "Christmas" && ordinal) {
-      return `the-${ordinal}-sunday-of-christmas`;
-    }
-    if (seasonName === "Epiphany") {
-      if (num === 1) return "the-baptism-of-christ";
-      if (ordinal) return `the-${ordinal}-sunday-of-epiphany`;
-    }
-    if (seasonName === "Lent" && ordinal) {
-      return `the-${ordinal}-sunday-of-lent`;
-    }
-    if (seasonName === "Easter" && ordinal) {
-      if (num === 1) return "easter-day"; // Easter 1 = Easter Day
-      if (num === 7) return "sunday-after-ascension-day"; // Easter 7 = Sunday after Ascension
-      return `the-${ordinal}-sunday-of-easter`;
-    }
-  }
-
-  // "Proper X" Sundays — mapped via date ranges in our JSON
-  if (/proper/i.test(week)) {
-    return null; // Handled by date-range matching in the caller
-  }
-
-  // Pre-Lent Sundays (API names: "2 before Lent", "1 before Lent", "next before Lent")
-  if (nameLower === "2 before lent") return "the-second-sunday-before-lent";
-  if (nameLower === "1 before lent" || nameLower === "next before lent") {
-    return "the-sunday-next-before-lent";
-  }
-
-  // Pre-Advent Sundays
-  if (nameLower === "4 before advent") return "the-fourth-sunday-before-advent";
-  if (nameLower === "3 before advent") return "the-third-sunday-before-advent";
-  if (nameLower === "2 before advent") return "the-second-sunday-before-advent";
-
-  // Ordinary Time Sundays before Lent (Propers 1-3 can fall before Lent)
-  // These are matched by date-range in the caller
-
-  return null;
-}
+// ─── Local calendar computation ─────────────────────────────────
 
 /**
  * For "Proper" Sundays (Ordinary Time after Trinity), find the matching
@@ -318,44 +146,11 @@ function findProperSundayKey(date: Date): string | null {
   return null;
 }
 
-// ─── Colour and season mapping ──────────────────────────────────
-
-function mapApiColour(colour: string): string {
-  const c = colour.toLowerCase();
-  if (c === "purple" || c === "violet") return "PURPLE";
-  if (c === "white" || c === "gold") return "WHITE";
-  if (c === "red") return "RED";
-  if (c === "green") return "GREEN";
-  if (c === "rose" || c === "pink") return "ROSE";
-  return "GREEN";
-}
-
-function mapApiSeason(season: string, name: string): string {
-  const s = season.toLowerCase();
-  const n = name.toLowerCase();
-
-  if (s === "advent") return "ADVENT";
-  if (s === "christmas") return "CHRISTMAS";
-  if (s === "epiphany") return "EPIPHANY";
-  if (s === "lent") return "LENT";
-  if (s === "easter") return "EASTER";
-  if (n.includes("ascension")) return "ASCENSION";
-  if (n.includes("pentecost")) return "PENTECOST";
-  if (n.includes("trinity")) return "TRINITY";
-  if (n.includes("christ the king")) return "KINGDOM";
-  if (n.includes("holy week") || n.includes("palm sunday") || n.includes("maundy") || n.includes("good friday")) {
-    return "HOLY_WEEK";
-  }
-  return "ORDINARY";
-}
-
-// ─── Local calendar computation ─────────────────────────────────
-
 /**
  * Compute the full liturgical calendar locally without any API dependency.
  * This maps every Sunday and key feast to its lectionary JSON key.
  */
-function computeLocalCalendar(
+export function computeLiturgicalCalendar(
   churchYear: { startYear: number; endYear: number },
 ): LiturgicalDateEntry[] {
   const entries: LiturgicalDateEntry[] = [];
@@ -365,7 +160,6 @@ function computeLocalCalendar(
   const nextAdvent = computeAdventStart(churchYear.endYear);
   const easter = computeEasterDate(year);
   const ashWed = addDays(easter, -46);
-  const palmSunday = addDays(easter, -7);
   const pentecost = addDays(easter, 49);
   const trinitySunday = addDays(easter, 56);
   const christmasDay = new Date(churchYear.startYear, 11, 25);
@@ -389,7 +183,6 @@ function computeLocalCalendar(
   // ─── Sundays ───
   const sundays = allDates.filter((d) => isSunday(d));
   const epiphanyDate = new Date(year, 0, 6);
-  const candlemas = new Date(year, 1, 2);
 
   for (const sunday of sundays) {
     const d = sunday.getTime();
@@ -547,40 +340,7 @@ function computeLocalCalendar(
   // Sort by date
   entries.sort((a, b) => a.date.localeCompare(b.date));
 
-  return entries;
-}
-
-// ─── Main calendar computation ──────────────────────────────────
-
-/**
- * Generate all liturgical dates for a church year.
- * Uses local computation (reliable, no external dependency),
- * optionally enriched with api.liturgical.uk data for display names.
- */
-export async function computeLiturgicalCalendar(
-  churchYear: { startYear: number; endYear: number },
-  options?: { useApi?: boolean },
-): Promise<LiturgicalDateEntry[]> {
-  const entries = computeLocalCalendar(churchYear);
   logger.info("Computed liturgical date entries locally", { count: entries.length });
-
-  if (options?.useApi) {
-    logger.info("Enriching with api.liturgical.uk data");
-    let apiFailures = 0;
-    for (let idx = 0; idx < entries.length; idx++) {
-      if (apiFailures >= 3) break;
-      if (idx > 0) await sleep(500);
-
-      const apiData = await fetchLiturgicalDate(entries[idx].date);
-      if (apiData) {
-        entries[idx].name = apiData.name;
-        entries[idx].season = mapApiSeason(apiData.season, apiData.name);
-        entries[idx].colour = mapApiColour(apiData.colour);
-      } else {
-        apiFailures++;
-      }
-    }
-  }
 
   return entries;
 }
