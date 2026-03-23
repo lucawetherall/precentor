@@ -4,6 +4,8 @@ import { gte, asc } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 import { format, parseISO } from "date-fns";
 import Link from "next/link";
+import { LITURGICAL_COLOURS } from "@/types";
+import type { LiturgicalColour } from "@/types";
 
 interface Props {
   params: Promise<{ churchId: string }>;
@@ -42,22 +44,19 @@ export default async function SundaysPage({ params }: Props) {
               className="flex items-center gap-4 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
             >
               <span
+                aria-hidden="true"
                 className="w-2 h-8 flex-shrink-0"
                 style={{
-                  backgroundColor:
-                    day.colour === "PURPLE" ? "#5B2C6F" :
-                    day.colour === "GOLD" ? "#D4AF37" :
-                    day.colour === "RED" ? "#8B2500" :
-                    day.colour === "WHITE" ? "#F5F0E8" :
-                    day.colour === "ROSE" ? "#C48A9F" :
-                    "#4A6741",
+                  backgroundColor: LITURGICAL_COLOURS[day.colour as LiturgicalColour] ?? "#4A6741",
                 }}
               />
               <div className="flex-1">
                 <p className="font-mono text-xs text-muted-foreground">{format(parseISO(day.date), "EEE d MMM yyyy")}</p>
                 <p className="font-heading text-lg">{day.cwName}</p>
               </div>
-              <span className="text-xs text-muted-foreground">{day.season}</span>
+              <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
+                {day.season.replace(/_/g, " ")}
+              </span>
             </Link>
           ))}
         </div>

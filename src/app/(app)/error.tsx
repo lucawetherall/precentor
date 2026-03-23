@@ -15,7 +15,7 @@ export default function AppError({
       </p>
       <button
         onClick={reset}
-        className="px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors"
+        className="px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors"
       >
         Try again
       </button>

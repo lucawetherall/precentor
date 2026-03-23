@@ -39,7 +39,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-8">
+    <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-8">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-heading font-semibold">Set Up Your Church</h1>
@@ -59,6 +59,7 @@ export default function OnboardingPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="St Mary's Parish Church"
+              autoComplete="organization"
               required
               className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
             />
@@ -72,6 +73,7 @@ export default function OnboardingPage() {
               value={diocese}
               onChange={(e) => setDiocese(e.target.value)}
               placeholder="e.g. Diocese of London"
+              autoComplete="off"
               className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
             />
           </div>
@@ -84,6 +86,7 @@ export default function OnboardingPage() {
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Church Lane, Town, County"
+              autoComplete="street-address"
               className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
             />
           </div>
@@ -96,16 +99,17 @@ export default function OnboardingPage() {
               value={ccliNumber}
               onChange={(e) => setCcliNumber(e.target.value)}
               placeholder="Optional"
+              autoComplete="off"
               className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
             />
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
+            className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create Church"}
           </button>

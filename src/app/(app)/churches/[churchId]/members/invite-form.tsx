@@ -60,6 +60,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="singer@parish.org.uk"
+            autoComplete="email"
             required
             className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
           />
@@ -81,7 +82,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
           type="button"
           onClick={() => handleInvite(true)}
           disabled={loading || !email}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
         >
           {loading && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />}
           Send Email
@@ -98,10 +99,13 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
 
       {inviteLink && (
         <div className="flex gap-2 items-center">
+          <label htmlFor="invite-link" className="sr-only">Invite link</label>
           <input
+            id="invite-link"
             type="text"
             value={inviteLink}
             readOnly
+            aria-label="Invite link"
             className="flex-1 px-3 py-2 text-xs font-mono border border-border bg-muted"
           />
           <button

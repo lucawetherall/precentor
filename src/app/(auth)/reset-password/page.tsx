@@ -37,7 +37,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-8">
+    <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-8">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-heading font-semibold">Set New Password</h1>
@@ -51,12 +51,14 @@ export default function ResetPasswordPage() {
             <label htmlFor="password" className="text-sm font-body">New password</label>
             <input
               id="password"
+              name="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Min. 8 characters"
               required
               minLength={8}
+              autoComplete="new-password"
               className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
             />
           </div>
@@ -65,22 +67,26 @@ export default function ResetPasswordPage() {
             <label htmlFor="confirm-password" className="text-sm font-body">Confirm new password</label>
             <input
               id="confirm-password"
+              name="confirm-password"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm your password"
               required
               minLength={8}
+              autoComplete="new-password"
               className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
             />
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-destructive">{error}</p>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
+            className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
           >
             {loading ? "Updating..." : "Update Password"}
           </button>

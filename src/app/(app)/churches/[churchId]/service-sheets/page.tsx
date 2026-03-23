@@ -92,7 +92,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
                             : "Booklet missing eucharistic prayer"
                         }
                       >
-                        <BookOpen className="h-2.5 w-2.5" strokeWidth={2} />
+                        <BookOpen className="h-2.5 w-2.5" strokeWidth={2} aria-hidden="true" />
                         {isBookletReady ? "Booklet ready" : "Booklet incomplete"}
                       </span>
                     )}

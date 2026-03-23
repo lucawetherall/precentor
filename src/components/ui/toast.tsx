@@ -52,7 +52,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   }, [toast.id, onDismiss]);
 
   const borderColor =
-    toast.type === "success" ? "border-[#4A6741]" :
+    toast.type === "success" ? "border-success" :
     toast.type === "error" ? "border-destructive" :
     "border-primary";
 

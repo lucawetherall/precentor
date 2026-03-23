@@ -187,20 +187,22 @@ export function MusicSlotEditor({
                   value={slot.freeText || ""}
                   onChange={(e) => handleSlotChange(i, "freeText", e.target.value)}
                   placeholder={`Enter ${label.toLowerCase()}...`}
-                  className="flex-1 px-2 py-1 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                  aria-label={label}
+                  className="flex-1 px-2 py-1 text-sm border border-border bg-background focus:border-primary focus:outline-none"
                 />
                 <input
                   type="text"
                   value={slot.notes || ""}
                   onChange={(e) => handleSlotChange(i, "notes", e.target.value)}
                   placeholder="Notes"
-                  className="w-32 px-2 py-1 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                  aria-label={`Notes for ${label}`}
+                  className="w-32 px-2 py-1 text-sm border border-border bg-background focus:border-primary focus:outline-none"
                 />
                 <button
                   onClick={() => handleSuggest(i)}
                   disabled={suggestingFor === i}
                   className="p-1.5 text-primary hover:bg-accent transition-colors disabled:opacity-50"
-                  title="AI Suggest"
+                  aria-label={`AI suggest for ${label}`}
                 >
                   {suggestingFor === i ? (
                     <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} />
@@ -232,14 +234,14 @@ export function MusicSlotEditor({
       </div>
 
       {saveError && (
-        <p className="mt-2 text-sm text-destructive">{saveError}</p>
+        <p role="alert" className="mt-2 text-sm text-destructive">{saveError}</p>
       )}
 
       <div className="mt-4 flex justify-end">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-[#6B4423] transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> : <Save className="h-4 w-4" strokeWidth={1.5} />}
           Save Music
