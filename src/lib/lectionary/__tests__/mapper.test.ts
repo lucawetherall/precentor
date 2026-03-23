@@ -98,7 +98,8 @@ describe("buildReadingRows", () => {
   it("skips readings with invalid positions", () => {
     const yearReadings = {
       principal: [
-        { reference: "Test 1.1", position: "INVALID" as any },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { reference: "Test 1.1", position: "INVALID" as unknown as any },
       ],
       second: [],
       third: [],
