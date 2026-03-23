@@ -3,10 +3,29 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const SERVICE_LABELS: Record<string, string> = {
+  SUNG_EUCHARIST: "Sung Eucharist",
+  CHORAL_EVENSONG: "Choral Evensong",
+  SAID_EUCHARIST: "Said Eucharist",
+  CHORAL_MATINS: "Choral Matins",
+  FAMILY_SERVICE: "Family Service",
+  COMPLINE: "Compline",
+};
+
 export default function NewChurchPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedServices, setSelectedServices] = useState<
+    Record<string, { enabled: boolean; time: string }>
+  >({
+    SUNG_EUCHARIST: { enabled: false, time: "10:00" },
+    CHORAL_EVENSONG: { enabled: false, time: "18:30" },
+    SAID_EUCHARIST: { enabled: false, time: "08:00" },
+    CHORAL_MATINS: { enabled: false, time: "10:00" },
+    FAMILY_SERVICE: { enabled: false, time: "09:30" },
+    COMPLINE: { enabled: false, time: "21:00" },
+  });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -14,6 +33,11 @@ export default function NewChurchPage() {
     setError("");
 
     const formData = new FormData(e.currentTarget);
+
+    const defaultServices = Object.entries(selectedServices)
+      .filter(([, v]) => v.enabled)
+      .map(([type, v]) => ({ type, time: v.time }));
+
     const res = await fetch("/api/churches", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -22,6 +46,7 @@ export default function NewChurchPage() {
         diocese: formData.get("diocese"),
         address: formData.get("address"),
         ccliNumber: formData.get("ccliNumber"),
+        defaultServices,
       }),
     });
 
@@ -77,6 +102,46 @@ export default function NewChurchPage() {
             className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
           />
         </div>
+
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-body font-semibold">Regular Services</legend>
+          <p className="text-xs text-muted-foreground">
+            Select the services your church holds each Sunday. These will be created
+            automatically for every upcoming date.
+          </p>
+          {Object.entries(SERVICE_LABELS).map(([type, label]) => (
+            <div key={type} className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id={`svc-${type}`}
+                checked={selectedServices[type].enabled}
+                onChange={(e) =>
+                  setSelectedServices((prev) => ({
+                    ...prev,
+                    [type]: { ...prev[type], enabled: e.target.checked },
+                  }))
+                }
+                className="accent-primary"
+              />
+              <label htmlFor={`svc-${type}`} className="text-sm flex-1">
+                {label}
+              </label>
+              {selectedServices[type].enabled && (
+                <input
+                  type="time"
+                  value={selectedServices[type].time}
+                  onChange={(e) =>
+                    setSelectedServices((prev) => ({
+                      ...prev,
+                      [type]: { ...prev[type], time: e.target.value },
+                    }))
+                  }
+                  className="text-sm border border-border px-2 py-1 bg-white"
+                />
+              )}
+            </div>
+          ))}
+        </fieldset>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
