@@ -61,7 +61,7 @@ export async function POST(
         const inviteUrl = `${appUrl}/invite/${token}`;
 
         await resend.emails.send({
-          from: "Precentor <noreply@resend.dev>",
+          from: "Precentor <onboarding@resend.dev>",
           to: email,
           subject: "You've been invited to join a church on Precentor",
           html: `
