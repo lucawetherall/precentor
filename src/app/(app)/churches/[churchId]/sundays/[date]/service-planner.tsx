@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SERVICE_TYPE_LABELS, EUCHARIST_SLOTS, EVENSONG_SLOTS, MUSIC_SLOT_LABELS } from "@/types";
-import type { ServiceType, MusicSlotType } from "@/types";
+import { SERVICE_TYPE_LABELS } from "@/types";
+import type { ServiceType } from "@/types";
 import { MusicSlotEditor } from "./music-slot-editor";
 import { ServiceSettings } from "./service-settings";
 import { Plus, Loader2 } from "lucide-react";
@@ -22,12 +22,10 @@ interface Service {
 export function ServicePlanner({
   churchId,
   liturgicalDayId,
-  date,
   existingServices,
 }: {
   churchId: string;
   liturgicalDayId: string;
-  date: string;
   existingServices: Service[];
 }) {
   const [services, setServices] = useState<Service[]>(existingServices);

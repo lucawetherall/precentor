@@ -3,10 +3,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Church, Calendar, Users, Music, ArrowRight } from "lucide-react";
 import { db } from "@/lib/db";
-import { users, churchMemberships, churches, services, liturgicalDays, musicSlots } from "@/lib/db/schema";
-import { eq, and, gte, asc, count } from "drizzle-orm";
+import { users, churchMemberships, churches, services, liturgicalDays } from "@/lib/db/schema";
+import { eq, and, gte, asc } from "drizzle-orm";
 import { format, parseISO } from "date-fns";
-import type { InferSelectModel } from "drizzle-orm";
 import { SERVICE_TYPE_LABELS, LITURGICAL_COLOURS } from "@/types";
 import type { ServiceType, LiturgicalColour } from "@/types";
 
@@ -27,7 +26,6 @@ export default async function DashboardPage() {
     role: string;
   }
   let userChurches: UserChurch[] = [];
-  let dbUserId: string | null = null;
 
   try {
     const dbUser = await db
@@ -37,7 +35,6 @@ export default async function DashboardPage() {
       .limit(1);
 
     if (dbUser.length > 0) {
-      dbUserId = dbUser[0].id;
       const memberships = await db
         .select({
           churchId: churches.id,

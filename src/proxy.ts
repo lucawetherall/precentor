@@ -1,16 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/forgot-password", "/reset-password"];
-
-function isPublicPath(pathname: string): boolean {
-  return (
-    PUBLIC_PATHS.includes(pathname) ||
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/invite/") ||
-    pathname.startsWith("/api/invites/")
-  );
-}
+import { isPublicPath } from "@/lib/auth/public-paths";
 
 export async function proxy(request: NextRequest) {
   try {

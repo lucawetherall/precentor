@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
-import { liturgicalDays, readings, services, musicSlots, hymns, anthems, massSettings, canticleSettings, responsesSettings } from "@/lib/db/schema";
+import { liturgicalDays, readings, services } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { SERVICE_TYPE_LABELS, LITURGICAL_COLOURS } from "@/types";
+import { LITURGICAL_COLOURS } from "@/types";
 import { format, parseISO } from "date-fns";
 import type { LiturgicalColour } from "@/types";
 import type { InferSelectModel } from "drizzle-orm";
@@ -93,7 +93,6 @@ export default async function SundayDetailPage({ params }: Props) {
       <ServicePlanner
         churchId={churchId}
         liturgicalDayId={day.id}
-        date={date}
         existingServices={dayServices}
       />
     </div>
