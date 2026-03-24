@@ -64,6 +64,7 @@ export async function GET(request: Request) {
     }
   }
 
+  console.error("[auth/callback] Auth error — redirecting to login:", error ?? "no code param");
   return NextResponse.redirect(`${origin}/login?error=auth`);
 }
 
