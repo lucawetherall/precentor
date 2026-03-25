@@ -1,20 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/forgot-password", "/reset-password"];
-
-function isPublicPath(pathname: string): boolean {
-  return (
-    PUBLIC_PATHS.includes(pathname) ||
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/invite/") ||
-    pathname.startsWith("/api/invites/")
-  );
-}
-
-const AUTH_ONLY_PATHS = ["/login", "/signup", "/forgot-password"];
+import { isPublicPath, AUTH_ONLY_PATHS } from "@/lib/auth/public-paths";
 
 export async function updateSession(request: NextRequest) {
+  // Auth callback routes must not call getUser() here.
+  // If the user has stale/expired session cookies, getUser() triggers
+  // _removeSession() which clears the PKCE code-verifier cookie before the
+  // route handler can call exchangeCodeForSession(), causing password reset
+  // (and other auth callbacks) to fail with ?error=auth.
+  if (request.nextUrl.pathname.startsWith("/auth")) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });

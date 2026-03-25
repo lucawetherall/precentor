@@ -5,7 +5,7 @@ import { format, parseISO } from "date-fns";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
 import { ServiceSheetActions, BatchDownloadActions } from "./actions-client";
-import { BookOpen, FileText } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 interface Props {
   params: Promise<{ churchId: string }>;

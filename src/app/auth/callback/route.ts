@@ -13,31 +13,37 @@ export async function GET(request: Request) {
   // Validate next param to prevent open redirects
   const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
 
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  // Try PKCE code exchange first (works when same browser context has the verifier cookie)
-  if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      return handleAuthenticatedUser(request, supabase, origin, next);
+    // Try PKCE code exchange first (works when same browser context has the verifier cookie)
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (!error) {
+        return handleAuthenticatedUser(request, supabase, origin, next);
+      }
+      console.error("[auth/callback] Code exchange failed:", error.message);
     }
+
+    // Fallback: token_hash flow for email links opened in a different browser context
+    // (e.g. in-app email viewer, different browser) where the PKCE verifier cookie is absent
+    if (tokenHash && type) {
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: type as "recovery" | "email" | "signup",
+      });
+      if (!error) {
+        // For recovery flows, redirect to reset-password regardless of next param
+        const redirectPath = type === "recovery" ? "/reset-password" : next;
+        return handleAuthenticatedUser(request, supabase, origin, redirectPath);
+      }
+      console.error("[auth/callback] OTP verification failed:", error.message);
+    }
+  } catch (e) {
+    console.error("[auth/callback] Unexpected error:", e);
   }
 
-  // Fallback: token_hash flow for email links opened in a different browser context
-  // (e.g. in-app email viewer, different browser) where the PKCE verifier cookie is absent
-  if (tokenHash && type) {
-    const { error } = await supabase.auth.verifyOtp({
-      token_hash: tokenHash,
-      type: type as "recovery" | "email" | "signup",
-    });
-    if (!error) {
-      // For recovery flows, redirect to reset-password regardless of next param
-      const redirectPath = type === "recovery" ? "/reset-password" : next;
-      return handleAuthenticatedUser(request, supabase, origin, redirectPath);
-    }
-  }
-
-  return NextResponse.redirect(`${origin}/login?error=auth`);
+  return buildRedirect(request, origin, "/login?error=auth");
 }
 
 async function handleAuthenticatedUser(
@@ -62,7 +68,7 @@ async function handleAuthenticatedUser(
 
     if (existing.length === 0) {
       if (!user.email) {
-        return NextResponse.redirect(`${origin}/login?error=auth`);
+        return buildRedirect(request, origin, "/login?error=auth");
       }
       const [newUser] = await db.insert(users).values({
         email: user.email,
@@ -93,7 +99,7 @@ async function handleAuthenticatedUser(
   return buildRedirect(request, origin, next || "/dashboard");
 }
 
-function buildRedirect(request: Request, origin: string, path: string) {
+function buildRedirect(_request: Request, origin: string, path: string) {
   const isLocalEnv = process.env.NODE_ENV === "development";
 
   if (isLocalEnv) {
