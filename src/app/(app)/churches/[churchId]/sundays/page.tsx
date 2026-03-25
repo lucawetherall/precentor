@@ -23,7 +23,7 @@ export default async function SundaysPage({ params }: Props) {
       .where(gte(liturgicalDays.date, today))
       .orderBy(asc(liturgicalDays.date))
       .limit(20);
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   return (
     <div className="p-8 max-w-4xl">

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SERVICE_TYPE_LABELS, EUCHARIST_SLOTS, EVENSONG_SLOTS, MUSIC_SLOT_LABELS } from "@/types";
-import type { ServiceType, MusicSlotType } from "@/types";
+import { SERVICE_TYPE_LABELS } from "@/types";
+import type { ServiceType } from "@/types";
 import { MusicSlotEditor } from "./music-slot-editor";
 import { ServiceSettings } from "./service-settings";
 import { Plus, Loader2 } from "lucide-react";
@@ -22,12 +22,10 @@ interface Service {
 export function ServicePlanner({
   churchId,
   liturgicalDayId,
-  date,
   existingServices,
 }: {
   churchId: string;
   liturgicalDayId: string;
-  date: string;
   existingServices: Service[];
 }) {
   const [services, setServices] = useState<Service[]>(existingServices);
@@ -79,8 +77,8 @@ export function ServicePlanner({
       </div>
 
       {/* Service tabs */}
-      <div className="flex items-center gap-1 border-b border-border mb-4">
-        <div role="tablist" aria-label="Services" className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1 border-b border-border mb-4">
+        <div role="tablist" aria-label="Services" className="flex flex-wrap items-center gap-1">
           {services.map((s) => (
             <button
               key={s.id}
@@ -99,7 +97,7 @@ export function ServicePlanner({
           ))}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           <label htmlFor="new-service-type" className="sr-only">Service type</label>
           <select
             id="new-service-type"

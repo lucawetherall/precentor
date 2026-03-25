@@ -26,6 +26,14 @@ export async function POST(
     return NextResponse.json({ error: "serviceId and status are required" }, { status: 400 });
   }
 
+  const validStatuses = availabilityStatusEnum.enumValues;
+  if (!validStatuses.includes(status)) {
+    return NextResponse.json(
+      { error: `Invalid status: ${status}` },
+      { status: 400 }
+    );
+  }
+
   // Members can only set their own availability; editors+ can set for anyone
   const targetUserId = userId || user!.id;
   if (targetUserId !== user!.id && !hasMinRole(membership!.role as MemberRole, "EDITOR")) {

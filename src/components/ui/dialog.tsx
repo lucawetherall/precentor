@@ -39,7 +39,7 @@ function Dialog({
 
 function DialogTrigger({
   children,
-  asChild: _asChild,
+  asChild: _asChild, // eslint-disable-line @typescript-eslint/no-unused-vars
   className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }) {

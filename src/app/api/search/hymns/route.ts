@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { searchHymns } from "@/lib/search/hymns";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -23,7 +24,8 @@ export async function GET(request: NextRequest) {
   try {
     const results = await searchHymns(q, book || undefined, offset);
     return NextResponse.json({ results, hasMore: results.length === 20 });
-  } catch (error) {
-    return NextResponse.json([], { status: 200 });
+  } catch (err) {
+    logger.error("Hymn search failed", err, { query: q, book });
+    return NextResponse.json({ error: "Search failed" }, { status: 500 });
   }
 }

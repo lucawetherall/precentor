@@ -5,7 +5,7 @@ import { format, parseISO } from "date-fns";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
 import { ServiceSheetActions, BatchDownloadActions } from "./actions-client";
-import { BookOpen, FileText } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 interface Props {
   params: Promise<{ churchId: string }>;
@@ -44,7 +44,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
       .where(eq(services.churchId, churchId))
       .orderBy(desc(liturgicalDays.date))
       .limit(20);
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   const serviceIds = recentServices.map((s) => s.serviceId);
 
@@ -74,7 +74,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
             return (
               <div
                 key={s.serviceId}
-                className="flex items-center gap-4 border border-border bg-card p-4 shadow-sm"
+                className="flex flex-wrap items-center gap-4 border border-border bg-card p-4 shadow-sm"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">

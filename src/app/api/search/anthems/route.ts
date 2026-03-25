@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { searchAnthems } from "@/lib/search/anthems";
+import { requireChurchRole } from "@/lib/auth/permissions";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -13,6 +15,11 @@ export async function GET(request: NextRequest) {
   const q = searchParams.get("q") || "";
   const churchId = searchParams.get("churchId") || undefined;
 
+  if (churchId) {
+    const { error } = await requireChurchRole(churchId, "MEMBER");
+    if (error) return error;
+  }
+
   if (q.length < 1) {
     return NextResponse.json([]);
   }
@@ -23,7 +30,8 @@ export async function GET(request: NextRequest) {
   try {
     const results = await searchAnthems(q, churchId, offset);
     return NextResponse.json({ results, hasMore: results.length === 20 });
-  } catch (error) {
-    return NextResponse.json([], { status: 200 });
+  } catch (err) {
+    logger.error("Anthem search failed", err, { query: q, churchId });
+    return NextResponse.json({ error: "Search failed" }, { status: 500 });
   }
 }

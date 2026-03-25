@@ -29,7 +29,7 @@ function Tooltip({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   defaultOpen = false,
-  delayDuration: _delayDuration = 200,
+  delayDuration: _delayDuration = 200, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: {
   children: React.ReactNode
   open?: boolean
@@ -51,6 +51,7 @@ function Tooltip({
 const TooltipTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 >(({ className, asChild: _asChild, ...props }, ref) => {
   const { onOpenChange } = React.useContext(TooltipContext)
   return (
@@ -71,6 +72,7 @@ TooltipTrigger.displayName = "TooltipTrigger"
 const TooltipContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { sideOffset?: number; side?: "top" | "bottom" | "left" | "right" }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 >(({ className, sideOffset: _sideOffset = 4, side = "top", ...props }, ref) => {
   const { open } = React.useContext(TooltipContext)
   if (!open) return null

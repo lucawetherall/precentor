@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MUSIC_SLOT_LABELS, EUCHARIST_SLOTS, EVENSONG_SLOTS } from "@/types";
 import type { MusicSlotType } from "@/types";
 import { Sparkles, Save, Loader2 } from "lucide-react";
@@ -42,12 +42,13 @@ export function MusicSlotEditor({
   const { addToast } = useToast();
 
   // Determine template slots based on service type
-  const templateSlots: MusicSlotType[] =
+  const templateSlots: MusicSlotType[] = useMemo(() =>
     serviceType === "SUNG_EUCHARIST" || serviceType === "SAID_EUCHARIST"
       ? EUCHARIST_SLOTS
       : serviceType === "CHORAL_EVENSONG"
       ? EVENSONG_SLOTS
-      : ["HYMN", "HYMN", "HYMN", "HYMN", "ORGAN_VOLUNTARY_POST"];
+      : ["HYMN", "HYMN", "HYMN", "HYMN", "ORGAN_VOLUNTARY_POST"],
+  [serviceType]);
 
   useEffect(() => {
     async function loadSlots() {
@@ -95,7 +96,7 @@ export function MusicSlotEditor({
       setLoading(false);
     }
     loadSlots();
-  }, [serviceId]);
+  }, [serviceId, churchId, templateSlots]);
 
   const handleSlotChange = (index: number, field: string, value: string) => {
     setSlots((prev) =>
