@@ -88,7 +88,6 @@ function cleanRef(ref: string): string {
  */
 function parseReadingsFromCell(
   cellHtml: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _$: cheerio.CheerioAPI,
 ): LectionaryReading[] {
   if (!cellHtml) return [];

@@ -66,8 +66,6 @@ function NavLinks({
 }
 
 export function ChurchSidebar({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  churchId: _churchId,
   churchName,
   userRole,
   userEmail,

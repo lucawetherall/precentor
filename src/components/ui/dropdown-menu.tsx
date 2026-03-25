@@ -40,7 +40,7 @@ function DropdownMenu({
 function DropdownMenuTrigger({
   children,
   className,
-  asChild: _asChild, // eslint-disable-line @typescript-eslint/no-unused-vars
+  asChild: _asChild,  
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }) {
   const { open, onOpenChange } = React.useContext(DropdownMenuContext)
@@ -228,7 +228,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     onCheckedChange?: (checked: boolean) => void
   }
 >(({ className, children, checked, onCheckedChange, ...props }, ref) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const { onOpenChange: _onOpenChange } = React.useContext(DropdownMenuContext)
   return (
     <div

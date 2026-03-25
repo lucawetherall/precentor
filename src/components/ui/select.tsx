@@ -37,7 +37,7 @@ const SelectValue = ({
   return <option value="" disabled>{placeholder}</option>
 }
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 const SelectContent = ({
   children,
   className: _className,
@@ -45,7 +45,7 @@ const SelectContent = ({
 }: React.HTMLAttributes<HTMLDivElement>) => {
   return <>{children}</>
 }
-/* eslint-enable @typescript-eslint/no-unused-vars */
+ 
 
 const SelectItem = React.forwardRef<
   HTMLOptionElement,

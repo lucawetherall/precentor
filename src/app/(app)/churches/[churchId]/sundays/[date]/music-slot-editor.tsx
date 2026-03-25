@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { MUSIC_SLOT_LABELS, EUCHARIST_SLOTS, EVENSONG_SLOTS } from "@/types";
 import type { MusicSlotType } from "@/types";
 import { Sparkles, Save, Loader2 } from "lucide-react";
@@ -41,16 +41,28 @@ export function MusicSlotEditor({
   const [suggestingFor, setSuggestingFor] = useState<number | null>(null);
   const { addToast } = useToast();
 
-  // Determine template slots based on service type
-  const templateSlots: MusicSlotType[] = useMemo(() =>
-    serviceType === "SUNG_EUCHARIST" || serviceType === "SAID_EUCHARIST"
-      ? EUCHARIST_SLOTS
-      : serviceType === "CHORAL_EVENSONG"
-      ? EVENSONG_SLOTS
-      : ["HYMN", "HYMN", "HYMN", "HYMN", "ORGAN_VOLUNTARY_POST"],
-  [serviceType]);
-
   useEffect(() => {
+    const defaultSlots: MusicSlotType[] =
+      serviceType === "SUNG_EUCHARIST" || serviceType === "SAID_EUCHARIST"
+        ? EUCHARIST_SLOTS
+        : serviceType === "CHORAL_EVENSONG"
+        ? EVENSONG_SLOTS
+        : ["HYMN", "HYMN", "HYMN", "HYMN", "ORGAN_VOLUNTARY_POST"];
+
+    const makeTemplate = () =>
+      defaultSlots.map((type, i) => ({
+        id: "",
+        slotType: type,
+        positionOrder: i,
+        hymnId: null,
+        anthemId: null,
+        massSettingId: null,
+        canticleSettingId: null,
+        responsesSettingId: null,
+        freeText: null,
+        notes: null,
+      }));
+
     async function loadSlots() {
       try {
         const res = await fetch(`/api/churches/${churchId}/services/${serviceId}/slots`);
@@ -59,44 +71,16 @@ export function MusicSlotEditor({
           if (data.length > 0) {
             setSlots(data);
           } else {
-            // Create default template
-            setSlots(
-              templateSlots.map((type, i) => ({
-                id: "",
-                slotType: type,
-                positionOrder: i,
-                hymnId: null,
-                anthemId: null,
-                massSettingId: null,
-                canticleSettingId: null,
-                responsesSettingId: null,
-                freeText: null,
-                notes: null,
-              }))
-            );
+            setSlots(makeTemplate());
           }
         }
       } catch {
-        // Use template
-        setSlots(
-          templateSlots.map((type, i) => ({
-            id: "",
-            slotType: type,
-            positionOrder: i,
-            hymnId: null,
-            anthemId: null,
-            massSettingId: null,
-            canticleSettingId: null,
-            responsesSettingId: null,
-            freeText: null,
-            notes: null,
-          }))
-        );
+        setSlots(makeTemplate());
       }
       setLoading(false);
     }
     loadSlots();
-  }, [serviceId, churchId, templateSlots]);
+  }, [serviceId, churchId, serviceType]);
 
   const handleSlotChange = (index: number, field: string, value: string) => {
     setSlots((prev) =>
