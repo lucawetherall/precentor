@@ -11,11 +11,16 @@ export async function GET(request: Request) {
   // Validate next param to prevent open redirects
   const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
 
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+  try {
+    if (code) {
+      const supabase = await createClient();
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
+      if (error) {
+        console.error("[auth/callback] Code exchange failed:", error.message);
+        return buildRedirect(request, origin, "/login?error=auth");
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -32,7 +37,7 @@ export async function GET(request: Request) {
 
         if (existing.length === 0) {
           if (!user.email) {
-            return NextResponse.redirect(`${origin}/login?error=auth`);
+            return buildRedirect(request, origin, "/login?error=auth");
           }
           const [newUser] = await db.insert(users).values({
             email: user.email,
@@ -62,15 +67,14 @@ export async function GET(request: Request) {
 
       return buildRedirect(request, origin, next || "/dashboard");
     }
-
-    // Code exchange failed — `error` is in scope here
-    console.error("[auth/callback] Code exchange failed:", error);
+  } catch (e) {
+    console.error("[auth/callback] Unexpected error:", e);
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth`);
+  return buildRedirect(request, origin, "/login?error=auth");
 }
 
-function buildRedirect(request: Request, origin: string, path: string) {
+function buildRedirect(_request: Request, origin: string, path: string) {
   const isLocalEnv = process.env.NODE_ENV === "development";
 
   if (isLocalEnv) {
