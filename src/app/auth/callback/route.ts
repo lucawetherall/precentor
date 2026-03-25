@@ -7,64 +7,90 @@ import { eq } from "drizzle-orm";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type");
   const rawNext = searchParams.get("next");
   // Validate next param to prevent open redirects
   const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
 
+  const supabase = await createClient();
+
+  // Try PKCE code exchange first (works when same browser context has the verifier cookie)
   if (code) {
-    const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-
     if (!error) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      return handleAuthenticatedUser(request, supabase, origin, next);
+    }
+  }
 
-      if (user) {
-        // Upsert user record
-        const existing = await db
-          .select()
-          .from(users)
-          .where(eq(users.supabaseId, user.id))
-          .limit(1);
-
-        let dbUserId: string;
-
-        if (existing.length === 0) {
-          if (!user.email) {
-            return NextResponse.redirect(`${origin}/login?error=auth`);
-          }
-          const [newUser] = await db.insert(users).values({
-            email: user.email,
-            supabaseId: user.id,
-            name: user.user_metadata?.name || null,
-          }).returning();
-          dbUserId = newUser.id;
-        } else {
-          dbUserId = existing[0].id;
-        }
-
-        // If there's an explicit next path (e.g. /reset-password), use it
-        if (next) {
-          return buildRedirect(request, origin, next);
-        }
-
-        // Check if user has any church memberships to decide onboarding vs dashboard
-        const memberships = await db
-          .select()
-          .from(churchMemberships)
-          .where(eq(churchMemberships.userId, dbUserId))
-          .limit(1);
-
-        const redirectTo = memberships.length === 0 ? "/onboarding" : "/dashboard";
-        return buildRedirect(request, origin, redirectTo);
-      }
-
-      return buildRedirect(request, origin, next || "/dashboard");
+  // Fallback: token_hash flow for email links opened in a different browser context
+  // (e.g. in-app email viewer, different browser) where the PKCE verifier cookie is absent
+  if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: type as "recovery" | "email" | "signup",
+    });
+    if (!error) {
+      // For recovery flows, redirect to reset-password regardless of next param
+      const redirectPath = type === "recovery" ? "/reset-password" : next;
+      return handleAuthenticatedUser(request, supabase, origin, redirectPath);
     }
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth`);
+}
+
+async function handleAuthenticatedUser(
+  request: Request,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  origin: string,
+  next: string | null,
+) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    // Upsert user record
+    const existing = await db
+      .select()
+      .from(users)
+      .where(eq(users.supabaseId, user.id))
+      .limit(1);
+
+    let dbUserId: string;
+
+    if (existing.length === 0) {
+      if (!user.email) {
+        return NextResponse.redirect(`${origin}/login?error=auth`);
+      }
+      const [newUser] = await db.insert(users).values({
+        email: user.email,
+        supabaseId: user.id,
+        name: user.user_metadata?.name || null,
+      }).returning();
+      dbUserId = newUser.id;
+    } else {
+      dbUserId = existing[0].id;
+    }
+
+    // If there's an explicit next path (e.g. /reset-password), use it
+    if (next) {
+      return buildRedirect(request, origin, next);
+    }
+
+    // Check if user has any church memberships to decide onboarding vs dashboard
+    const memberships = await db
+      .select()
+      .from(churchMemberships)
+      .where(eq(churchMemberships.userId, dbUserId))
+      .limit(1);
+
+    const redirectTo = memberships.length === 0 ? "/onboarding" : "/dashboard";
+    return buildRedirect(request, origin, redirectTo);
+  }
+
+  return buildRedirect(request, origin, next || "/dashboard");
 }
 
 function buildRedirect(request: Request, origin: string, path: string) {
