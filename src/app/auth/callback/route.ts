@@ -62,9 +62,11 @@ export async function GET(request: Request) {
 
       return buildRedirect(request, origin, next || "/dashboard");
     }
+
+    // Code exchange failed — `error` is in scope here
+    console.error("[auth/callback] Code exchange failed:", error);
   }
 
-  console.error("[auth/callback] Auth error — redirecting to login:", error ?? "no code param");
   return NextResponse.redirect(`${origin}/login?error=auth`);
 }
 
