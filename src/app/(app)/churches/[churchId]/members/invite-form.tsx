@@ -49,7 +49,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-2 items-end">
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
         <div className="flex-1">
           <label htmlFor="invite-email" className="block text-sm font-body mb-1">
             Invite by email
@@ -71,30 +71,32 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
             id="invite-role"
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+            className="w-full sm:w-auto px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
           >
             <option value="MEMBER">Member</option>
             <option value="EDITOR">Editor</option>
             <option value="ADMIN">Admin</option>
           </select>
         </div>
-        <button
-          type="button"
-          onClick={() => handleInvite(true)}
-          disabled={loading || !email}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-        >
-          {loading && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />}
-          Send Email
-        </button>
-        <button
-          type="button"
-          onClick={() => handleInvite(false)}
-          disabled={loading || !email}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm bg-white text-foreground border border-border hover:bg-muted transition-colors disabled:opacity-50"
-        >
-          Get Link
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => handleInvite(true)}
+            disabled={loading || !email}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
+          >
+            {loading && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />}
+            Send Email
+          </button>
+          <button
+            type="button"
+            onClick={() => handleInvite(false)}
+            disabled={loading || !email}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 text-sm bg-white text-foreground border border-border hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            Get Link
+          </button>
+        </div>
       </div>
 
       {inviteLink && (

@@ -36,7 +36,7 @@ export default async function SundayDetailPage({ params }: Props) {
 
   if (!day) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <p className="text-muted-foreground">No liturgical data for {date}.</p>
         <Link href={`/churches/${churchId}/sundays`} className="text-primary underline text-sm mt-2 inline-block">
           Back to Sundays
@@ -48,7 +48,7 @@ export default async function SundayDetailPage({ params }: Props) {
   const colour = LITURGICAL_COLOURS[day.colour as LiturgicalColour] || "#4A6741";
 
   return (
-    <div id="main-content" className="p-8 max-w-5xl">
+    <div id="main-content" className="p-4 sm:p-6 lg:p-8 max-w-5xl">
       <Link
         href={`/churches/${churchId}/sundays`}
         className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
@@ -72,10 +72,10 @@ export default async function SundayDetailPage({ params }: Props) {
           <h2 className="text-lg font-heading font-semibold mb-3">Readings</h2>
           <div className="space-y-1">
             {dayReadings.map((r) => (
-              <div key={r.id} className="flex gap-3 text-sm">
-                <span className="text-muted-foreground w-24 flex-shrink-0">{r.position.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</span>
-                <span>{r.reference}</span>
-                <span className="text-xs text-muted-foreground ml-auto">{r.lectionary.charAt(0).toUpperCase() + r.lectionary.slice(1).toLowerCase()}</span>
+              <div key={r.id} className="flex flex-col sm:flex-row sm:gap-3 text-sm py-1 sm:py-0">
+                <span className="text-muted-foreground text-xs sm:text-sm sm:w-24 sm:flex-shrink-0">{r.position.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</span>
+                <span className="flex-1">{r.reference}</span>
+                <span className="text-xs text-muted-foreground sm:ml-auto">{r.lectionary.charAt(0).toUpperCase() + r.lectionary.slice(1).toLowerCase()}</span>
               </div>
             ))}
           </div>
