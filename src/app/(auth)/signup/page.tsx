@@ -47,7 +47,7 @@ export default function SignupPage() {
   };
 
   return (
-    <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-8">
+    <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-8">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-heading font-semibold">Create Account</h1>

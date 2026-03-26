@@ -164,9 +164,23 @@ export function MusicSlotEditor({
 
           return (
             <div key={i} className="border border-border bg-card p-3 shadow-sm">
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground font-mono w-6">{i + 1}</span>
-                <span className="text-sm font-heading font-semibold w-40 flex-shrink-0">{label}</span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 sm:contents">
+                  <span className="text-xs text-muted-foreground font-mono w-6">{i + 1}</span>
+                  <span className="text-sm font-heading font-semibold sm:w-40 sm:flex-shrink-0">{label}</span>
+                  <button
+                    onClick={() => handleSuggest(i)}
+                    disabled={suggestingFor === i}
+                    className="p-1.5 text-primary hover:bg-accent transition-colors disabled:opacity-50 sm:order-last ml-auto sm:ml-0"
+                    aria-label={`AI suggest for ${label}`}
+                  >
+                    {suggestingFor === i ? (
+                      <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} />
+                    ) : (
+                      <Sparkles className="h-4 w-4" strokeWidth={1.5} />
+                    )}
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={slot.freeText || ""}
@@ -181,20 +195,8 @@ export function MusicSlotEditor({
                   onChange={(e) => handleSlotChange(i, "notes", e.target.value)}
                   placeholder="Notes"
                   aria-label={`Notes for ${label}`}
-                  className="w-32 px-2 py-1 text-sm border border-border bg-background focus:border-primary focus:outline-none"
+                  className="w-full sm:w-32 px-2 py-1 text-sm border border-border bg-background focus:border-primary focus:outline-none"
                 />
-                <button
-                  onClick={() => handleSuggest(i)}
-                  disabled={suggestingFor === i}
-                  className="p-1.5 text-primary hover:bg-accent transition-colors disabled:opacity-50"
-                  aria-label={`AI suggest for ${label}`}
-                >
-                  {suggestingFor === i ? (
-                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} />
-                  ) : (
-                    <Sparkles className="h-4 w-4" strokeWidth={1.5} />
-                  )}
-                </button>
               </div>
 
               {/* Suggestions popover */}

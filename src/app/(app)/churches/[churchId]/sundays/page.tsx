@@ -26,7 +26,7 @@ export default async function SundaysPage({ params }: Props) {
   } catch { /* DB not available */ }
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <h1 className="text-3xl font-heading font-semibold mb-6">Upcoming Sundays</h1>
 
       {upcomingDays.length === 0 ? (
@@ -54,7 +54,7 @@ export default async function SundaysPage({ params }: Props) {
                 <p className="font-mono text-xs text-muted-foreground">{format(parseISO(day.date), "EEE d MMM yyyy")}</p>
                 <p className="font-heading text-lg">{day.cwName}</p>
               </div>
-              <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
+              <span className="text-xs text-muted-foreground sm:whitespace-nowrap flex-shrink-0">
                 {day.season.replace(/_/g, " ")}
               </span>
             </Link>

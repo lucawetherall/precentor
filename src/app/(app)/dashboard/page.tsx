@@ -104,7 +104,7 @@ export default async function DashboardPage() {
   const userName = user.user_metadata?.name || user.email?.split("@")[0] || "there";
 
   return (
-    <main id="main-content" className="p-8 max-w-4xl">
+    <main id="main-content" className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <h1 className="text-3xl font-heading font-semibold mb-1">
         Welcome, {userName}
       </h1>

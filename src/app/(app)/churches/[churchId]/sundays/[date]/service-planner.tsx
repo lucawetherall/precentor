@@ -77,15 +77,15 @@ export function ServicePlanner({
       </div>
 
       {/* Service tabs */}
-      <div className="flex items-center gap-1 border-b border-border mb-4">
-        <div role="tablist" aria-label="Services" className="flex items-center gap-1">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 border-b border-border mb-4">
+        <div role="tablist" aria-label="Services" className="flex items-center gap-1 overflow-x-auto -mb-px">
           {services.map((s) => (
             <button
               key={s.id}
               role="tab"
               aria-selected={activeTab === s.id}
               onClick={() => setActiveTab(s.id)}
-              className={`px-3 py-2 text-sm border-b-2 transition-colors ${
+              className={`px-3 py-2 text-sm whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === s.id
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground"
@@ -97,7 +97,7 @@ export function ServicePlanner({
           ))}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="sm:ml-auto flex flex-wrap items-center gap-2 pb-2 sm:pb-0">
           <label htmlFor="new-service-type" className="sr-only">Service type</label>
           <select
             id="new-service-type"
