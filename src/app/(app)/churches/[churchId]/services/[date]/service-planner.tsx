@@ -5,7 +5,8 @@ import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
 import { SectionEditor } from "./section-editor";
 import { ServiceSettings } from "./service-settings";
-import { Plus, Loader2, Trash2 } from "lucide-react";
+import { BookletPreview } from "./booklet-preview";
+import { Plus, Loader2, Trash2, BookOpen, X } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
 interface Service {
@@ -36,6 +37,7 @@ export function ServicePlanner({
   const [deleting, setDeleting] = useState(false);
   const [newType, setNewType] = useState<ServiceType>("SUNG_EUCHARIST");
   const [newTime, setNewTime] = useState("10:00");
+  const [showPreview, setShowPreview] = useState(false);
   const { addToast } = useToast();
 
   const handleCreateService = async () => {
@@ -175,7 +177,19 @@ export function ServicePlanner({
               includeReadingText: activeService.includeReadingText,
             }}
           />
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              onClick={() => setShowPreview((v) => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border hover:border-primary hover:text-primary transition-colors rounded-sm"
+              aria-expanded={showPreview}
+            >
+              {showPreview ? (
+                <X className="h-3 w-3" strokeWidth={1.5} />
+              ) : (
+                <BookOpen className="h-3 w-3" strokeWidth={1.5} />
+              )}
+              {showPreview ? "Close Preview" : "Preview & Edit"}
+            </button>
             <button
               onClick={handleDeleteService}
               disabled={deleting}
@@ -190,6 +204,15 @@ export function ServicePlanner({
               Delete service
             </button>
           </div>
+          {showPreview && (
+            <div className="mt-4">
+              <BookletPreview
+                churchId={churchId}
+                serviceId={activeService.id}
+                mode={activeService.sheetMode === "booklet" ? "booklet" : "summary"}
+              />
+            </div>
+          )}
         </>
       )}
 
