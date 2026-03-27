@@ -66,7 +66,7 @@ export default async function TemplatesAdminPage({ params }: Props) {
     rite: string;
   }[] = [];
 
-  let systemSectionsMap: Map<
+  const systemSectionsMap: Map<
     string,
     {
       id: string;
@@ -80,12 +80,12 @@ export default async function TemplatesAdminPage({ params }: Props) {
     }[]
   > = new Map();
 
-  let churchTemplateMap: Map<
+  const churchTemplateMap: Map<
     string,
     { id: string; name: string; baseTemplateId: string }
   > = new Map();
 
-  let churchSectionsMap: Map<
+  const churchSectionsMap: Map<
     string,
     {
       id: string;

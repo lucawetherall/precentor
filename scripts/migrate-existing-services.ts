@@ -98,7 +98,7 @@ async function migrateService(service: typeof services.$inferSelect) {
         if (template?.musicSlotType) {
           await db
             .update(serviceSections)
-            .set({ musicSlotType: template.musicSlotType as any })
+            .set({ musicSlotType: template.musicSlotType as (typeof serviceSections.$inferInsert)["musicSlotType"] })
             .where(eq(serviceSections.id, section.id));
           totalMusicSlotTypesBackfilled++;
         }

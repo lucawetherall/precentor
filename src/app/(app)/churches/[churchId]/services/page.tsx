@@ -17,8 +17,8 @@ export default async function ServicesPage({ params }: Props) {
   const today = format(new Date(), "yyyy-MM-dd");
 
   let upcomingDays: InferSelectModel<typeof liturgicalDays>[] = [];
-  let servicesByDay: Map<string, InferSelectModel<typeof services>[]> = new Map();
-  let sectionsByService: Map<string, InferSelectModel<typeof serviceSections>[]> = new Map();
+  const servicesByDay: Map<string, InferSelectModel<typeof services>[]> = new Map();
+  const sectionsByService: Map<string, InferSelectModel<typeof serviceSections>[]> = new Map();
 
   try {
     upcomingDays = await db

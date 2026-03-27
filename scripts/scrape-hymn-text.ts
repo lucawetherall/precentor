@@ -190,7 +190,9 @@ async function main() {
     try {
       // Try base URL first; if 404, retry with "a" suffix (e.g. /1a for hymns
       // that have multiple tune settings in hymnary.org).
-      let { html, status } = await fetchHymnPage(url);
+      const initialFetch = await fetchHymnPage(url);
+      let html = initialFetch.html;
+      const status = initialFetch.status;
       let resolvedUrl = url;
 
       if (status === 404) {

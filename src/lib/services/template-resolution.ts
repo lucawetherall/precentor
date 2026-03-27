@@ -3,6 +3,7 @@ import {
   churchTemplates,
   churchTemplateSections,
   serviceTypeTemplates,
+  serviceTypeEnum,
   templateSections,
 } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
@@ -26,7 +27,7 @@ export async function resolveTemplateSections(
   // 1. Find the system template for this service type
   const [systemTemplate] = await db.select()
     .from(serviceTypeTemplates)
-    .where(eq(serviceTypeTemplates.serviceType, serviceType as any));
+    .where(eq(serviceTypeTemplates.serviceType, serviceType as (typeof serviceTypeEnum.enumValues)[number]));
   if (!systemTemplate) return [];
 
   // 2. Check for church-specific override

@@ -79,7 +79,8 @@ function EditableBlock({ block, blockIndex, allBlocks, onBlocksChange, saving }:
 
   // Keep local value in sync when block.text changes externally
   useEffect(() => {
-    setValue(block.text);
+    if (value !== block.text) setValue(block.text);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [block.text]);
 
   return (
@@ -218,9 +219,11 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
   const [savedSectionId, setSavedSectionId] = useState<string | null>(null);
   const [saveErrorSectionId, setSaveErrorSectionId] = useState<string | null>(null);
 
-  // Track the latest raw sections for saving
+  // Track the latest raw sections for saving (kept in ref so save callbacks see current value)
   const rawSectionsRef = useRef<RawServiceSection[]>([]);
-  rawSectionsRef.current = rawSections;
+  useEffect(() => {
+    rawSectionsRef.current = rawSections;
+  }, [rawSections]);
 
   useEffect(() => {
     async function load() {
