@@ -13,6 +13,7 @@ import {
   liturgicalTexts,
   eucharisticPrayers,
   hymnVerses,
+  collects,
 } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import type {
@@ -107,10 +108,20 @@ async function resolveDbSections(
     if (legacyEp) epBlocks = legacyEp.blocks;
   }
 
-  // Resolve collect text
+  // Resolve collect text — look up collectId if set
+  let collectFromDb: string | null = null;
+  if (service.collectId) {
+    const [collectRow] = await db
+      .select({ text: collects.text })
+      .from(collects)
+      .where(eq(collects.id, service.collectId))
+      .limit(1);
+    collectFromDb = collectRow?.text ?? null;
+  }
+
   const collectText = resolveCollectText(
     service.collectOverride ?? null,
-    null, // collectId join not done here; liturgical day collect is the fallback
+    collectFromDb,
     day.collect ?? null,
   );
 
