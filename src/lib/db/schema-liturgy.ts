@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, uniqueIndex, index } from "drizzle-orm/pg-core";
 import {
   churches,
   hymns,
@@ -7,7 +7,7 @@ import {
   serviceTypeEnum,
   musicSlotTypeEnum,
   riteEnum,
-} from "./schema";
+} from "./schema-base";
 
 // ─── Liturgical Texts ────────────────────────────────────────
 export const liturgicalTexts = pgTable("liturgical_texts", {
@@ -16,7 +16,7 @@ export const liturgicalTexts = pgTable("liturgical_texts", {
   title: text("title").notNull(),
   rite: riteEnum("rite").notNull(),
   category: text("category").notNull(),
-  blocks: jsonb("blocks").notNull(),
+  blocks: jsonb("blocks").notNull().$type<{ speaker: string; text: string }[]>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -35,7 +35,7 @@ export const serviceTypeTemplates = pgTable("service_type_templates", {
 // ─── Template Sections ────────────────────────────────────────
 export const templateSections = pgTable("template_sections", {
   id: uuid("id").primaryKey().defaultRandom(),
-  templateId: uuid("template_id").notNull().references(() => serviceTypeTemplates.id),
+  templateId: uuid("template_id").notNull().references(() => serviceTypeTemplates.id, { onDelete: "cascade" }),
   sectionKey: text("section_key").notNull(),
   title: text("title").notNull(),
   majorSection: text("major_section"),
@@ -83,12 +83,14 @@ export const serviceSections = pgTable("service_sections", {
   majorSection: text("major_section"),
   positionOrder: integer("position_order").notNull(),
   liturgicalTextId: uuid("liturgical_text_id").references(() => liturgicalTexts.id),
-  textOverride: jsonb("text_override"),
+  textOverride: jsonb("text_override").$type<{ speaker: string; text: string }[] | null>(),
   musicSlotId: uuid("music_slot_id").references(() => musicSlots.id, { onDelete: "set null" }),
   placeholderType: text("placeholder_type"),
   placeholderValue: text("placeholder_value"),
   visible: boolean("visible").default(true).notNull(),
-});
+}, (t) => [
+  index("service_section_service_idx").on(t.serviceId),
+]);
 
 // ─── Hymn Verses ──────────────────────────────────────────────
 export const hymnVerses = pgTable("hymn_verses", {
