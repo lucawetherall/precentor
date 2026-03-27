@@ -18,6 +18,7 @@
     "db:seed-prayers": "tsx scripts/seed-eucharistic-prayers.ts",
     "db:seed-collects": "tsx scripts/seed-collects.ts",
     "db:scrape-hymns": "tsx scripts/scrape-hymn-text.ts",
+    "db:scrape-collects": "tsx scripts/scrape-collects.ts",
     "db:migrate-services": "tsx scripts/migrate-existing-services.ts"
   },
   "dependencies": {

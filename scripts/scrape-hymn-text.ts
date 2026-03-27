@@ -52,10 +52,10 @@ interface ParsedVerse {
 
 // ─── Hymnal URL builder ────────────────────────────────────────────
 
-function hymnaryUrl(book: string, number: number): string {
+function hymnaryUrl(book: string, number: number, suffix: string = ""): string {
   // NEH → NEH1985, AM → AM2013
   const hymnalId = book === "NEH" ? "NEH1985" : "AM2013";
-  return `${HYMNARY_BASE}/${hymnalId}/${number}`;
+  return `${HYMNARY_BASE}/${hymnalId}/${number}${suffix}`;
 }
 
 // ─── HTML Parsing ──────────────────────────────────────────────────
@@ -146,17 +146,18 @@ function sleep(ms: number): Promise<void> {
 
 // ─── Fetching ──────────────────────────────────────────────────────
 
-async function fetchHymnPage(url: string): Promise<string> {
+async function fetchHymnPage(url: string): Promise<{ html: string; status: number }> {
   const res = await fetch(url, {
     headers: {
       // Identify as a bot doing research; hymnary.org does not block scrapers
       "User-Agent": "precentor-hymn-scraper/1.0 (build-time data pipeline)",
     },
   });
-  if (!res.ok) {
+  if (!res.ok && res.status !== 404) {
     throw new Error(`HTTP ${res.status} ${res.statusText}`);
   }
-  return res.text();
+  const html = res.ok ? await res.text() : "";
+  return { html, status: res.status };
 }
 
 // ─── Main ──────────────────────────────────────────────────────────
@@ -187,15 +188,35 @@ async function main() {
     }
 
     try {
-      const html = await fetchHymnPage(url);
+      // Try base URL first; if 404, retry with "a" suffix (e.g. /1a for hymns
+      // that have multiple tune settings in hymnary.org).
+      let { html, status } = await fetchHymnPage(url);
+      let resolvedUrl = url;
+
+      if (status === 404) {
+        await sleep(RATE_LIMIT_MS);
+        const fallbackUrl = hymnaryUrl(hymn.book, hymn.number, "a");
+        const fallback = await fetchHymnPage(fallbackUrl);
+        if (fallback.status === 404) {
+          console.warn(`  [${i + 1}] ${hymn.book} ${hymn.number} — 404 on base and "a" suffix — unavailable`);
+          failedHymns.push({ book: hymn.book, number: hymn.number, reason: "404 (base and 'a' suffix)" });
+          hymnsFailed++;
+          if (i < allHymns.length - 1) await sleep(RATE_LIMIT_MS);
+          continue;
+        }
+        html = fallback.html;
+        resolvedUrl = fallbackUrl;
+        console.log(`  [${i + 1}] ${hymn.book} ${hymn.number} — resolved via "a" suffix (${resolvedUrl})`);
+      }
+
       const verses = parseHymnText(html);
 
       if (verses === null) {
-        console.warn(`  [${i + 1}] ${hymn.book} ${hymn.number} — no #text div found (${url})`);
+        console.warn(`  [${i + 1}] ${hymn.book} ${hymn.number} — no #text div found (${resolvedUrl})`);
         failedHymns.push({ book: hymn.book, number: hymn.number, reason: "no #text div" });
         hymnsFailed++;
       } else if (verses.length === 0) {
-        console.warn(`  [${i + 1}] ${hymn.book} ${hymn.number} — text section found but no parseable stanzas (licence wall?) (${url})`);
+        console.warn(`  [${i + 1}] ${hymn.book} ${hymn.number} — text section found but no parseable stanzas (licence wall?) (${resolvedUrl})`);
         failedHymns.push({ book: hymn.book, number: hymn.number, reason: "no parseable stanzas" });
         hymnsEmpty++;
       } else {
