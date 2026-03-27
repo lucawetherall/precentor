@@ -13,7 +13,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "db:seed": "tsx scripts/seed-lectionary.ts",
-    "db:seed-texts": "tsx scripts/seed-liturgical-texts.ts"
+    "db:seed-texts": "tsx scripts/seed-liturgical-texts.ts",
+    "db:seed-templates": "tsx scripts/seed-templates.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
