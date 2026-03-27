@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
 import { SectionEditor } from "./section-editor";
 import { ServiceSettings } from "./service-settings";
 import { BookletPreview } from "./booklet-preview";
-import { Plus, Loader2, Trash2, BookOpen, X } from "lucide-react";
+import { Plus, Loader2, Trash2, BookOpen, X, FileDown, FileText, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Service {
   id: string;
@@ -38,6 +44,11 @@ export function ServicePlanner({
   const [newType, setNewType] = useState<ServiceType>("SUNG_EUCHARIST");
   const [newTime, setNewTime] = useState("10:00");
   const [showPreview, setShowPreview] = useState(false);
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const pdfBlobUrlRef = useRef<string | null>(null);
   const { addToast } = useToast();
 
   const handleCreateService = async () => {
@@ -101,6 +112,52 @@ export function ServicePlanner({
   };
 
   const activeService = services.find((s) => s.id === activeTab);
+
+  // Revoke old blob URL when dialog closes or a new one is created
+  const handlePdfDialogClose = () => {
+    setPdfDialogOpen(false);
+    if (pdfBlobUrlRef.current) {
+      URL.revokeObjectURL(pdfBlobUrlRef.current);
+      pdfBlobUrlRef.current = null;
+    }
+    setPdfBlobUrl(null);
+    setPdfError(null);
+  };
+
+  const handlePreviewPdf = async () => {
+    if (!activeService) return;
+    setPdfLoading(true);
+    setPdfError(null);
+    setPdfDialogOpen(true);
+    try {
+      const sheetMode = activeService.sheetMode === "booklet" ? "booklet" : "summary";
+      const url = `/api/churches/${churchId}/services/${activeService.id}/sheet?format=pdf&mode=${sheetMode}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        setPdfError("Failed to load PDF preview");
+        setPdfLoading(false);
+        return;
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      // Revoke any previous blob URL
+      if (pdfBlobUrlRef.current) {
+        URL.revokeObjectURL(pdfBlobUrlRef.current);
+      }
+      pdfBlobUrlRef.current = blobUrl;
+      setPdfBlobUrl(blobUrl);
+    } catch {
+      setPdfError("Network error loading PDF");
+    }
+    setPdfLoading(false);
+  };
+
+  const handleDownload = (format: "pdf" | "docx") => {
+    if (!activeService) return;
+    const sheetMode = activeService.sheetMode === "booklet" ? "booklet" : "summary";
+    const url = `/api/churches/${churchId}/services/${activeService.id}/sheet?format=${format}&mode=${sheetMode}`;
+    window.open(url, "_blank");
+  };
 
   return (
     <div>
@@ -177,19 +234,33 @@ export function ServicePlanner({
               includeReadingText: activeService.includeReadingText,
             }}
           />
-          <div className="mt-4 flex items-center justify-between">
-            <button
-              onClick={() => setShowPreview((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border hover:border-primary hover:text-primary transition-colors rounded-sm"
-              aria-expanded={showPreview}
-            >
-              {showPreview ? (
-                <X className="h-3 w-3" strokeWidth={1.5} />
-              ) : (
-                <BookOpen className="h-3 w-3" strokeWidth={1.5} />
-              )}
-              {showPreview ? "Close Preview" : "Preview & Edit"}
-            </button>
+          <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => setShowPreview((v) => !v)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border hover:border-primary hover:text-primary transition-colors rounded-sm"
+                aria-expanded={showPreview}
+              >
+                {showPreview ? (
+                  <X className="h-3 w-3" strokeWidth={1.5} />
+                ) : (
+                  <BookOpen className="h-3 w-3" strokeWidth={1.5} />
+                )}
+                {showPreview ? "Close Preview" : "Preview & Edit"}
+              </button>
+              <button
+                onClick={handlePreviewPdf}
+                disabled={pdfLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border hover:border-primary hover:text-primary transition-colors rounded-sm disabled:opacity-50"
+              >
+                {pdfLoading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
+                ) : (
+                  <Eye className="h-3 w-3" strokeWidth={1.5} />
+                )}
+                Preview PDF
+              </button>
+            </div>
             <button
               onClick={handleDeleteService}
               disabled={deleting}
@@ -221,6 +292,64 @@ export function ServicePlanner({
           <p className="text-muted-foreground">No services planned for this day. Add one above.</p>
         </div>
       )}
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={pdfDialogOpen} onOpenChange={(open) => { if (!open) handlePdfDialogClose(); }}>
+        <DialogContent className="w-screen h-screen max-w-none m-0 p-0 rounded-none flex flex-col">
+          <DialogHeader className="px-4 py-3 border-b border-border flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="font-heading text-sm">PDF Preview</DialogTitle>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownload("pdf")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border hover:border-primary hover:text-primary transition-colors rounded-sm"
+                >
+                  <FileDown className="h-3 w-3" strokeWidth={1.5} />
+                  Download PDF
+                </button>
+                <button
+                  onClick={() => handleDownload("docx")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border hover:border-primary hover:text-primary transition-colors rounded-sm"
+                >
+                  <FileText className="h-3 w-3" strokeWidth={1.5} />
+                  Download DOCX
+                </button>
+                <button
+                  onClick={() => {
+                    handlePdfDialogClose();
+                    setShowPreview(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border hover:border-primary hover:text-primary transition-colors rounded-sm"
+                >
+                  <BookOpen className="h-3 w-3" strokeWidth={1.5} />
+                  Edit
+                </button>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-hidden">
+            {pdfLoading && (
+              <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.5} />
+                Loading PDF…
+              </div>
+            )}
+            {pdfError && (
+              <div className="flex items-center justify-center h-full text-destructive text-sm">
+                {pdfError}
+              </div>
+            )}
+            {pdfBlobUrl && !pdfLoading && (
+              <iframe
+                src={pdfBlobUrl}
+                className="w-full h-full border-0"
+                title="PDF Preview"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
