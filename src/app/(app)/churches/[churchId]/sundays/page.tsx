@@ -126,8 +126,6 @@ export default async function SundaysPage({ params }: Props) {
       <Suspense>
         <SundaysViewWrapper
           churchId={churchId}
-          userId={userId}
-          role={role}
           liturgicalDays={days}
         />
       </Suspense>

@@ -77,7 +77,7 @@ export function MemberServiceView({
             href={editUrl}
             className="text-sm border border-border px-3 py-1.5 hover:border-primary hover:text-primary transition-colors"
           >
-            ✎ Edit music &amp; details
+            ✎ Edit music & details
           </Link>
         </div>
       )}

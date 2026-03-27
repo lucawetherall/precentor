@@ -106,6 +106,17 @@ export async function DELETE(
     return NextResponse.json({ error: "You can only update your own availability" }, { status: 403 });
   }
 
+  // Verify service belongs to this church
+  const service = await db
+    .select()
+    .from(services)
+    .where(and(eq(services.id, serviceId), eq(services.churchId, churchId)))
+    .limit(1);
+
+  if (service.length === 0) {
+    return NextResponse.json({ error: "Service not found" }, { status: 404 });
+  }
+
   try {
     await db
       .delete(availability)

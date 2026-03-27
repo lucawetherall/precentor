@@ -7,14 +7,10 @@ import { SundaysList } from './sundays-list'
 import { SundaysAgenda } from './sundays-agenda'
 import { SundaysCalendar } from './sundays-calendar'
 import type { LiturgicalDayWithService } from '@/types/service-views'
-import type { MemberRole } from '@/types'
-
 type ViewMode = 'list' | 'agenda' | 'calendar'
 
 interface SundaysViewWrapperProps {
   churchId: string
-  userId: string
-  role: MemberRole
   liturgicalDays: LiturgicalDayWithService[]
 }
 
@@ -23,8 +19,6 @@ const VALID_VIEWS: ViewMode[] = ['list', 'agenda', 'calendar']
 
 export function SundaysViewWrapper({
   churchId,
-  userId,
-  role,
   liturgicalDays,
 }: SundaysViewWrapperProps) {
   const searchParams = useSearchParams()
