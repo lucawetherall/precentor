@@ -39,6 +39,8 @@ This spec redesigns the service planning and booklet generation system. The curr
 
 All liturgical text, service structure, eucharistic prayers, collects, and hymn verses move from code to database. The system uses a three-tier template resolution: system defaults → church customisation → service instance.
 
+**Primary key convention:** All new tables use `uuid` primary keys to match the existing schema. Foreign keys referencing existing tables (e.g., `hymns.id`, `churches.id`, `services.id`) are `uuid` type.
+
 ### 2.1 New tables
 
 #### `liturgical_texts`
@@ -47,7 +49,7 @@ Stores every shared liturgical text: creeds, confessions, responses, rubrics, gr
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | serial PK | |
+| `id` | uuid PK | |
 | `key` | text UNIQUE | e.g. `nicene-creed`, `confession-cw`, `lords-prayer` |
 | `title` | text | Human-readable name |
 | `rite` | enum(`CW`, `BCP`, `COMMON`) | Which tradition the text belongs to |
@@ -64,7 +66,7 @@ System-wide default template definitions. One row per service type.
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | serial PK | |
+| `id` | uuid PK | |
 | `service_type` | enum | `SUNG_EUCHARIST`, `CHORAL_EVENSONG`, `SAID_EUCHARIST`, `CHORAL_MATINS`, `FAMILY_SERVICE`, `COMPLINE`, `CUSTOM` |
 | `rite` | text | e.g. `Common Worship Order One`, `BCP Evensong` |
 | `name` | text | Human-readable name |
@@ -80,7 +82,7 @@ Ordered list of sections within a system template. Each row is one element in th
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | serial PK | |
+| `id` | uuid PK | |
 | `template_id` | FK → `service_type_templates.id` | |
 | `section_key` | text | e.g. `entrance-hymn`, `gloria`, `collect`, `gospel-reading` |
 | `title` | text | Display name: `Entrance Hymn`, `Gloria in Excelsis` |
@@ -98,7 +100,7 @@ Church-specific override of a system template. Created lazily — only exists wh
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | serial PK | |
+| `id` | uuid PK | |
 | `church_id` | FK → `churches.id` ON DELETE CASCADE | |
 | `base_template_id` | FK → `service_type_templates.id` | |
 | `name` | text | Church's custom name for this template |
@@ -112,7 +114,7 @@ Full copy of template sections for a church's customised version. When a church 
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | serial PK | |
+| `id` | uuid PK | |
 | `church_template_id` | FK → `church_templates.id` ON DELETE CASCADE | |
 | `section_key` | text | |
 | `title` | text | |
@@ -130,7 +132,7 @@ The actual running order for a specific service instance. Created by copying fro
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | serial PK | |
+| `id` | uuid PK | |
 | `service_id` | FK → `services.id` ON DELETE CASCADE | |
 | `section_key` | text | |
 | `title` | text | |
@@ -149,7 +151,7 @@ All eucharistic prayers with full text, descriptions, and rite classification.
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | serial PK | |
+| `id` | uuid PK | |
 | `key` | text UNIQUE | `cw-a`, `cw-b`, ... `cw-h`, `bcp-consecration` |
 | `name` | text | `Prayer A`, `Prayer of Consecration (BCP)` |
 | `rite` | enum(`CW`, `BCP`) | |
@@ -157,7 +159,7 @@ All eucharistic prayers with full text, descriptions, and rite classification.
 | `blocks` | jsonb | `[{speaker, text}]` — full prayer text |
 | `created_at` | timestamptz | |
 
-Seeded from the current `cw-eucharistic-prayers.ts` plus BCP consecration prayer.
+Seeded from the current `src/data/liturgy/eucharistic-prayers.ts` plus BCP consecration prayer.
 
 #### `collects`
 
@@ -165,7 +167,7 @@ Multiple collects per liturgical day. Churches can add custom collects.
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | serial PK | |
+| `id` | uuid PK | |
 | `liturgical_day_id` | FK → `liturgical_days.id` nullable | null for custom collects unlinked to calendar |
 | `rite` | enum(`CW`, `BCP`, `CUSTOM`) | |
 | `title` | text | e.g. `Collect for the Third Sunday of Advent (BCP)` |
@@ -181,7 +183,7 @@ One row per verse of hymn text, scraped from hymnary.org at build time.
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | serial PK | |
+| `id` | uuid PK | |
 | `hymn_id` | FK → `hymns.id` ON DELETE CASCADE | |
 | `verse_number` | integer | 1-indexed |
 | `text` | text | Full verse text with line breaks preserved |
@@ -208,12 +210,14 @@ One row per verse of hymn text, scraped from hymnary.org at build time.
 
 When `verse_count` is set but `selected_verses` is null, the auto-selection algorithm runs. When `selected_verses` is set, it takes precedence.
 
+**Note on `music_slots.service_id`:** The existing `music_slots.service_id` FK is retained. The new `service_sections.music_slot_id` establishes the structural link (which section this slot belongs to). `music_slots.service_id` remains for direct service-level queries and cascading deletes. Both references point to the same service.
+
 #### `churches.settings` (JSON)
 
 | Change | Key | Type | Notes |
 |--------|-----|------|-------|
 | ADD | `default_verse_count` | number | Church-wide default, e.g. 4 |
-| ADD | `default_eucharistic_prayer_id` | number nullable | Default prayer for new services |
+| ADD | `default_eucharistic_prayer_id` | string (uuid) nullable | Default prayer for new services |
 
 ### 2.3 Template resolution order
 
@@ -330,6 +334,7 @@ When a music slot has a hymn assigned and `verse_count` is set:
    - Fill remaining slots by evenly spacing from the middle verses
    - Example: 7 verses, 4 requested → [1, 3, 5, 7]
    - Example: 6 verses, 3 requested → [1, 3, 6]
+   - Example: 8 verses, 2 requested → [1, 8] (first and last only, all middle content skipped)
 4. Choruses/refrains (`is_chorus = true`) appear after each selected verse and do not count toward `verse_count`
 5. If the hymn has fewer or equal verses to `verse_count`, all verses are included
 
@@ -483,7 +488,7 @@ Use existing shadcn/ui component patterns (Button, Card, Badge, Dialog, Select, 
 2. Add new columns to `services` and `music_slots`
 3. Seed `liturgical_texts` from `src/data/liturgy/*.ts`
 4. Seed `service_type_templates` + `template_sections` from current hardcoded `ServiceTemplate` definitions
-5. Seed `eucharistic_prayers` from `cw-eucharistic-prayers.ts` + BCP
+5. Seed `eucharistic_prayers` from `src/data/liturgy/eucharistic-prayers.ts` + BCP
 6. Seed `collects` from `liturgical_days.collect` (CW) + additional BCP collects
 7. Run `scrape-hymn-text.ts` to populate `hymn_verses`
 8. Migrate existing `services.eucharistic_prayer` (letter) to `services.eucharistic_prayer_id` (FK)
