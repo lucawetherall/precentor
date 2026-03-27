@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { services, serviceTypeEnum } from "@/lib/db/schema";
+import { services, serviceTypeEnum, serviceSections, musicSlots, musicSlotTypeEnum } from "@/lib/db/schema";
+import { resolveTemplateSections } from "@/lib/services/template-resolution";
 
 export async function POST(
   request: Request,
@@ -37,6 +38,41 @@ export async function POST(
       serviceType: serviceType as (typeof serviceTypeEnum.enumValues)[number],
       time: time || null,
     }).returning();
+
+    // Copy template sections for the new service
+    const templateSections = await resolveTemplateSections(churchId, serviceType);
+
+    if (templateSections.length > 0) {
+      // Insert music slots for sections that need them, then link back via musicSlotId
+      const sectionValues = await Promise.all(
+        templateSections.map(async (section, i) => {
+          let musicSlotId: string | null = null;
+
+          if (section.musicSlotType) {
+            const [slot] = await db.insert(musicSlots).values({
+              serviceId: service.id,
+              slotType: section.musicSlotType as (typeof musicSlotTypeEnum.enumValues)[number],
+              positionOrder: section.positionOrder ?? i,
+            }).returning({ id: musicSlots.id });
+            musicSlotId = slot.id;
+          }
+
+          return {
+            serviceId: service.id,
+            sectionKey: section.sectionKey,
+            title: section.title,
+            majorSection: section.majorSection ?? null,
+            positionOrder: section.positionOrder ?? i,
+            liturgicalTextId: section.liturgicalTextId ?? null,
+            musicSlotId,
+            placeholderType: section.placeholderType ?? null,
+            visible: true,
+          };
+        })
+      );
+
+      await db.insert(serviceSections).values(sectionValues);
+    }
 
     return NextResponse.json(service, { status: 201 });
   } catch (error) {
