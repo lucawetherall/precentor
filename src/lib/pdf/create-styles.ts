@@ -153,9 +153,9 @@ export function createStyles(layout: TemplateLayout) {
     readingText: {
       fontSize: baseFontSize - 1,
       fontFamily: fonts.regular,
-      paddingLeft: 8,
+      paddingLeft: 16,
       marginBottom: 8,
-      lineHeight: 1.5,
+      lineHeight: 1.6,
     },
 
     // ─── Collect ────────────────────────────────────────

@@ -70,10 +70,10 @@ export default async function ServiceDetailPage({ params }: Props) {
       {dayReadings.length > 0 && (
         <div className="mb-6 border border-border bg-card p-4 shadow-sm">
           <h2 className="text-lg font-heading font-semibold mb-3">Readings</h2>
-          <div className="space-y-1">
+          <div className="space-y-0">
             {dayReadings.map((r) => (
-              <div key={r.id} className="flex gap-3 text-sm">
-                <span className="text-muted-foreground w-24 flex-shrink-0">{r.position.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</span>
+              <div key={r.id} className="flex gap-6 text-sm leading-relaxed border-b border-border py-2 last:border-b-0">
+                <span className="text-muted-foreground w-28 flex-shrink-0">{r.position.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</span>
                 <span>{r.reference}</span>
                 <span className="text-xs text-muted-foreground ml-auto">{r.lectionary.charAt(0).toUpperCase() + r.lectionary.slice(1).toLowerCase()}</span>
               </div>
