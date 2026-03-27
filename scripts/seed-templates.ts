@@ -8,6 +8,7 @@
  * Usage: npm run db:seed-templates
  */
 
+import "dotenv/config";
 import { db } from "@/lib/db";
 import { liturgicalTexts, serviceTypeTemplates, templateSections } from "@/lib/db/schema-liturgy";
 import { eq } from "drizzle-orm";

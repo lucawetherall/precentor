@@ -21,6 +21,7 @@
  * Inline back-references like "[Refrain]" are stripped from stanza text.
  */
 
+import "dotenv/config";
 import * as cheerio from "cheerio";
 import { db } from "@/lib/db";
 import { hymns, hymnVerses } from "@/lib/db/schema";

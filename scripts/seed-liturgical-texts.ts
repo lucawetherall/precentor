@@ -8,6 +8,7 @@
  * Usage: npm run db:seed-texts
  */
 
+import "dotenv/config";
 import { db } from "@/lib/db";
 import { liturgicalTexts } from "@/lib/db/schema-liturgy";
 

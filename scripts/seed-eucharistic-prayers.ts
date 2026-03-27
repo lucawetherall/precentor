@@ -7,6 +7,7 @@
  * Usage: npm run db:seed-prayers
  */
 
+import "dotenv/config";
 import { db } from "@/lib/db";
 import { eucharisticPrayers } from "@/lib/db/schema-base";
 

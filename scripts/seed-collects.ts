@@ -10,6 +10,7 @@
  * Usage: npm run db:seed-collects
  */
 
+import "dotenv/config";
 import { db } from "@/lib/db";
 import { collects, liturgicalDays } from "@/lib/db/schema-base";
 import { isNotNull } from "drizzle-orm";
