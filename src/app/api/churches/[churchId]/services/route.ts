@@ -65,7 +65,7 @@ export async function POST(
             positionOrder: section.positionOrder ?? i,
             liturgicalTextId: section.liturgicalTextId ?? null,
             musicSlotId,
-            musicSlotType: section.musicSlotType ?? null,
+            musicSlotType: (section.musicSlotType as (typeof serviceSections.$inferInsert)["musicSlotType"]) ?? null,
             placeholderType: section.placeholderType ?? null,
             visible: true,
           };

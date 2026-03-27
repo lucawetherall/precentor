@@ -158,7 +158,7 @@ async function migrateService(service: typeof services.$inferSelect) {
       liturgicalTextId: ts.liturgicalTextId ?? null,
       textOverride: null,
       musicSlotId: linkedSlotId,
-      musicSlotType: ts.musicSlotType ?? null,
+      musicSlotType: (ts.musicSlotType as (typeof serviceSections.$inferInsert)["musicSlotType"]) ?? null,
       placeholderType: ts.placeholderType ?? null,
       placeholderValue: null,
       visible: true,
