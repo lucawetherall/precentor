@@ -16,7 +16,8 @@
     "db:seed-texts": "tsx scripts/seed-liturgical-texts.ts",
     "db:seed-templates": "tsx scripts/seed-templates.ts",
     "db:seed-prayers": "tsx scripts/seed-eucharistic-prayers.ts",
-    "db:seed-collects": "tsx scripts/seed-collects.ts"
+    "db:seed-collects": "tsx scripts/seed-collects.ts",
+    "db:scrape-hymns": "tsx scripts/scrape-hymn-text.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
