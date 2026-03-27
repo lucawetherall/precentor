@@ -67,7 +67,6 @@ function NavLinks({
 }
 
 export function ChurchSidebar({
-  churchId,
   churchName,
   userRole,
   userEmail,

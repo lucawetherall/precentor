@@ -144,8 +144,19 @@
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground font-body antialiased;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background-color: rgba(139, 69, 19, 0.15);
+    color: #2C2416;
   }
 
   h1,
@@ -155,5 +166,19 @@
   h5,
   h6 {
     @apply font-heading;
+  }
+
+  /* Consistent focus ring for keyboard navigation */
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
   }
 }

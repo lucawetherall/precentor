@@ -31,7 +31,7 @@ export default async function ChurchesPage() {
   } catch { /* DB not available */ }
 
   return (
-    <main id="main-content" className="p-8 max-w-4xl">
+    <main id="main-content" className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-heading font-semibold">Your Churches</h1>
         <Link

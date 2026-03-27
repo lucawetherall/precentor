@@ -25,7 +25,7 @@ export default async function ChurchSettingsPage({ params }: Props) {
   if (!church) redirect("/churches");
 
   return (
-    <div className="p-8 max-w-lg">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-lg">
       <h1 className="text-3xl font-heading font-semibold mb-6">Church Settings</h1>
       <ChurchSettingsForm church={church} />
     </div>

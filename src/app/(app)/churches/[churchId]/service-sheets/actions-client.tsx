@@ -61,7 +61,7 @@ export function ServiceSheetActions({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <select
         value={mode}
         onChange={(e) => handleModeChange(e.target.value as SheetMode)}
@@ -180,8 +180,8 @@ export function BatchDownloadActions({
   if (serviceIds.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-3 p-4 border border-border bg-card shadow-sm">
-      <span className="text-sm text-muted-foreground flex-1">
+    <div className="flex flex-wrap items-center gap-3 p-3 sm:p-4 border border-border bg-card shadow-sm">
+      <span className="text-sm text-muted-foreground w-full sm:w-auto sm:flex-1">
         Download all {serviceIds.length} service sheets:
       </span>
 

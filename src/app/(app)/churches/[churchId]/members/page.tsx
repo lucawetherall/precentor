@@ -63,7 +63,7 @@ export default async function MembersPage({ params }: Props) {
   const isAdmin = hasMinRole(userRole, "ADMIN");
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <h1 className="text-3xl font-heading font-semibold mb-6">Members</h1>
 
       {isAdmin && <InviteMemberForm churchId={churchId} />}

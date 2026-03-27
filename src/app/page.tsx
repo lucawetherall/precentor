@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <main id="main-content" className="min-h-screen">
       {/* Hero */}
-      <section className="flex flex-col items-center justify-center px-8 py-28 sm:py-36 text-center relative overflow-hidden">
+      <section className="flex flex-col items-center justify-center px-4 sm:px-8 py-20 sm:py-28 lg:py-36 text-center relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/30" />
         <div className="max-w-2xl space-y-6 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 text-xs font-body text-primary border border-primary/30 bg-primary/5 mb-2">
@@ -38,9 +38,9 @@ export default function Home() {
       </section>
 
       {/* Features */}
-      <section className="px-8 py-16 bg-muted/50">
+      <section className="px-4 sm:px-8 py-12 sm:py-16 bg-muted/50">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-heading font-semibold text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl font-heading font-semibold text-center mb-8 sm:mb-12">
             Everything you need for church music planning
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -91,9 +91,9 @@ export default function Home() {
       </section>
 
       {/* How it works */}
-      <section className="px-8 py-16">
+      <section className="px-4 sm:px-8 py-12 sm:py-16">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-heading font-semibold text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl font-heading font-semibold text-center mb-8 sm:mb-12">
             Get started in three steps
           </h2>
           <div className="space-y-8">
@@ -135,7 +135,7 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="px-8 py-16 bg-muted/50">
+      <section className="px-4 sm:px-8 py-12 sm:py-16 bg-muted/50">
         <div className="max-w-2xl mx-auto text-center">
           <Church className="h-10 w-10 mx-auto text-primary mb-4" strokeWidth={1.5} aria-hidden="true" />
           <h2 className="text-2xl font-heading font-semibold mb-3">
@@ -155,7 +155,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="px-8 py-8 border-t border-border">
+      <footer className="px-4 sm:px-8 py-8 border-t border-border">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
           <span className="font-heading font-semibold text-foreground text-sm">Precentor</span>
           <span>&copy; {new Date().getFullYear()} Precentor. Built for the Church of England.</span>

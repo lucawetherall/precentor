@@ -5,7 +5,7 @@ import { format, parseISO } from "date-fns";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
 import { ServiceSheetActions, BatchDownloadActions } from "./actions-client";
-import { BookOpen, FileText } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 interface Props {
   params: Promise<{ churchId: string }>;
@@ -49,7 +49,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
   const serviceIds = recentServices.map((s) => s.serviceId);
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <h1 className="text-3xl font-heading font-semibold mb-6">Service Sheets</h1>
       <p className="text-sm text-muted-foreground mb-6">
         Generate PDF or Word service sheets for any planned service.
@@ -74,7 +74,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
             return (
               <div
                 key={s.serviceId}
-                className="flex items-center gap-4 border border-border bg-card p-4 shadow-sm"
+                className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border border-border bg-card p-3 sm:p-4 shadow-sm"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
