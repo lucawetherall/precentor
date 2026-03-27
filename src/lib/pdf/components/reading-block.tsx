@@ -18,8 +18,8 @@ export function ReadingBlock({
   const label = POSITION_LABELS[reading.position] || reading.position;
 
   return (
-    <View style={{ marginBottom: 8 }}>
-      <View style={styles.readingRow}>
+    <View style={{ marginBottom: 8, gap: 4 }}>
+      <View style={[styles.readingRow, { gap: 8 }]}>
         <Text style={styles.readingLabel}>{label}</Text>
         <Text style={styles.readingValue}>{reading.reference}</Text>
       </View>

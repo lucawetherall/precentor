@@ -1,4 +1,4 @@
-export default function SundayDetailLoading() {
+export default function ServiceDetailLoading() {
   return (
     <div className="p-8 max-w-5xl">
       <div className="h-4 w-32 bg-muted animate-pulse mb-4" />
