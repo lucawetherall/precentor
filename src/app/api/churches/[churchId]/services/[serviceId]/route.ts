@@ -87,6 +87,36 @@ export async function PATCH(
     updates.includeReadingText = body.includeReadingText;
   }
 
+  if ("eucharisticPrayerId" in body) {
+    if (body.eucharisticPrayerId !== null && typeof body.eucharisticPrayerId !== "string") {
+      return NextResponse.json(
+        { error: "eucharisticPrayerId must be a string or null" },
+        { status: 400 }
+      );
+    }
+    updates.eucharisticPrayerId = body.eucharisticPrayerId;
+  }
+
+  if ("collectId" in body) {
+    if (body.collectId !== null && typeof body.collectId !== "string") {
+      return NextResponse.json(
+        { error: "collectId must be a string or null" },
+        { status: 400 }
+      );
+    }
+    updates.collectId = body.collectId;
+  }
+
+  if ("collectOverride" in body) {
+    if (body.collectOverride !== null && typeof body.collectOverride !== "string") {
+      return NextResponse.json(
+        { error: "collectOverride must be a string or null" },
+        { status: 400 }
+      );
+    }
+    updates.collectOverride = body.collectOverride;
+  }
+
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
@@ -106,5 +136,30 @@ export async function PATCH(
   } catch (err) {
     logger.error("Failed to update service settings", err);
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ churchId: string; serviceId: string }> }
+) {
+  const { churchId, serviceId } = await params;
+  const { error } = await requireChurchRole(churchId, "EDITOR");
+  if (error) return error;
+
+  try {
+    const result = await db
+      .delete(services)
+      .where(and(eq(services.id, serviceId), eq(services.churchId, churchId)))
+      .returning({ id: services.id });
+
+    if (result.length === 0) {
+      return NextResponse.json({ error: "Service not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    logger.error("Failed to delete service", err);
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
 }

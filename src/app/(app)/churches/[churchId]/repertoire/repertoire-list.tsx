@@ -142,7 +142,7 @@ export function RepertoireList({
         <div className="space-y-1">
           {filteredLogs.map((log) => (
             <div key={log.id} className="flex items-center gap-3 text-sm border-b border-border py-1">
-              <span className="font-mono text-xs text-muted-foreground w-24 flex-shrink-0">
+              <span className="font-mono text-xs text-muted-foreground w-20 sm:w-24 flex-shrink-0">
                 {format(parseISO(log.date), "d MMM yyyy")}
               </span>
               <span>{log.freeText || "—"}</span>

@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = "Church Music Planner <noreply@precentor.app>";
+const FROM_EMAIL = "Precentor <onboarding@resend.dev>";
 
 export async function sendRotaNotification(
   to: string,

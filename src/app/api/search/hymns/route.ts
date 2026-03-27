@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   try {
     const results = await searchHymns(q, book || undefined, offset);
     return NextResponse.json({ results, hasMore: results.length === 20 });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json([], { status: 200 });
   }
 }

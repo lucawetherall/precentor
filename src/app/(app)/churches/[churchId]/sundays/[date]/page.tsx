@@ -18,7 +18,7 @@ import { requireChurchRole, hasMinRole } from '@/lib/auth/permissions'
 import type { MemberRole } from '@/types'
 import type { PopulatedMusicSlot } from '@/types/service-views'
 import { MemberServiceView } from './member-service-view'
-import { ServicePlanner } from './service-planner'
+import { ServicePlanner } from '../../services/[date]/service-planner'
 
 interface Props {
   params: Promise<{ churchId: string; date: string }>

@@ -19,7 +19,7 @@ interface NavItem {
 }
 
 // We pass icon names as strings and render them here to keep the server component simple
-import { Calendar, Users, Music, FileText, Settings } from "lucide-react";
+import { Calendar, Users, Music, FileText, Settings, Layout } from "lucide-react";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
   Calendar,
@@ -27,6 +27,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; strokeWi
   Music,
   FileText,
   Settings,
+  Layout,
 };
 
 function NavLinks({
@@ -66,7 +67,6 @@ function NavLinks({
 }
 
 export function ChurchSidebar({
-  churchId,
   churchName,
   userRole,
   userEmail,

@@ -23,7 +23,7 @@ export async function GET(
 ) {
   const { churchId, serviceId } = await params;
   const formatParam = request.nextUrl.searchParams.get("format") || "pdf";
-  const format = formatParam === "docx" ? "docx" : "pdf";
+  const format = formatParam === "docx" ? "docx" : formatParam === "json" ? "json" : "pdf";
   const sizeParam = request.nextUrl.searchParams.get("size");
   const modeParam = request.nextUrl.searchParams.get("mode");
 
@@ -43,6 +43,18 @@ export async function GET(
     }
 
     const mode = resolveSheetMode(serviceRecord[0].sheetMode, modeParam);
+
+    // Return JSON data for browser preview
+    if (format === "json") {
+      const data =
+        mode === "booklet"
+          ? await buildBookletData(serviceId, churchId)
+          : await buildSummaryData(serviceId, churchId);
+      if (!data) {
+        return NextResponse.json({ error: "Service not found" }, { status: 404 });
+      }
+      return NextResponse.json(data);
+    }
 
     // Build layout override from query params
     const layoutOverride: Partial<TemplateLayout> = {};
