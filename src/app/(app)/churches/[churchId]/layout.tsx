@@ -62,6 +62,7 @@ export default async function ChurchLayout({ children, params }: Props) {
     ...(isAdmin ? [
       { href: `/churches/${churchId}/members`, label: "Members", iconName: "Users" },
       { href: `/churches/${churchId}/settings`, label: "Settings", iconName: "Settings" },
+      { href: `/churches/${churchId}/settings/templates`, label: "Templates", iconName: "Layout" },
     ] : []),
   ];
 
