@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { SERVICE_TYPE_LABELS, EUCHARIST_SLOTS, EVENSONG_SLOTS, MUSIC_SLOT_LABELS } from "@/types";
-import type { ServiceType, MusicSlotType } from "@/types";
-import { MusicSlotEditor } from "./music-slot-editor";
+import { SERVICE_TYPE_LABELS } from "@/types";
+import type { ServiceType } from "@/types";
+import { SectionEditor } from "./section-editor";
 import { ServiceSettings } from "./service-settings";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
 interface Service {
@@ -33,6 +33,7 @@ export function ServicePlanner({
   const [services, setServices] = useState<Service[]>(existingServices);
   const [activeTab, setActiveTab] = useState<string>(services[0]?.id || "");
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [newType, setNewType] = useState<ServiceType>("SUNG_EUCHARIST");
   const [newTime, setNewTime] = useState("10:00");
   const { addToast } = useToast();
@@ -68,6 +69,33 @@ export function ServicePlanner({
       addToast("Network error — could not create service", "error");
     }
     setCreating(false);
+  };
+
+  const handleDeleteService = async () => {
+    if (!activeTab) return;
+    const confirmed = window.confirm(
+      "Delete this service? This cannot be undone."
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(
+        `/api/churches/${churchId}/services/${activeTab}`,
+        { method: "DELETE" }
+      );
+      if (res.ok) {
+        const remaining = services.filter((s) => s.id !== activeTab);
+        setServices(remaining);
+        setActiveTab(remaining[0]?.id || "");
+        addToast("Service deleted", "success");
+      } else {
+        addToast("Failed to delete service", "error");
+      }
+    } catch {
+      addToast("Network error — could not delete service", "error");
+    }
+    setDeleting(false);
   };
 
   const activeService = services.find((s) => s.id === activeTab);
@@ -133,9 +161,8 @@ export function ServicePlanner({
       {/* Active service content */}
       {activeService && (
         <>
-          <MusicSlotEditor
+          <SectionEditor
             serviceId={activeService.id}
-            serviceType={activeService.serviceType || "CUSTOM"}
             churchId={churchId}
           />
           <ServiceSettings
@@ -148,6 +175,21 @@ export function ServicePlanner({
               includeReadingText: activeService.includeReadingText,
             }}
           />
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={handleDeleteService}
+              disabled={deleting}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-destructive border border-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors disabled:opacity-50 rounded-sm"
+              aria-label="Delete service"
+            >
+              {deleting ? (
+                <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
+              ) : (
+                <Trash2 className="h-3 w-3" strokeWidth={1.5} />
+              )}
+              Delete service
+            </button>
+          </div>
         </>
       )}
 
