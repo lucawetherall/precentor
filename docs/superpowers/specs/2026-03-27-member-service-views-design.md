@@ -35,6 +35,10 @@ The current `/sundays` and `/sundays/[date]` pages are oriented toward admins an
 
 **Approach:** Role-aware rendering within existing pages. The authenticated user's `churchMemberships.role` (MEMBER | EDITOR | ADMIN) determines which UI sections are shown. No new routes are needed.
 
+### Auth and Role Propagation
+
+Both server page components (`sundays/page.tsx` and `sundays/[date]/page.tsx`) currently make no auth calls. Both must be updated to call `requireChurchRole(churchId, "MEMBER")` at the top of the render function, which returns `{ user, membership, error }`. The resulting `userId` and `membership.role` are passed as props to all child components that need them. Unauthenticated or non-member requests are handled by the returned `error` response.
+
 ---
 
 ## Page 1: Sundays (`/churches/[churchId]/sundays`)
@@ -42,6 +46,17 @@ The current `/sundays` and `/sundays/[date]` pages are oriented toward admins an
 ### View Toggle
 
 A `SundaysViewWrapper` client component wraps the page content. The selected view mode is persisted in the URL search param `?view=list|agenda|calendar` so browser history and link-sharing work correctly. Defaults to `list`.
+
+```ts
+interface SundaysViewWrapperProps {
+  churchId: string
+  userId: string
+  role: 'MEMBER' | 'EDITOR' | 'ADMIN'
+  liturgicalDays: LiturgicalDayWithService[]  // joined: day + service + user availability + slot previews
+}
+```
+
+All data for all three views is fetched once on the server and passed as a single prop bundle. Switching views is purely a client-side re-render — no additional network requests.
 
 ### List View (`SundaysList`)
 
@@ -54,16 +69,16 @@ The existing card layout, enhanced:
 
 Services grouped under month headings (e.g. "April 2026"). Each card:
 - **Left column:** Large day number + abbreviated day name.
-- **Body:** Service name, season chip (coloured border), service type and time, music preview (up to 4 slot titles; "Music not yet planned" if empty).
+- **Body:** Service name, season chip (coloured border), service type and time, music preview (up to 4 slot titles from populated `musicSlots`; "Music not yet planned" if no slots exist).
 - **Right column:** `AvailabilityWidget` stacked vertically, labelled "Availability".
 
 ### Calendar View (`SundaysCalendar`) — new
 
-Standard 7-column month grid (Mon–Sun). Controls: prev/next month chevrons + month/year heading.
+Standard 7-column month grid, **Mon–Sun column order** (ISO week layout, consistent with common calendar conventions). Controls: prev/next month chevrons + month/year heading. Sunday is the rightmost column and is visually distinguished (column header + date number in primary colour).
 
 - Non-service cells: date number only, muted background.
 - Sunday cells with services: liturgical-colour left border on a nested block, service name, compact `AvailabilityWidget` (three small buttons below the name).
-- Special holy days (Good Friday, Maundy Thursday etc.) noted with a small tinted label.
+- **Holy day labels:** Non-Sunday `liturgicalDays` rows within `HOLY_WEEK` season (e.g. Maundy Thursday, Good Friday, Holy Saturday) are rendered with a small tinted label using `liturgicalDays.cwName` and a background tint derived from `liturgicalDays.colour` via `LITURGICAL_COLOURS`. Detection: `season === 'HOLY_WEEK'` AND the day of the week is not Sunday.
 - Sundays are visually distinguished (column header + date number in primary colour).
 
 ### Data Fetching
@@ -72,7 +87,7 @@ The page server component fetches:
 1. `liturgicalDays` from today onwards (existing).
 2. `services` for the church joined to those days (to get service type, time, status).
 3. The current user's `availability` rows for those services.
-4. Music slot counts per service (for agenda preview titles).
+4. Up to 4 populated `musicSlots` per service (joined to `hymns`/`anthems` to resolve display titles for the agenda preview). This replaces the earlier notion of "slot counts" — actual titles are required.
 
 ---
 
@@ -91,6 +106,8 @@ The page server component fetches:
 | Existing full service planner | — | via edit button | via edit button |
 
 The existing service planner is not removed — editors/admins reach it by clicking "Edit music & details", which either navigates to a dedicated edit sub-route or reveals the planner inline. This decision is deferred to the implementation plan.
+
+The existing `SundayDetailPage` currently renders the service header, readings, collect, and `ServicePlanner` directly inline. This refactor moves those sections into `MemberServiceView` (for all roles) and shows the edit controls only for EDITOR/ADMIN. The existing readings/collect markup is not duplicated — it is relocated into the new component.
 
 ### `MemberServiceView` Component — new
 
@@ -126,10 +143,13 @@ interface AvailabilityWidgetProps {
 - Renders three buttons: ✓ Yes (`AVAILABLE`) / ? Maybe (`TENTATIVE`) / ✗ No (`UNAVAILABLE`).
 - Active state: filled background in green/amber/red with white text.
 - Inactive state: outlined with neutral border.
-- Clicking an active button deselects (sets to `null`).
-- **Optimistic update:** status updates immediately in UI; `POST /api/churches/[churchId]/availability` fires in background. On error, status reverts and a toast is shown.
-- Uses the existing availability API which already handles all three states.
+- Clicking an active button deselects (removes the availability row, returning to `null`/unset state).
+- **Optimistic update:** status updates immediately in UI. On error, status reverts and a toast is shown.
 - Works for all roles — any authenticated church member can set their own availability.
+
+**API calls:**
+- Set/change status: `POST /api/churches/[churchId]/availability` with `{ serviceId, status }` — existing route, no changes needed.
+- Deselect (remove row): `DELETE /api/churches/[churchId]/availability` with `{ serviceId }` in the request body — **new endpoint to add**. Deletes the `availability` row for `(userId, serviceId)`. Members can only delete their own; editors+ can delete for any `userId` passed in the body.
 
 ---
 
@@ -161,11 +181,11 @@ The existing `POST /api/churches/[churchId]/availability` route handles all writ
 
 ## Testing
 
-- Unit tests for `AvailabilityWidget`: renders correct active state, fires correct API call, reverts on error.
-- Unit tests for `SundaysCalendar`: correct day placement for months starting on different weekdays, liturgical colour rendering.
+- Unit tests for `AvailabilityWidget`: renders correct active state, fires POST on status change, fires DELETE on deselect, reverts optimistically on error.
+- Unit tests for `SundaysCalendar`: correct day placement for months starting on different weekdays, liturgical colour rendering, holy day label detection.
 - Unit tests for `ServiceMusicList`: renders all slot types, handles empty slots gracefully.
 - Integration test for the sundays page: all three views render without error for each role.
-- Integration test for the service detail page: correct sections shown/hidden per role.
+- Integration test for the service detail page: MEMBER sees no "Edit music & details" banner; EDITOR and ADMIN do. Confirm the role gate is enforced server-side (the rendered HTML for a MEMBER request must not contain the edit controls), not just client-side.
 
 ---
 
