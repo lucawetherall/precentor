@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -46,6 +46,8 @@ export function CollectChooser({
   const [collects, setCollects] = useState<Collect[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [source, setSource] = useState<CollectSource>("cw");
   const [selectedId, setSelectedId] = useState<string | null>(initialCollectId);
@@ -72,14 +74,23 @@ export function CollectChooser({
 
   const patch = async (updates: Record<string, unknown>) => {
     setSaving(true);
+    setSaved(false);
+    setSaveError(null);
     try {
-      await fetch(`/api/churches/${churchId}/services/${serviceId}`, {
+      const res = await fetch(`/api/churches/${churchId}/services/${serviceId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
       });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } else {
+        const data = await res.json().catch(() => null);
+        setSaveError(data?.error ?? "Failed to save");
+      }
     } catch {
-      // silent
+      setSaveError("Network error — could not save");
     }
     setSaving(false);
   };
@@ -165,7 +176,16 @@ export function CollectChooser({
         {saving && (
           <Loader2 className="h-3 w-3 animate-spin text-muted-foreground flex-shrink-0" strokeWidth={1.5} />
         )}
+        {saved && !saving && (
+          <span className="flex items-center gap-0.5 text-xs text-green-600 flex-shrink-0">
+            <Check className="h-3 w-3" strokeWidth={2} />
+            Saved
+          </span>
+        )}
       </div>
+      {saveError && (
+        <p className="text-xs text-destructive">{saveError}</p>
+      )}
 
       {/* Custom textarea */}
       {source === "custom" && (

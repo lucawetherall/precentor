@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Loader2, FileDown, FileText } from "lucide-react";
-import { useToast } from "@/components/ui/toast";
+import { Loader2, FileDown, FileText, Check } from "lucide-react";
 import type { BookletServiceSheetData, SummaryServiceSheetData, ResolvedDbSection } from "@/types/service-sheet";
 import type { LiturgicalTextBlock } from "@/data/liturgy/types";
 
@@ -123,11 +122,15 @@ interface SectionPreviewProps {
   rawSection: RawServiceSection | undefined;
   onTextOverrideChange: (sectionId: string, blocks: LiturgicalTextBlock[] | null) => void;
   savingSectionId: string | null;
+  savedSectionId: string | null;
+  saveErrorSectionId: string | null;
 }
 
-function SectionPreview({ section, rawSection, onTextOverrideChange, savingSectionId }: SectionPreviewProps) {
+function SectionPreview({ section, rawSection, onTextOverrideChange, savingSectionId, savedSectionId, saveErrorSectionId }: SectionPreviewProps) {
   const hasOverride = !!(rawSection?.textOverride && rawSection.textOverride.length > 0);
   const isSaving = savingSectionId === section.id;
+  const isSaved = savedSectionId === section.id;
+  const hasError = saveErrorSectionId === section.id;
 
   const handleBlocksChange = useCallback((newBlocks: LiturgicalTextBlock[]) => {
     onTextOverrideChange(section.id, newBlocks);
@@ -181,15 +184,26 @@ function SectionPreview({ section, rawSection, onTextOverrideChange, savingSecti
         </div>
       )}
 
-      {hasOverride && (
-        <button
-          onClick={handleReset}
-          disabled={isSaving}
-          className="mt-1 text-xs text-primary underline hover:no-underline disabled:opacity-50"
-        >
-          Reset to default
-        </button>
-      )}
+      <div className="flex items-center gap-2 mt-1">
+        {hasOverride && (
+          <button
+            onClick={handleReset}
+            disabled={isSaving}
+            className="text-xs text-primary underline hover:no-underline disabled:opacity-50"
+          >
+            Reset to default
+          </button>
+        )}
+        {isSaved && (
+          <span className="flex items-center gap-0.5 text-xs text-green-600">
+            <Check className="h-3 w-3" strokeWidth={2} />
+            Saved
+          </span>
+        )}
+        {hasError && (
+          <span className="text-xs text-destructive">Failed to save</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -201,7 +215,8 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingSectionId, setSavingSectionId] = useState<string | null>(null);
-  const { addToast } = useToast();
+  const [savedSectionId, setSavedSectionId] = useState<string | null>(null);
+  const [saveErrorSectionId, setSaveErrorSectionId] = useState<string | null>(null);
 
   // Track the latest raw sections for saving
   const rawSectionsRef = useRef<RawServiceSection[]>([]);
@@ -248,6 +263,8 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
     blocks: LiturgicalTextBlock[] | null
   ) => {
     setSavingSectionId(sectionId);
+    setSavedSectionId(null);
+    setSaveErrorSectionId(null);
     try {
       // Build updated raw sections array with the override applied
       const updatedRaw = rawSectionsRef.current.map((s) =>
@@ -264,7 +281,7 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
       );
 
       if (!res.ok) {
-        addToast("Failed to save text override", "error");
+        setSaveErrorSectionId(sectionId);
       } else {
         // Update local raw sections state
         setRawSections(updatedRaw);
@@ -281,13 +298,14 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
           }
         }
 
-        addToast(blocks === null ? "Reset to default" : "Text saved", "success");
+        setSavedSectionId(sectionId);
+        setTimeout(() => setSavedSectionId(null), 2000);
       }
     } catch {
-      addToast("Network error — could not save", "error");
+      setSaveErrorSectionId(sectionId);
     }
     setSavingSectionId(null);
-  }, [churchId, serviceId, mode, addToast]);
+  }, [churchId, serviceId, mode]);
 
   const handleExport = (format: "pdf" | "docx") => {
     const url = `/api/churches/${churchId}/services/${serviceId}/sheet?format=${format}&mode=${mode}`;
@@ -378,6 +396,8 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
                     rawSection={rawSection}
                     onTextOverrideChange={handleTextOverrideChange}
                     savingSectionId={savingSectionId}
+                    savedSectionId={savedSectionId}
+                    saveErrorSectionId={saveErrorSectionId}
                   />
                 </div>
               );

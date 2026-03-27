@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/toast";
+import { Loader2, Check } from "lucide-react";
 import { SectionRow } from "./section-row";
 import { AddSectionPicker } from "./add-section-picker";
 import type { ServiceSection } from "./section-row";
@@ -28,7 +27,8 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
   const [sections, setSections] = useState<ServiceSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const { addToast } = useToast();
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Drag state
   const dragSectionIdRef = useRef<string | null>(null);
@@ -54,6 +54,8 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
 
   const persistSections = async (updated: ServiceSection[]) => {
     setSaving(true);
+    setSaved(false);
+    setSaveError(null);
     try {
       const res = await fetch(
         `/api/churches/${churchId}/services/${serviceId}/sections`,
@@ -64,10 +66,13 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
         }
       );
       if (!res.ok) {
-        addToast("Failed to save order", "error");
+        setSaveError("Failed to save order");
+      } else {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
       }
     } catch {
-      addToast("Network error — could not save", "error");
+      setSaveError("Network error — could not save");
     }
     setSaving(false);
   };
@@ -86,7 +91,6 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
       .map((s, i) => ({ ...s, positionOrder: i }));
     setSections(updated);
     await persistSections(updated);
-    addToast("Section removed", "success");
   };
 
   const handleSectionAdded = (section: ServiceSection) => {
@@ -157,6 +161,15 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
             <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
             Saving…
           </span>
+        )}
+        {saved && !saving && (
+          <span className="flex items-center gap-1 text-xs text-green-600">
+            <Check className="h-3 w-3" strokeWidth={2} />
+            Saved
+          </span>
+        )}
+        {saveError && !saving && (
+          <span className="text-xs text-destructive">{saveError}</span>
         )}
       </div>
 
