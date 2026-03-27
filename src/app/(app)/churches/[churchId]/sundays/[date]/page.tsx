@@ -129,7 +129,7 @@ export default async function SundayDetailPage({ params, searchParams }: Props) 
           className="flex items-center gap-1 text-sm text-primary underline mt-2"
         >
           <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-          Back to Sundays
+          Back to Services
         </Link>
       </div>
     )

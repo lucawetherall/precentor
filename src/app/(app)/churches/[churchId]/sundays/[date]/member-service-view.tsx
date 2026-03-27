@@ -62,7 +62,7 @@ export function MemberServiceView({
         className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
       >
         <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-        Back to Sundays
+        Back to Services
       </Link>
 
       {/* Editor notice (EDITOR/ADMIN only) */}

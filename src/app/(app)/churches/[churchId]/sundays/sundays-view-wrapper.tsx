@@ -48,7 +48,7 @@ export function SundaysViewWrapper({
   return (
     <>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-heading font-semibold">Upcoming Sundays</h1>
+        <h1 className="text-3xl font-heading font-semibold">Upcoming Services</h1>
         <div className="flex border border-border overflow-hidden">
           {VALID_VIEWS.map((v, i) => (
             <button

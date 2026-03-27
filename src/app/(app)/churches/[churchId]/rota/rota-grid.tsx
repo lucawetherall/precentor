@@ -119,7 +119,7 @@ export function RotaGrid({
   if (services.length === 0) {
     return (
       <div className="border border-border bg-card p-8 text-center">
-        <p className="text-muted-foreground">No upcoming services. Create services from the Sundays page first.</p>
+        <p className="text-muted-foreground">No upcoming services. Create services from the Services page first.</p>
       </div>
     );
   }
