@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, json, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, json, jsonb, uniqueIndex, index } from "drizzle-orm/pg-core";
 
 // ─── Enums ───────────────────────────────────────────────────
 export const memberRoleEnum = pgEnum("member_role", ["ADMIN", "EDITOR", "MEMBER"]);
@@ -98,6 +98,29 @@ export const readings = pgTable("readings", {
   index("reading_liturgical_day_idx").on(t.liturgicalDayId),
 ]);
 
+// ─── Liturgy Core (defined here to avoid circular imports) ────
+export const riteEnum = pgEnum("rite", ["CW", "BCP", "COMMON", "CUSTOM"]);
+
+export const eucharisticPrayers = pgTable("eucharistic_prayers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(),
+  name: text("name").notNull(),
+  rite: riteEnum("rite").notNull(),
+  description: text("description").notNull(),
+  blocks: jsonb("blocks").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const collects = pgTable("collects", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  liturgicalDayId: uuid("liturgical_day_id").references(() => liturgicalDays.id),
+  rite: riteEnum("rite").notNull(),
+  title: text("title").notNull(),
+  text: text("text").notNull(),
+  churchId: uuid("church_id").references(() => churches.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Services & Music Planning ───────────────────────────────
 export const services = pgTable("services", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -108,6 +131,9 @@ export const services = pgTable("services", {
   status: serviceStatusEnum("status").default("DRAFT").notNull(),
   notes: text("notes"),
   eucharisticPrayer: text("eucharistic_prayer"),
+  eucharisticPrayerId: uuid("eucharistic_prayer_id").references(() => eucharisticPrayers.id),
+  collectId: uuid("collect_id").references(() => collects.id),
+  collectOverride: text("collect_override"),
   includeReadingText: boolean("include_reading_text").default(true).notNull(),
   sheetMode: text("sheet_mode").default("summary").notNull(),
   liturgicalOverrides: json("liturgical_overrides").default({}).$type<Record<string, string>>(),
@@ -130,6 +156,8 @@ export const musicSlots = pgTable("music_slots", {
   responsesSettingId: uuid("responses_setting_id").references(() => responsesSettings.id),
   freeText: text("free_text"),
   notes: text("notes"),
+  verseCount: integer("verse_count"),
+  selectedVerses: integer("selected_verses").array(),
 }, (t) => [
   index("music_slot_service_idx").on(t.serviceId),
 ]);
@@ -258,3 +286,6 @@ export const serviceSheetTemplates = pgTable("service_sheet_templates", {
   layout: json("layout").default({}).$type<Record<string, unknown>>(),
   logoUrl: text("logo_url"),
 });
+
+// ─── Re-exports from schema-liturgy ──────────────────────────
+export * from "./schema-liturgy";
