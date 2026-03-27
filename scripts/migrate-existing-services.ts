@@ -21,7 +21,7 @@ import {
   eucharisticPrayers,
 } from "@/lib/db/schema-base";
 import { serviceSections } from "@/lib/db/schema-liturgy";
-import { eq } from "drizzle-orm";
+import { eq, isNull, and } from "drizzle-orm";
 import { resolveTemplateSections } from "@/lib/services/template-resolution";
 
 // ─── Summary counters ─────────────────────────────────────────
@@ -33,6 +33,7 @@ let errors = 0;
 let totalSectionsCreated = 0;
 let totalMusicSlotsLinked = 0;
 let totalPrayersMigrated = 0;
+let totalMusicSlotTypesBackfilled = 0;
 
 // ─── Main ─────────────────────────────────────────────────────
 
@@ -63,6 +64,7 @@ async function run() {
   console.log(`  Sections created:     ${totalSectionsCreated}`);
   console.log(`  Music slots linked:   ${totalMusicSlotsLinked}`);
   console.log(`  Prayers migrated:     ${totalPrayersMigrated}`);
+  console.log(`  musicSlotType backfilled: ${totalMusicSlotTypesBackfilled}`);
 }
 
 async function migrateService(service: typeof services.$inferSelect) {
@@ -76,7 +78,36 @@ async function migrateService(service: typeof services.$inferSelect) {
     .limit(1);
 
   if (existingSections.length > 0) {
-    console.log(`  SKIP ${label} — already has sections`);
+    // Backfill musicSlotType for existing sections that have it NULL
+    const sectionsNeedingType = await db
+      .select({ id: serviceSections.id, sectionKey: serviceSections.sectionKey })
+      .from(serviceSections)
+      .where(
+        and(
+          eq(serviceSections.serviceId, service.id),
+          isNull(serviceSections.musicSlotType),
+        )
+      );
+
+    if (sectionsNeedingType.length > 0) {
+      const templateSectionsForBackfill = await resolveTemplateSections(service.churchId, service.serviceType);
+      const templateByKey = new Map(templateSectionsForBackfill.map((ts) => [ts.sectionKey, ts]));
+
+      for (const section of sectionsNeedingType) {
+        const template = templateByKey.get(section.sectionKey);
+        if (template?.musicSlotType) {
+          await db
+            .update(serviceSections)
+            .set({ musicSlotType: template.musicSlotType as any })
+            .where(eq(serviceSections.id, section.id));
+          totalMusicSlotTypesBackfilled++;
+        }
+      }
+      console.log(`  BACKFILL ${label} — filled musicSlotType on ${totalMusicSlotTypesBackfilled} section(s)`);
+    } else {
+      console.log(`  SKIP ${label} — already has sections (musicSlotType already set)`);
+    }
+
     skipped++;
     return;
   }
@@ -127,6 +158,7 @@ async function migrateService(service: typeof services.$inferSelect) {
       liturgicalTextId: ts.liturgicalTextId ?? null,
       textOverride: null,
       musicSlotId: linkedSlotId,
+      musicSlotType: ts.musicSlotType ?? null,
       placeholderType: ts.placeholderType ?? null,
       placeholderValue: null,
       visible: true,

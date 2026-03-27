@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { serviceSections } from "@/lib/db/schema";
+import { serviceSections, musicSlotTypeEnum } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 
 export async function GET(
@@ -56,6 +56,7 @@ export async function PUT(
           liturgicalTextId?: string | null;
           textOverride?: { speaker: string; text: string }[] | null;
           musicSlotId?: string | null;
+          musicSlotType?: string | null;
           placeholderType?: string | null;
           placeholderValue?: string | null;
           visible?: boolean;
@@ -68,6 +69,7 @@ export async function PUT(
           liturgicalTextId: section.liturgicalTextId ?? null,
           textOverride: section.textOverride ?? null,
           musicSlotId: section.musicSlotId ?? null,
+          musicSlotType: (section.musicSlotType ?? null) as (typeof musicSlotTypeEnum.enumValues)[number] | null,
           placeholderType: section.placeholderType ?? null,
           placeholderValue: section.placeholderValue ?? null,
           visible: section.visible ?? true,

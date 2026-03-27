@@ -108,8 +108,7 @@ export default async function ServicesPage({ params }: Props) {
                       const sections = sectionsByService.get(service.id) ?? [];
                       const status = calculateCompleteness(
                         sections.map((s) => ({
-                          // serviceSections does not store musicSlotType; use null
-                          musicSlotType: null,
+                          musicSlotType: s.musicSlotType ?? null,
                           musicSlotId: s.musicSlotId ?? null,
                           placeholderType: s.placeholderType ?? null,
                           placeholderValue: s.placeholderValue ?? null,

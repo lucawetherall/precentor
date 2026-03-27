@@ -65,6 +65,7 @@ export async function POST(
             positionOrder: section.positionOrder ?? i,
             liturgicalTextId: section.liturgicalTextId ?? null,
             musicSlotId,
+            musicSlotType: section.musicSlotType ?? null,
             placeholderType: section.placeholderType ?? null,
             visible: true,
           };
