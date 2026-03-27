@@ -85,6 +85,7 @@ export const serviceSections = pgTable("service_sections", {
   liturgicalTextId: uuid("liturgical_text_id").references(() => liturgicalTexts.id),
   textOverride: jsonb("text_override").$type<{ speaker: string; text: string }[] | null>(),
   musicSlotId: uuid("music_slot_id").references(() => musicSlots.id, { onDelete: "set null" }),
+  musicSlotType: musicSlotTypeEnum("music_slot_type"),
   placeholderType: text("placeholder_type"),
   placeholderValue: text("placeholder_value"),
   visible: boolean("visible").default(true).notNull(),

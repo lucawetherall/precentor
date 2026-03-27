@@ -121,6 +121,7 @@ export const collects = pgTable("collects", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => [
   index("collect_liturgical_day_idx").on(t.liturgicalDayId),
+  uniqueIndex("collect_unique").on(t.liturgicalDayId, t.rite, t.churchId),
 ]);
 
 // ─── Services & Music Planning ───────────────────────────────
