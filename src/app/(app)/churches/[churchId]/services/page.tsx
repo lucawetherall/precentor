@@ -86,12 +86,26 @@ export default async function ServicesPage({ params }: Props) {
             .orderBy(asc(musicSlots.positionOrder))
         : []
 
+    // Build lookup maps for O(1) access
+    const serviceByDayId = new Map(
+      churchServices.map((s) => [s.liturgicalDayId, s])
+    );
+    const availByServiceId = new Map(
+      userAvailability.map((a) => [a.serviceId, a])
+    );
+    const slotsByServiceId = new Map<string, typeof slots>();
+    for (const slot of slots) {
+      const existing = slotsByServiceId.get(slot.serviceId) ?? [];
+      existing.push(slot);
+      slotsByServiceId.set(slot.serviceId, existing);
+    }
+
     days = upcomingDays.map((day) => {
-      const service = churchServices.find((s) => s.liturgicalDayId === day.id) ?? null
+      const service = serviceByDayId.get(day.id) ?? null
       if (!service) return { ...day, service: null }
 
-      const avail = userAvailability.find((a) => a.serviceId === service.id)
-      const serviceSlots = slots.filter((s) => s.serviceId === service.id)
+      const avail = availByServiceId.get(service.id)
+      const serviceSlots = slotsByServiceId.get(service.id) ?? []
 
       const musicPreview: MusicSlotPreview[] = serviceSlots.slice(0, 4).map((slot) => ({
         id: slot.id,
