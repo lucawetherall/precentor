@@ -47,9 +47,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
   useEffect(() => {
-    const timer = setTimeout(() => onDismiss(toast.id), 4000);
-    return () => clearTimeout(timer);
-  }, [toast.id, onDismiss]);
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    if (toast.type !== "error") {
+      timeoutId = setTimeout(() => onDismiss(toast.id), 4000);
+    }
+    return () => clearTimeout(timeoutId);
+  }, [toast.id, toast.type, onDismiss]);
 
   const borderColor =
     toast.type === "success" ? "border-success" :
