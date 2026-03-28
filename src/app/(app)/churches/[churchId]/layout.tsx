@@ -54,16 +54,33 @@ export default async function ChurchLayout({ children, params }: Props) {
   const userRole = membership.role as MemberRole;
   const isAdmin = hasMinRole(userRole, "ADMIN");
 
-  const navItems = [
-    { href: `/churches/${churchId}/services`, label: "Services", iconName: "Calendar" },
-    { href: `/churches/${churchId}/rota`, label: "Rota", iconName: "Users" },
-    { href: `/churches/${churchId}/repertoire`, label: "Repertoire", iconName: "Music" },
-    { href: `/churches/${churchId}/service-sheets`, label: "Service Sheets", iconName: "FileText" },
-    ...(isAdmin ? [
-      { href: `/churches/${churchId}/members`, label: "Members", iconName: "Users" },
-      { href: `/churches/${churchId}/settings`, label: "Settings", iconName: "Settings" },
-      { href: `/churches/${churchId}/settings/templates`, label: "Templates", iconName: "Layout" },
-    ] : []),
+  interface NavGroup {
+    label?: string;
+    items: { href: string; label: string; iconName: string; exactMatch?: boolean }[];
+  }
+
+  const navGroups: NavGroup[] = [
+    {
+      items: [
+        { href: `/churches/${churchId}`, label: "Overview", iconName: "Home", exactMatch: true },
+        { href: `/churches/${churchId}/services`, label: "Services", iconName: "Calendar" },
+        { href: `/churches/${churchId}/rota`, label: "Rota", iconName: "Users" },
+      ],
+    },
+    {
+      label: "More",
+      items: [
+        { href: `/churches/${churchId}/repertoire`, label: "Repertoire", iconName: "Music" },
+        { href: `/churches/${churchId}/service-sheets`, label: "Service Sheets", iconName: "FileText" },
+      ],
+    },
+    ...(isAdmin ? [{
+      label: "Admin",
+      items: [
+        { href: `/churches/${churchId}/members`, label: "Members", iconName: "Users" },
+        { href: `/churches/${churchId}/settings`, label: "Settings", iconName: "Settings" },
+      ],
+    }] : []),
   ];
 
   return (
@@ -73,7 +90,7 @@ export default async function ChurchLayout({ children, params }: Props) {
         churchName={church.name}
         userRole={membership.role}
         userEmail={user.email || ""}
-        navItems={navItems}
+        navGroups={navGroups}
       />
       <main id="main-content" className="flex-1">{children}</main>
     </div>
