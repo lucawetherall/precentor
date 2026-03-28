@@ -48,8 +48,7 @@ export function useSortableList({
   const itemsRef = useRef(items);
   itemsRef.current = items;
 
-  const getItemIdFromPoint = useCallback((x: number, y: number): string | null => {
-    const el = document.elementFromPoint(x, y);
+  const getItemIdFromElement = useCallback((el: Element | null): string | null => {
     if (!el) return null;
 
     // Walk up the DOM to find an element with data-sortable-id
@@ -88,8 +87,15 @@ export function useSortableList({
 
       currentYRef.current = e.clientY;
 
+      // Temporarily release pointer capture so elementFromPoint returns the element
+      // actually under the cursor (pointer capture would otherwise always return the handle).
+      const handle = e.currentTarget as Element;
+      handle.releasePointerCapture(e.pointerId);
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      handle.setPointerCapture(e.pointerId);
+
       // Determine which item the pointer is currently over
-      const hoveredId = getItemIdFromPoint(e.clientX, e.clientY);
+      const hoveredId = getItemIdFromElement(el);
       if (hoveredId && hoveredId !== id) {
         const hoveredIndex = itemsRef.current.findIndex(
           (item) => item.id === hoveredId
@@ -100,7 +106,7 @@ export function useSortableList({
         }
       }
     },
-    [getItemIdFromPoint]
+    [getItemIdFromElement]
   );
 
   const handlePointerUp = useCallback(
