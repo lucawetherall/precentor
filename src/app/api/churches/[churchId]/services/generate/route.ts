@@ -19,7 +19,7 @@ export async function POST(
     // No body or invalid JSON — use defaults
   }
 
-  const months = typeof body.months === "number" && body.months > 0 ? body.months : 3;
+  const months = typeof body.months === "number" && body.months > 0 && body.months <= 12 ? body.months : 3;
 
   const today = new Date();
   const fromDate = format(today, "yyyy-MM-dd");

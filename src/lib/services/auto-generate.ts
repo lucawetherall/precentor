@@ -44,6 +44,14 @@ export async function generateServicesForChurch(
 
   if (days.length === 0) return { created: 0 };
 
+  // Build a cache: serviceType → resolved template sections (avoids N+1 per day)
+  const templateCache = new Map<string, Awaited<ReturnType<typeof resolveTemplateSections>>>();
+  for (const pattern of patterns) {
+    if (!templateCache.has(pattern.serviceType)) {
+      templateCache.set(pattern.serviceType, await resolveTemplateSections(churchId, pattern.serviceType));
+    }
+  }
+
   let created = 0;
 
   // 3-7. For each pattern × day, attempt to insert a service
@@ -72,11 +80,8 @@ export async function generateServicesForChurch(
       const serviceId = inserted[0].id;
       created++;
 
-      // Resolve template sections and apply seasonal rules
-      const templateSectionsRaw = await resolveTemplateSections(
-        churchId,
-        pattern.serviceType,
-      );
+      // Use cached template sections for this serviceType
+      const templateSectionsRaw = templateCache.get(pattern.serviceType) ?? [];
 
       if (templateSectionsRaw.length === 0) continue;
 
@@ -99,29 +104,31 @@ export async function generateServicesForChurch(
 
       const finalSections = applySeasonalRules(mappedSections, day.season);
 
-      // Insert music slots for sections that need them, then bulk-insert sections
-      const sectionValues = await Promise.all(
-        finalSections.map(async (section) => {
-          let musicSlotId: string | null = null;
+      // Insert music slots and sections inside a transaction so they are atomic
+      await db.transaction(async (tx) => {
+        const sectionValues = await Promise.all(
+          finalSections.map(async (section) => {
+            let musicSlotId: string | null = null;
 
-          if (section.musicSlotType) {
-            const [slot] = await db
-              .insert(musicSlots)
-              .values({
-                serviceId,
-                slotType:
-                  section.musicSlotType as (typeof musicSlotTypeEnum.enumValues)[number],
-                positionOrder: section.positionOrder,
-              })
-              .returning({ id: musicSlots.id });
-            musicSlotId = slot.id;
-          }
+            if (section.musicSlotType) {
+              const [slot] = await tx
+                .insert(musicSlots)
+                .values({
+                  serviceId,
+                  slotType:
+                    section.musicSlotType as (typeof musicSlotTypeEnum.enumValues)[number],
+                  positionOrder: section.positionOrder,
+                })
+                .returning({ id: musicSlots.id });
+              musicSlotId = slot.id;
+            }
 
-          return { ...section, musicSlotId };
-        }),
-      );
+            return { ...section, musicSlotId };
+          }),
+        );
 
-      await db.insert(serviceSections).values(sectionValues);
+        await tx.insert(serviceSections).values(sectionValues);
+      });
     }
   }
 

@@ -3,12 +3,14 @@ import type { InferInsertModel } from "drizzle-orm";
 
 export type InsertServiceSection = InferInsertModel<typeof serviceSections>;
 
+const GLORIA_SUPPRESSED_SEASONS = ["ADVENT", "LENT", "HOLY_WEEK"];
+
 export function applySeasonalRules(
   sections: InsertServiceSection[],
   season: string,
 ): InsertServiceSection[] {
   const upper = season.toUpperCase();
-  if (!upper.includes("ADVENT") && !upper.includes("LENT")) {
+  if (!GLORIA_SUPPRESSED_SEASONS.some(s => upper === s)) {
     return sections;
   }
 
@@ -18,6 +20,7 @@ export function applySeasonalRules(
         ...section,
         musicSlotType: "MASS_SETTING_KYRIE" as InsertServiceSection["musicSlotType"],
         title: "Kyrie",
+        sectionKey: "gathering.kyrie",
       };
     }
     return section;
