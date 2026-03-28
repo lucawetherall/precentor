@@ -56,6 +56,7 @@ export function HymnPicker({ slotId, churchId }: HymnPickerProps) {
   // Load current hymn details when slot has a hymnId
   useEffect(() => {
     if (!hymnId) return;
+    if (currentHymn && currentHymn.id === hymnId) return;
     let cancelled = false;
     async function loadHymn() {
       setLoadingHymn(true);
@@ -73,7 +74,7 @@ export function HymnPicker({ slotId, churchId }: HymnPickerProps) {
     }
     loadHymn();
     return () => { cancelled = true; };
-  }, [hymnId, addToast]);
+  }, [hymnId, currentHymn, addToast]);
 
   const handleSearch = useCallback((q: string) => {
     setQuery(q);
