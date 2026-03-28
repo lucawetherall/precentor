@@ -322,6 +322,7 @@ export function ServicePlanner({
                 churchId={churchId}
                 serviceId={activeService.id}
                 mode={activeService.sheetMode === "booklet" ? "booklet" : "summary"}
+                isVisible={showPreview}
               />
             </div>
           )}

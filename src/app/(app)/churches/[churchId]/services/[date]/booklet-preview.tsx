@@ -12,6 +12,7 @@ interface BookletPreviewProps {
   churchId: string;
   serviceId: string;
   mode?: "booklet" | "summary";
+  isVisible?: boolean;
 }
 
 function speakerLabel(speaker: string): string {
@@ -210,7 +211,7 @@ function SectionPreview({ section, rawSection, onTextOverrideChange, savingSecti
   );
 }
 
-export function BookletPreview({ churchId, serviceId, mode = "booklet" }: BookletPreviewProps) {
+export function BookletPreview({ churchId, serviceId, mode = "booklet", isVisible = true }: BookletPreviewProps) {
   const { sections: contextSections } = useServiceEditor();
 
   const [data, setData] = useState<SheetData | null>(null);
@@ -245,6 +246,7 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
   });
 
   useEffect(() => {
+    if (!isVisible) return;
     async function load() {
       setLoading(true);
       setError(null);
@@ -272,7 +274,7 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
       setLoading(false);
     }
     load();
-  }, [churchId, serviceId, mode]);
+  }, [churchId, serviceId, mode, isVisible]);
 
   const handleTextOverrideChange = useCallback(async (
     sectionId: string,

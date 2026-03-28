@@ -1,5 +1,8 @@
 import { useReducer, useCallback, useRef } from "react";
 import type { ServiceSection } from "./section-row";
+import type { BookletServiceSheetData, SummaryServiceSheetData } from "@/types/service-sheet";
+
+export type SheetData = BookletServiceSheetData | SummaryServiceSheetData;
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -42,6 +45,7 @@ interface ServiceEditorState {
   saveStatus: SaveStatus;
   undoStack: ServiceEditorSnapshot[];
   redoStack: ServiceEditorSnapshot[];
+  sheetData: SheetData | null;
 }
 
 // ─── Actions ────────────────────────────────────────────────
@@ -51,6 +55,7 @@ type ServiceEditorAction =
   | { type: "SET_SETTINGS"; settings: ServiceSettings }
   | { type: "SET_MUSIC_SLOTS"; musicSlots: Map<string, MusicSlot> }
   | { type: "SET_SAVE_STATUS"; status: SaveStatus }
+  | { type: "SET_SHEET_DATA"; data: SheetData | null }
   | { type: "SNAPSHOT_AND_UPDATE_SECTIONS"; sections: ServiceSection[] }
   | { type: "SNAPSHOT_AND_UPDATE_SETTINGS"; settings: ServiceSettings }
   | { type: "SNAPSHOT_AND_UPDATE_SLOT"; slotId: string; fields: Partial<MusicSlot> }
@@ -93,6 +98,9 @@ function reducer(
 
     case "SET_SAVE_STATUS":
       return { ...state, saveStatus: action.status };
+
+    case "SET_SHEET_DATA":
+      return { ...state, sheetData: action.data };
 
     case "SNAPSHOT_AND_UPDATE_SECTIONS": {
       const snapshot = takeSnapshot(state);
@@ -216,6 +224,7 @@ export function useServiceEditorReducer({
     saveStatus: "idle" as SaveStatus,
     undoStack: [],
     redoStack: [],
+    sheetData: null,
   });
 
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -425,6 +434,10 @@ export function useServiceEditorReducer({
     dispatch({ type: "REDO" });
   }, []);
 
+  const setSheetData = useCallback((data: SheetData | null) => {
+    dispatch({ type: "SET_SHEET_DATA", data });
+  }, []);
+
   // Re-fetch sections from the server and update state.
   // Used when an external component (e.g. AddSectionPicker) mutates sections
   // outside the context's control.
@@ -448,6 +461,7 @@ export function useServiceEditorReducer({
     saveStatus: state.saveStatus,
     undoStack: state.undoStack,
     redoStack: state.redoStack,
+    sheetData: state.sheetData,
 
     // Mutations
     updateSection,
@@ -460,6 +474,7 @@ export function useServiceEditorReducer({
     undo,
     redo,
     refreshSections,
+    setSheetData,
   };
 }
 
