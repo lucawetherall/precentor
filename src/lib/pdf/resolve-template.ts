@@ -15,7 +15,8 @@ export interface ResolvedSection {
 
 const READING_POSITION_MAP: Record<string, string> = {
   "reading-ot": "OLD_TESTAMENT",
-  "reading-epistle": "EPISTLE",
+  "reading-nt": "NEW_TESTAMENT",
+  "reading-epistle": "NEW_TESTAMENT", // backward compat
   "reading-gospel": "GOSPEL",
   "reading-psalm": "PSALM",
 };
@@ -83,7 +84,7 @@ export function resolveTemplate(
           break;
 
         case "reading-ot":
-        case "reading-epistle":
+        case "reading-nt":
         case "reading-gospel":
         case "reading-psalm":
           reading = findReading(data.readings, section.placeholder);

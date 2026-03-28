@@ -41,7 +41,7 @@ export interface LiturgicalSection {
     | "collect"
     | "post-communion"
     | "reading-ot"
-    | "reading-epistle"
+    | "reading-nt"
     | "reading-gospel"
     | "reading-psalm"
     | "eucharistic-prayer"

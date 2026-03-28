@@ -14,7 +14,7 @@ vi.mock("@/data/lectionary-coe.json", () => ({
             principal: [
               { reference: "Jeremiah 33.14-16", position: "OLD_TESTAMENT" },
               { reference: "Psalm 25.1-9", position: "PSALM" },
-              { reference: "1 Thessalonians 3.9-13", position: "EPISTLE" },
+              { reference: "1 Thessalonians 3.9-13", position: "NEW_TESTAMENT" },
               { reference: "Luke 21.25-36", position: "GOSPEL" },
             ],
             second: [],

@@ -58,7 +58,7 @@ describe("resolveTemplate edge cases", () => {
         id: "test.epistle",
         title: "Second Reading",
         blocks: [],
-        placeholder: "reading-epistle",
+        placeholder: "reading-nt",
       },
       {
         id: "test.gospel",

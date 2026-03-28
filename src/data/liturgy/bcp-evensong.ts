@@ -146,7 +146,7 @@ Amen.`,
       blocks: [
         { speaker: "rubric", text: "All sit." },
       ],
-      placeholder: "reading-epistle",
+      placeholder: "reading-nt",
     },
     {
       id: "evensong.nunc-dimittis",

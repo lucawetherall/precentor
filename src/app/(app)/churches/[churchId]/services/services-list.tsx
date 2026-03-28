@@ -4,12 +4,11 @@ import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from '@/types'
 import type { LiturgicalColour } from '@/types'
 import type { LiturgicalDayWithService } from '@/types/service-views'
 import { AvailabilityWidget } from '@/components/availability-widget'
-import { ChoirStatusBadge } from './choir-status-badge'
+import { CHOIR_STATUS_NOTES } from './choir-status-constants'
 
 interface ServicesListProps {
   churchId: string
   days: LiturgicalDayWithService[]
-  userRole: string
 }
 
 function groupByMonth(
@@ -24,7 +23,7 @@ function groupByMonth(
   return Array.from(map.entries())
 }
 
-export function ServicesList({ churchId, days, userRole }: ServicesListProps) {
+export function ServicesList({ churchId, days }: ServicesListProps) {
   if (days.length === 0) {
     return (
       <div className="border border-border bg-card p-8 text-center">
@@ -62,27 +61,19 @@ export function ServicesList({ churchId, days, userRole }: ServicesListProps) {
                     </span>
                   </div>
 
-                  {/* Choir status — first after date column */}
-                  {day.service && (
-                    <div
-                      className="flex flex-col items-center justify-center gap-1 px-3 border-r border-border flex-shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ChoirStatusBadge
-                        serviceId={day.service.id}
-                        churchId={churchId}
-                        choirStatus={day.service.choirStatus}
-                        userRole={userRole}
-                      />
-                    </div>
-                  )}
-
                   {/* Body */}
                   <Link
                     href={`/churches/${churchId}/services/${day.date}`}
                     className="flex-1 p-4 min-w-0"
                   >
-                    <p className="font-heading text-lg mb-1">{day.cwName}</p>
+                    <p className="font-heading text-lg mb-1">
+                      {day.cwName}
+                      {day.service && day.service.choirStatus !== 'CHOIR_REQUIRED' && CHOIR_STATUS_NOTES[day.service.choirStatus] && (
+                        <span className="text-sm italic text-muted-foreground/60 font-normal ml-2">
+                          {CHOIR_STATUS_NOTES[day.service.choirStatus]}
+                        </span>
+                      )}
+                    </p>
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <span
                         className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 border"

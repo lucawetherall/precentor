@@ -41,7 +41,7 @@ describe("BCP Evensong template", () => {
       .map((s) => s.placeholder);
     expect(placeholders).toContain("collect");
     expect(placeholders).toContain("reading-ot");
-    expect(placeholders).toContain("reading-epistle");
+    expect(placeholders).toContain("reading-nt");
     expect(placeholders).toContain("reading-psalm");
   });
 

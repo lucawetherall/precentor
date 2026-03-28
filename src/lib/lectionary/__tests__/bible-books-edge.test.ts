@@ -53,12 +53,12 @@ describe("classifyReading edge cases", () => {
     });
   });
 
-  describe("Epistle books", () => {
+  describe("New Testament books", () => {
     it.each([
-      ["Romans 1.1", "EPISTLE"],
-      ["1 Corinthians 1.1", "EPISTLE"],
-      ["Revelation 1.1", "EPISTLE"],
-      ["Acts 1.1", "EPISTLE"],
+      ["Romans 1.1", "NEW_TESTAMENT"],
+      ["1 Corinthians 1.1", "NEW_TESTAMENT"],
+      ["Revelation 1.1", "NEW_TESTAMENT"],
+      ["Acts 1.1", "NEW_TESTAMENT"],
     ] as const)('classifies "%s" as %s', (ref, expected) => {
       expect(classifyReading(ref)).toBe(expected);
     });
@@ -106,8 +106,8 @@ describe("classifyReading edge cases", () => {
       expect(classifyReading("2 Kings 1.1")).toBe("OLD_TESTAMENT");
     });
 
-    it('classifies "3 John 1" as EPISTLE', () => {
-      expect(classifyReading("3 John 1")).toBe("EPISTLE");
+    it('classifies "3 John 1" as NEW_TESTAMENT', () => {
+      expect(classifyReading("3 John 1")).toBe("NEW_TESTAMENT");
     });
   });
 

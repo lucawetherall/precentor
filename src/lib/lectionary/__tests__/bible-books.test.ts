@@ -64,7 +64,7 @@ describe("classifyReading", () => {
     });
   });
 
-  describe("EPISTLE readings", () => {
+  describe("NEW_TESTAMENT readings", () => {
     it.each([
       "Romans 8.1-11",
       "Acts 2.1-11",
@@ -73,8 +73,8 @@ describe("classifyReading", () => {
       "Hebrews 11.1-3",
       "James 1.1-12",
       "Philippians 2.1-11",
-    ])("classifies \"%s\" as EPISTLE", (reference) => {
-      expect(classifyReading(reference)).toBe("EPISTLE");
+    ])("classifies \"%s\" as NEW_TESTAMENT", (reference) => {
+      expect(classifyReading(reference)).toBe("NEW_TESTAMENT");
     });
   });
 

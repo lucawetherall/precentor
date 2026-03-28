@@ -15,7 +15,7 @@ const summaryData: SummaryServiceSheetData = {
   collect: "Test collect prayer text.",
   postCommunion: "Test post communion prayer text.",
   readings: [
-    { position: "EPISTLE", reference: "1 Corinthians 1:18-25" },
+    { position: "NEW_TESTAMENT", reference: "1 Corinthians 1:18-25" },
   ],
   musicSlots: [
     {

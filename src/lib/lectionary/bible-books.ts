@@ -7,7 +7,7 @@
 export type ReadingPosition =
   | "OLD_TESTAMENT"
   | "PSALM"
-  | "EPISTLE"
+  | "NEW_TESTAMENT"
   | "GOSPEL"
   | "CANTICLE";
 
@@ -69,7 +69,7 @@ const OT_BOOKS = new Set([
 
 const GOSPEL_BOOKS = new Set(["Matthew", "Mark", "Luke", "John"]);
 
-const EPISTLE_BOOKS = new Set([
+const NEW_TESTAMENT_BOOKS = new Set([
   "Acts",
   "Romans",
   "1 Corinthians",
@@ -177,7 +177,7 @@ export function classifyReading(reference: string): ReadingPosition {
   const normalized = bookName.replace(/^(\d)\s*/, "$1 ");
 
   if (GOSPEL_BOOKS.has(normalized)) return "GOSPEL";
-  if (EPISTLE_BOOKS.has(normalized)) return "EPISTLE";
+  if (NEW_TESTAMENT_BOOKS.has(normalized)) return "NEW_TESTAMENT";
   if (OT_BOOKS.has(normalized)) return "OLD_TESTAMENT";
 
   // Fallback: if it looks like a psalm reference

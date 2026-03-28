@@ -101,7 +101,7 @@ export const CW_EUCHARIST_ORDER_ONE: ServiceTemplate = {
       id: "word.second-reading",
       title: "Second Reading",
       blocks: [],
-      placeholder: "reading-epistle",
+      placeholder: "reading-nt",
     },
     {
       id: "word.gradual-hymn",
