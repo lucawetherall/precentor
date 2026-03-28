@@ -10,7 +10,7 @@ import {
   rotaEntries,
   serviceSections,
 } from '@/lib/db/schema'
-import { eq, and, asc } from 'drizzle-orm'
+import { eq, and, asc, inArray } from 'drizzle-orm'
 import type { InferSelectModel } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -121,22 +121,24 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
       }
 
       // Fetch sections and raw slots for all services (for editor mode)
-      if (isEditMode) {
+      if (isEditMode && dayServices.length > 0) {
+        const svcIds = dayServices.map((s) => s.id);
+        const [allSections, allSlots] = await Promise.all([
+          db
+            .select()
+            .from(serviceSections)
+            .where(inArray(serviceSections.serviceId, svcIds))
+            .orderBy(asc(serviceSections.positionOrder)),
+          db
+            .select()
+            .from(musicSlots)
+            .where(inArray(musicSlots.serviceId, svcIds))
+            .orderBy(asc(musicSlots.positionOrder)),
+        ]);
+        // Group by serviceId
         for (const svc of dayServices) {
-          const [svcSections, svcSlots] = await Promise.all([
-            db
-              .select()
-              .from(serviceSections)
-              .where(eq(serviceSections.serviceId, svc.id))
-              .orderBy(asc(serviceSections.positionOrder)),
-            db
-              .select()
-              .from(musicSlots)
-              .where(eq(musicSlots.serviceId, svc.id))
-              .orderBy(asc(musicSlots.positionOrder)),
-          ])
-          editorSectionsMap[svc.id] = svcSections
-          editorSlotsMap[svc.id] = svcSlots
+          editorSectionsMap[svc.id] = allSections.filter((s) => s.serviceId === svc.id);
+          editorSlotsMap[svc.id] = allSlots.filter((s) => s.serviceId === svc.id);
         }
       }
     }
