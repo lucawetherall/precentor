@@ -7,7 +7,6 @@ import { useSortableList } from "./use-sortable-list";
 
 interface SectionEditorProps {
   churchId: string;
-  serviceId: string;
 }
 
 function MajorSectionDivider({ label }: { label: string }) {

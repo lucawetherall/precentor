@@ -260,7 +260,6 @@ export function ServicePlanner({
             <SaveStatusIndicator />
           </div>
           <SectionEditor
-            serviceId={activeService.id}
             churchId={churchId}
           />
           <ServiceSettings

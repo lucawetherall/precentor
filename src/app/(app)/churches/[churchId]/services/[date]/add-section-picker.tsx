@@ -116,7 +116,8 @@ export function AddSectionPicker({ churchId }: AddSectionPickerProps) {
   }) => {
     setSaving(true);
     try {
-      const nextPositionOrder = sections.length + 1;
+      // Compute append position from current max to handle non-contiguous orders after deletes
+      const nextPositionOrder = sections.reduce((m, s) => Math.max(m, s.positionOrder), 0) + 1
       await addSection({
         sectionKey: sectionData.sectionKey,
         title: sectionData.title,
