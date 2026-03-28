@@ -13,6 +13,7 @@ export type MusicSlotType =
   | "HYMN"
   | "PSALM"
   | "ANTHEM"
+  | "MASS_SETTING_KYRIE"
   | "MASS_SETTING_GLORIA"
   | "MASS_SETTING_SANCTUS"
   | "MASS_SETTING_AGNUS"
@@ -67,6 +68,7 @@ export const MUSIC_SLOT_LABELS: Record<MusicSlotType, string> = {
   HYMN: "Hymn",
   PSALM: "Psalm",
   ANTHEM: "Anthem",
+  MASS_SETTING_KYRIE: "Kyrie",
   MASS_SETTING_GLORIA: "Gloria",
   MASS_SETTING_SANCTUS: "Sanctus & Benedictus",
   MASS_SETTING_AGNUS: "Agnus Dei",
@@ -94,6 +96,7 @@ export const LITURGICAL_COLOURS: Record<LiturgicalColour, string> = {
 export const EUCHARIST_SLOTS: MusicSlotType[] = [
   "ORGAN_VOLUNTARY_PRE",
   "HYMN", // Entrance
+  "MASS_SETTING_KYRIE",
   "MASS_SETTING_GLORIA",
   "HYMN", // Gradual
   "GOSPEL_ACCLAMATION",

@@ -306,4 +306,6 @@ export const churchServicePatterns = pgTable("church_service_patterns", {
   serviceType: serviceTypeEnum("service_type").notNull(),
   time: text("time"),  // e.g. "10:00"
   enabled: boolean("enabled").default(true).notNull(),
-});
+}, (t) => [
+  uniqueIndex("church_service_pattern_unique").on(t.churchId, t.dayOfWeek, t.serviceType),
+]);

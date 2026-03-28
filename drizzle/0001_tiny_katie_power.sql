@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "church_service_pattern_unique" ON "church_service_patterns" USING btree ("church_id","day_of_week","service_type");

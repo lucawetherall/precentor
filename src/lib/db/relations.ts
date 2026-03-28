@@ -41,6 +41,7 @@ export const readingsRelations = relations(s.readings, ({ one }) => ({
 export const servicesRelations = relations(s.services, ({ one, many }) => ({
   church: one(s.churches, { fields: [s.services.churchId], references: [s.churches.id] }),
   liturgicalDay: one(s.liturgicalDays, { fields: [s.services.liturgicalDayId], references: [s.liturgicalDays.id] }),
+  defaultMassSetting: one(s.massSettings, { fields: [s.services.defaultMassSettingId], references: [s.massSettings.id] }),
   musicSlots: many(s.musicSlots),
   availability: many(s.availability),
   rotaEntries: many(s.rotaEntries),
@@ -68,10 +69,11 @@ export const anthemsRelations = relations(s.anthems, ({ one, many }) => ({
   musicSlots: many(s.musicSlots),
 }));
 
-// massSettings: has many churchMassSettings, musicSlots
+// massSettings: has many churchMassSettings, musicSlots, services (via defaultMassSettingId)
 export const massSettingsRelations = relations(s.massSettings, ({ many }) => ({
   churchMassSettings: many(s.churchMassSettings),
   musicSlots: many(s.musicSlots),
+  services: many(s.services),
 }));
 
 // churchMassSettings: belongs to church + massSetting
