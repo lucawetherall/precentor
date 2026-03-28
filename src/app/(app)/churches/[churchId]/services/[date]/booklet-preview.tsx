@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Loader2, FileDown, FileText, Check } from "lucide-react";
 import type { BookletServiceSheetData, SummaryServiceSheetData, ResolvedDbSection } from "@/types/service-sheet";
 import type { LiturgicalTextBlock } from "@/data/liturgy/types";
@@ -238,12 +238,6 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet", isVisibl
     placeholderValue: s.placeholderValue,
     visible: s.visible,
   }));
-
-  // Track the latest raw sections for saving (kept in ref so save callbacks see current value)
-  const rawSectionsRef = useRef<RawServiceSection[]>(rawSections);
-  useEffect(() => {
-    rawSectionsRef.current = rawSections;
-  });
 
   useEffect(() => {
     if (!isVisible) return;

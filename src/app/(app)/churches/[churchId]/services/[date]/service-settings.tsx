@@ -12,9 +12,7 @@ const CHOIR_STATUS_LABELS: Record<string, string> = {
 };
 
 interface ServiceSettingsProps {
-  serviceId: string;
   serviceType: string;
-  churchId: string;
 }
 
 export function ServiceSettings({

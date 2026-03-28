@@ -32,22 +32,6 @@ interface Service {
   defaultMassSettingId: string | null;
 }
 
-// Serializable version of slot data from server (same shape as DB row)
-interface SerializedSlot {
-  id: string;
-  serviceId: string;
-  slotType: string;
-  positionOrder: number;
-  hymnId: string | null;
-  anthemId: string | null;
-  massSettingId: string | null;
-  canticleSettingId: string | null;
-  responsesSettingId: string | null;
-  freeText: string | null;
-  notes: string | null;
-  verseCount: number | null;
-  selectedVerses: number[] | null;
-}
 
 export function ServicePlanner({
   churchId,
@@ -62,7 +46,7 @@ export function ServicePlanner({
   date: string;
   existingServices: Service[];
   editorSectionsMap?: Record<string, ServiceSection[]>;
-  editorSlotsMap?: Record<string, SerializedSlot[]>;
+  editorSlotsMap?: Record<string, MusicSlot[]>;
 }) {
   const [services, setServices] = useState<Service[]>(existingServices);
   const [activeTab, setActiveTab] = useState<string>(services[0]?.id || "");
@@ -271,9 +255,7 @@ export function ServicePlanner({
             churchId={churchId}
           />
           <ServiceSettings
-            serviceId={activeService.id}
             serviceType={activeService.serviceType}
-            churchId={churchId}
           />
           <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
