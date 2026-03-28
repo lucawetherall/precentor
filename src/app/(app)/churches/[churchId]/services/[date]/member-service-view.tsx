@@ -58,7 +58,7 @@ export function MemberServiceView({
     <div className="p-8 max-w-5xl">
       {/* Back link */}
       <Link
-        href={`/churches/${churchId}/sundays`}
+        href={`/churches/${churchId}/services`}
         className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
       >
         <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />

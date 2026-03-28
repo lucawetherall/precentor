@@ -3,24 +3,24 @@
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { cn } from '@/lib/utils'
-import { SundaysList } from './sundays-list'
-import { SundaysAgenda } from './sundays-agenda'
-import { SundaysCalendar } from './sundays-calendar'
+import { ServicesList } from './services-list'
+import { ServicesAgenda } from './services-agenda'
+import { ServicesCalendar } from './services-calendar'
 import type { LiturgicalDayWithService } from '@/types/service-views'
 type ViewMode = 'list' | 'agenda' | 'calendar'
 
-interface SundaysViewWrapperProps {
+interface ServicesViewWrapperProps {
   churchId: string
   liturgicalDays: LiturgicalDayWithService[]
 }
 
-const LS_KEY = 'precentor:sundays-view'
+const LS_KEY = 'precentor:services-view'
 const VALID_VIEWS: ViewMode[] = ['list', 'agenda', 'calendar']
 
-export function SundaysViewWrapper({
+export function ServicesViewWrapper({
   churchId,
   liturgicalDays,
-}: SundaysViewWrapperProps) {
+}: ServicesViewWrapperProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const urlView = searchParams.get('view') as ViewMode | null
@@ -68,9 +68,9 @@ export function SundaysViewWrapper({
         </div>
       </div>
 
-      {view === 'list' && <SundaysList churchId={churchId} days={liturgicalDays} />}
-      {view === 'agenda' && <SundaysAgenda churchId={churchId} days={liturgicalDays} />}
-      {view === 'calendar' && <SundaysCalendar churchId={churchId} days={liturgicalDays} />}
+      {view === 'list' && <ServicesList churchId={churchId} days={liturgicalDays} />}
+      {view === 'agenda' && <ServicesAgenda churchId={churchId} days={liturgicalDays} />}
+      {view === 'calendar' && <ServicesCalendar churchId={churchId} days={liturgicalDays} />}
     </>
   )
 }

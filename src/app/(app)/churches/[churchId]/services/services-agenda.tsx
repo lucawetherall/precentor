@@ -5,7 +5,7 @@ import type { LiturgicalColour } from '@/types'
 import type { LiturgicalDayWithService } from '@/types/service-views'
 import { AvailabilityWidget } from '@/components/availability-widget'
 
-interface SundaysAgendaProps {
+interface ServicesAgendaProps {
   churchId: string
   days: LiturgicalDayWithService[]
 }
@@ -22,7 +22,7 @@ function groupByMonth(
   return Array.from(map.entries())
 }
 
-export function SundaysAgenda({ churchId, days }: SundaysAgendaProps) {
+export function ServicesAgenda({ churchId, days }: ServicesAgendaProps) {
   if (days.length === 0) {
     return (
       <div className="border border-border bg-card p-8 text-center">
@@ -62,7 +62,7 @@ export function SundaysAgenda({ churchId, days }: SundaysAgendaProps) {
 
                   {/* Body */}
                   <Link
-                    href={`/churches/${churchId}/sundays/${day.date}`}
+                    href={`/churches/${churchId}/services/${day.date}`}
                     className="flex-1 p-4 min-w-0"
                   >
                     <p className="font-heading text-lg mb-1">{day.cwName}</p>

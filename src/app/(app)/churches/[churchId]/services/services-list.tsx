@@ -5,12 +5,12 @@ import type { LiturgicalColour } from '@/types'
 import type { LiturgicalDayWithService } from '@/types/service-views'
 import { AvailabilityWidget } from '@/components/availability-widget'
 
-interface SundaysListProps {
+interface ServicesListProps {
   churchId: string
   days: LiturgicalDayWithService[]
 }
 
-export function SundaysList({ churchId, days }: SundaysListProps) {
+export function ServicesList({ churchId, days }: ServicesListProps) {
   if (days.length === 0) {
     return (
       <div className="border border-border bg-card p-8 text-center">
@@ -34,7 +34,7 @@ export function SundaysList({ churchId, days }: SundaysListProps) {
             style={{ backgroundColor: LITURGICAL_COLOURS[day.colour as LiturgicalColour] ?? '#4A6741' }}
           />
           <Link
-            href={`/churches/${churchId}/sundays/${day.date}`}
+            href={`/churches/${churchId}/services/${day.date}`}
             className="flex-1 flex items-center gap-4 p-4 min-w-0"
           >
             <div className="flex-1 min-w-0">

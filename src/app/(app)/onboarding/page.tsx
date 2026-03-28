@@ -30,7 +30,7 @@ export default function OnboardingPage() {
 
     if (res.ok) {
       const church = await res.json();
-      router.push(`/churches/${church.id}/sundays`);
+      router.push(`/churches/${church.id}/services`);
     } else {
       const data = await res.json();
       setError(data.error || "Failed to create church.");
