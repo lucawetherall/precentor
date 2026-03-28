@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { churchUpdateSchema } from "@/lib/validation/schemas";
+import { apiError } from "@/lib/api-helpers";
 
 export async function PATCH(
   request: Request,
@@ -20,12 +22,16 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const parsed = churchUpdateSchema.safeParse(body);
+  if (!parsed.success) return apiError(parsed.error.issues[0].message, 400);
+  const fields = parsed.data;
+
   try {
     const updates: Record<string, unknown> = { updatedAt: new Date() };
-    if ("name" in body) updates.name = body.name;
-    if ("diocese" in body) updates.diocese = body.diocese || null;
-    if ("address" in body) updates.address = body.address || null;
-    if ("ccliNumber" in body) updates.ccliNumber = body.ccliNumber || null;
+    if ("name" in fields) updates.name = fields.name;
+    if ("diocese" in fields) updates.diocese = fields.diocese || null;
+    if ("address" in fields) updates.address = fields.address || null;
+    if ("ccliNumber" in fields) updates.ccliNumber = fields.ccliNumber || null;
 
     const [updated] = await db
       .update(churches)

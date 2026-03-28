@@ -4,9 +4,8 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { invites } from "@/lib/db/schema";
 import { randomBytes } from "crypto";
-
-const VALID_ROLES = ["ADMIN", "EDITOR", "MEMBER"] as const;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { memberInviteSchema } from "@/lib/validation/schemas";
+import { apiError } from "@/lib/api-helpers";
 
 function escapeHtml(str: string): string {
   return str
@@ -30,13 +29,9 @@ export async function POST(
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const { email, role, sendEmail } = body;
-
-  if (!email || typeof email !== "string" || !EMAIL_REGEX.test(email)) {
-    return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
-  }
-
-  const validatedRole = VALID_ROLES.includes(role) ? role : "MEMBER";
+  const parsed = memberInviteSchema.safeParse(body);
+  if (!parsed.success) return apiError(parsed.error.issues[0].message, 400);
+  const { email, role: validatedRole, sendEmail } = parsed.data;
 
   try {
     const token = randomBytes(32).toString("hex");
