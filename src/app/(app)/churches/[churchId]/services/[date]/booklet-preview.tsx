@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Loader2, FileDown, FileText, Check } from "lucide-react";
 import type { BookletServiceSheetData, SummaryServiceSheetData, ResolvedDbSection } from "@/types/service-sheet";
 import type { LiturgicalTextBlock } from "@/data/liturgy/types";
+import { useServiceEditor } from "./service-editor-context";
 
 type SheetData = BookletServiceSheetData | SummaryServiceSheetData;
 
@@ -210,31 +211,48 @@ function SectionPreview({ section, rawSection, onTextOverrideChange, savingSecti
 }
 
 export function BookletPreview({ churchId, serviceId, mode = "booklet" }: BookletPreviewProps) {
+  const { sections: contextSections } = useServiceEditor();
+
   const [data, setData] = useState<SheetData | null>(null);
-  const [sections, setSections] = useState<ResolvedDbSection[]>([]);
-  const [rawSections, setRawSections] = useState<RawServiceSection[]>([]);
+  const [resolvedSections, setResolvedSections] = useState<ResolvedDbSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingSectionId, setSavingSectionId] = useState<string | null>(null);
   const [savedSectionId, setSavedSectionId] = useState<string | null>(null);
   const [saveErrorSectionId, setSaveErrorSectionId] = useState<string | null>(null);
 
+  // Use context sections as rawSections source (cast to RawServiceSection shape)
+  const rawSections: RawServiceSection[] = contextSections.map((s) => ({
+    id: s.id,
+    serviceId: serviceId,
+    sectionKey: s.sectionKey,
+    title: s.title,
+    majorSection: s.majorSection,
+    positionOrder: s.positionOrder,
+    liturgicalTextId: s.liturgicalTextId,
+    textOverride: s.textOverride as LiturgicalTextBlock[] | null,
+    musicSlotId: s.musicSlotId,
+    musicSlotType: s.musicSlotType,
+    placeholderType: s.placeholderType,
+    placeholderValue: s.placeholderValue,
+    visible: s.visible,
+  }));
+
   // Track the latest raw sections for saving (kept in ref so save callbacks see current value)
-  const rawSectionsRef = useRef<RawServiceSection[]>([]);
+  const rawSectionsRef = useRef<RawServiceSection[]>(rawSections);
   useEffect(() => {
     rawSectionsRef.current = rawSections;
-  }, [rawSections]);
+  });
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        // Load both sheet data (for rendered sections) and raw sections (for overrides)
-        const [sheetRes, sectionsRes] = await Promise.all([
-          fetch(`/api/churches/${churchId}/services/${serviceId}/sheet?format=json&mode=${mode}`),
-          fetch(`/api/churches/${churchId}/services/${serviceId}/sections`),
-        ]);
+        // Load sheet data only (sections come from context)
+        const sheetRes = await fetch(
+          `/api/churches/${churchId}/services/${serviceId}/sheet?format=json&mode=${mode}`
+        );
 
         if (!sheetRes.ok) {
           setError("Failed to load preview data");
@@ -246,12 +264,7 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
         setData(json);
 
         if (json.mode === "booklet" && json.resolvedDbSections) {
-          setSections(json.resolvedDbSections);
-        }
-
-        if (sectionsRes.ok) {
-          const raw: RawServiceSection[] = await sectionsRes.json();
-          setRawSections(raw);
+          setResolvedSections(json.resolvedDbSections);
         }
       } catch {
         setError("Network error loading preview");
@@ -269,26 +282,19 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
     setSavedSectionId(null);
     setSaveErrorSectionId(null);
     try {
-      // Build updated raw sections array with the override applied
-      const updatedRaw = rawSectionsRef.current.map((s) =>
-        s.id === sectionId ? { ...s, textOverride: blocks } : s
-      );
-
+      // Use the granular PATCH endpoint for the individual section
       const res = await fetch(
-        `/api/churches/${churchId}/services/${serviceId}/sections`,
+        `/api/churches/${churchId}/services/${serviceId}/sections/${sectionId}`,
         {
-          method: "PUT",
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sections: updatedRaw }),
+          body: JSON.stringify({ textOverride: blocks }),
         }
       );
 
       if (!res.ok) {
         setSaveErrorSectionId(sectionId);
       } else {
-        // Update local raw sections state
-        setRawSections(updatedRaw);
-
         // Refresh sheet data to get re-resolved blocks
         const sheetRes = await fetch(
           `/api/churches/${churchId}/services/${serviceId}/sheet?format=json&mode=${mode}`
@@ -297,7 +303,7 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
           const json: SheetData = await sheetRes.json();
           setData(json);
           if (json.mode === "booklet" && json.resolvedDbSections) {
-            setSections(json.resolvedDbSections);
+            setResolvedSections(json.resolvedDbSections);
           }
         }
 
@@ -370,9 +376,9 @@ export function BookletPreview({ churchId, serviceId, mode = "booklet" }: Bookle
         </div>
 
         {/* Sections (booklet mode) */}
-        {sections.length > 0 ? (
+        {resolvedSections.length > 0 ? (
           <div>
-            {sections.map((section) => {
+            {resolvedSections.map((section) => {
               const showDivider =
                 section.majorSection &&
                 !renderedMajorSections.has(section.majorSection);

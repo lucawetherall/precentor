@@ -6,6 +6,10 @@ import type { ServiceType } from "@/types";
 import { SectionEditor } from "./section-editor";
 import { ServiceSettings } from "./service-settings";
 import { BookletPreview } from "./booklet-preview";
+import { ServiceEditorProvider } from "./service-editor-context";
+import { SaveStatusIndicator } from "./save-status-indicator";
+import type { ServiceSection } from "./section-row";
+import type { MusicSlot } from "./use-service-editor";
 import { Plus, Loader2, Trash2, BookOpen, X, FileDown, FileText, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -24,6 +28,25 @@ interface Service {
   sheetMode: string;
   eucharisticPrayer: string | null;
   includeReadingText: boolean;
+  choirStatus: string;
+  defaultMassSettingId: string | null;
+}
+
+// Serializable version of slot data from server (same shape as DB row)
+interface SerializedSlot {
+  id: string;
+  serviceId: string;
+  slotType: string;
+  positionOrder: number;
+  hymnId: string | null;
+  anthemId: string | null;
+  massSettingId: string | null;
+  canticleSettingId: string | null;
+  responsesSettingId: string | null;
+  freeText: string | null;
+  notes: string | null;
+  verseCount: number | null;
+  selectedVerses: number[] | null;
 }
 
 export function ServicePlanner({
@@ -31,11 +54,15 @@ export function ServicePlanner({
   liturgicalDayId,
   date,
   existingServices,
+  editorSectionsMap = {},
+  editorSlotsMap = {},
 }: {
   churchId: string;
   liturgicalDayId: string;
   date: string;
   existingServices: Service[];
+  editorSectionsMap?: Record<string, ServiceSection[]>;
+  editorSlotsMap?: Record<string, SerializedSlot[]>;
 }) {
   const [services, setServices] = useState<Service[]>(existingServices);
   const [activeTab, setActiveTab] = useState<string>(services[0]?.id || "");
@@ -71,6 +98,8 @@ export function ServicePlanner({
           sheetMode: service.sheetMode ?? "summary",
           eucharisticPrayer: service.eucharisticPrayer ?? null,
           includeReadingText: service.includeReadingText ?? true,
+          choirStatus: service.choirStatus ?? "CHOIR_REQUIRED",
+          defaultMassSettingId: service.defaultMassSettingId ?? null,
         };
         setServices((prev) => [...prev, newService]);
         setActiveTab(newService.id);
@@ -219,7 +248,24 @@ export function ServicePlanner({
 
       {/* Active service content */}
       {activeService && (
-        <>
+        <ServiceEditorProvider
+          key={activeService.id}
+          serviceId={activeService.id}
+          churchId={churchId}
+          initialSections={(editorSectionsMap[activeService.id] ?? []) as ServiceSection[]}
+          initialSettings={{
+            sheetMode: activeService.sheetMode,
+            eucharisticPrayer: activeService.eucharisticPrayer,
+            includeReadingText: activeService.includeReadingText,
+            choirStatus: activeService.choirStatus,
+            defaultMassSettingId: activeService.defaultMassSettingId,
+          }}
+          initialSlots={(editorSlotsMap[activeService.id] ?? []) as MusicSlot[]}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div />
+            <SaveStatusIndicator />
+          </div>
           <SectionEditor
             serviceId={activeService.id}
             churchId={churchId}
@@ -228,11 +274,6 @@ export function ServicePlanner({
             serviceId={activeService.id}
             serviceType={activeService.serviceType}
             churchId={churchId}
-            initialSettings={{
-              sheetMode: activeService.sheetMode,
-              eucharisticPrayer: activeService.eucharisticPrayer,
-              includeReadingText: activeService.includeReadingText,
-            }}
           />
           <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
@@ -284,7 +325,7 @@ export function ServicePlanner({
               />
             </div>
           )}
-        </>
+        </ServiceEditorProvider>
       )}
 
       {services.length === 0 && (

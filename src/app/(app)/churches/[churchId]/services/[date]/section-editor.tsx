@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Loader2, Check } from "lucide-react";
+import { useRef, useState } from "react";
 import { SectionRow } from "./section-row";
 import { AddSectionPicker } from "./add-section-picker";
+import { useServiceEditor } from "./service-editor-context";
 import type { ServiceSection } from "./section-row";
 
 interface SectionEditorProps {
@@ -24,77 +24,34 @@ function MajorSectionDivider({ label }: { label: string }) {
 }
 
 export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
-  const [sections, setSections] = useState<ServiceSection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const {
+    sections,
+    reorderSections,
+    deleteSection,
+    updateSection,
+    refreshSections,
+  } = useServiceEditor();
 
   // Drag state
   const dragSectionIdRef = useRef<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadSections() {
-      try {
-        const res = await fetch(
-          `/api/churches/${churchId}/services/${serviceId}/sections`
-        );
-        if (res.ok) {
-          const data: ServiceSection[] = await res.json();
-          setSections(data);
-        }
-      } catch {
-        // leave empty
-      }
-      setLoading(false);
-    }
-    loadSections();
-  }, [churchId, serviceId]);
-
-  const persistSections = async (updated: ServiceSection[]) => {
-    setSaving(true);
-    setSaved(false);
-    setSaveError(null);
-    try {
-      const res = await fetch(
-        `/api/churches/${churchId}/services/${serviceId}/sections`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sections: updated }),
-        }
-      );
-      if (!res.ok) {
-        setSaveError("Failed to save order");
-      } else {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-      }
-    } catch {
-      setSaveError("Network error — could not save");
-    }
-    setSaving(false);
-  };
-
   const handleToggleVisible = async (sectionId: string) => {
-    const updated = sections.map((s) =>
-      s.id === sectionId ? { ...s, visible: !s.visible } : s
-    );
-    setSections(updated);
-    await persistSections(updated);
+    const section = sections.find((s) => s.id === sectionId);
+    if (section) {
+      await updateSection(sectionId, { visible: !section.visible });
+    }
   };
 
   const handleDelete = async (sectionId: string) => {
-    const updated = sections
-      .filter((s) => s.id !== sectionId)
-      .map((s, i) => ({ ...s, positionOrder: i }));
-    setSections(updated);
-    await persistSections(updated);
+    await deleteSection(sectionId);
   };
 
-  const handleSectionAdded = (section: ServiceSection) => {
-    setSections((prev) => [...prev, section]);
+  const handleSectionAdded = (_section: ServiceSection) => {
+    // AddSectionPicker uses its own PUT-all endpoint to add sections.
+    // Re-fetch from the server to sync context state with what was persisted.
+    // TODO: In a future phase, AddSectionPicker should use addSection from context.
+    refreshSections();
   };
 
   // ── Drag and drop ──────────────────────────────────────────
@@ -126,24 +83,9 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
     const [moved] = reordered.splice(dragIndex, 1);
     reordered.splice(overIndex, 0, moved);
 
-    const withNewOrder = reordered.map((s, i) => ({
-      ...s,
-      positionOrder: i,
-    }));
-
-    setSections(withNewOrder);
-    await persistSections(withNewOrder);
+    const orderedIds = reordered.map((s) => s.id);
+    await reorderSections(orderedIds);
   };
-
-  if (loading) {
-    return (
-      <div className="space-y-2">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-12 bg-muted animate-pulse rounded-sm" />
-        ))}
-      </div>
-    );
-  }
 
   // Group sections by majorSection for divider rendering
   const renderedMajorSections = new Set<string>();
@@ -156,21 +98,6 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
         <h3 className="text-sm font-heading font-semibold text-muted-foreground uppercase tracking-wide">
           Running Order
         </h3>
-        {saving && (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
-            Saving…
-          </span>
-        )}
-        {saved && !saving && (
-          <span className="flex items-center gap-1 text-xs text-green-600">
-            <Check className="h-3 w-3" strokeWidth={2} />
-            Saved
-          </span>
-        )}
-        {saveError && !saving && (
-          <span className="text-xs text-destructive">{saveError}</span>
-        )}
       </div>
 
       {sections.length === 0 ? (
