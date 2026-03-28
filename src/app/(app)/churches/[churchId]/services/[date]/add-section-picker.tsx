@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type { ServiceSection } from "./section-row";
+import { useServiceEditor } from "./service-editor-context";
 
 interface LiturgicalText {
   id: string;
@@ -24,9 +24,6 @@ type SectionType = "hymn" | "liturgical-text" | "reading" | "custom-text";
 
 interface AddSectionPickerProps {
   churchId: string;
-  serviceId: string;
-  nextPositionOrder: number;
-  onSectionAdded: (section: ServiceSection) => void;
 }
 
 const SECTION_TYPES: {
@@ -66,12 +63,8 @@ const SECTION_TYPES: {
   },
 ];
 
-export function AddSectionPicker({
-  churchId,
-  serviceId,
-  nextPositionOrder,
-  onSectionAdded,
-}: AddSectionPickerProps) {
+export function AddSectionPicker({ churchId }: AddSectionPickerProps) {
+  const { sections, addSection } = useServiceEditor();
   const [open, setOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<SectionType | null>(null);
   const [liturgicalTexts, setLiturgicalTexts] = useState<LiturgicalText[]>([]);
@@ -115,23 +108,16 @@ export function AddSectionPicker({
   const saveSection = async (sectionData: {
     sectionKey: string;
     title: string;
-    musicSlotType?: string;
-    liturgicalTextId?: string;
-    placeholderType?: string;
-    placeholderValue?: string;
-    textOverride?: { speaker: string; text: string }[];
+    musicSlotType?: string | null;
+    liturgicalTextId?: string | null;
+    placeholderType?: string | null;
+    placeholderValue?: string | null;
+    textOverride?: { speaker: string; text: string }[] | null;
   }) => {
     setSaving(true);
     try {
-      // Fetch current sections, append new one
-      const getRes = await fetch(
-        `/api/churches/${churchId}/services/${serviceId}/sections`
-      );
-      const currentSections: ServiceSection[] = getRes.ok
-        ? await getRes.json()
-        : [];
-
-      const newSection = {
+      const nextPositionOrder = sections.length + 1;
+      await addSection({
         sectionKey: sectionData.sectionKey,
         title: sectionData.title,
         majorSection: null,
@@ -143,39 +129,9 @@ export function AddSectionPicker({
         placeholderType: sectionData.placeholderType ?? null,
         placeholderValue: sectionData.placeholderValue ?? null,
         visible: true,
-      };
-
-      const putRes = await fetch(
-        `/api/churches/${churchId}/services/${serviceId}/sections`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sections: [...currentSections, newSection],
-          }),
-        }
-      );
-
-      if (putRes.ok) {
-        // Refetch to get the generated id
-        const refreshRes = await fetch(
-          `/api/churches/${churchId}/services/${serviceId}/sections`
-        );
-        if (refreshRes.ok) {
-          const refreshed: ServiceSection[] = await refreshRes.json();
-          const added = refreshed.find(
-            (s) =>
-              s.sectionKey === sectionData.sectionKey &&
-              s.positionOrder === nextPositionOrder
-          );
-          if (added) {
-            onSectionAdded(added);
-          }
-        }
-        handleClose();
-      }
-    } catch {
-      // silent — caller will notice nothing was added
+        notes: null,
+      });
+      handleClose();
     } finally {
       setSaving(false);
     }

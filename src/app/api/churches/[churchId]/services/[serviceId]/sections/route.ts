@@ -107,6 +107,10 @@ export async function POST(
   }
 }
 
+// DEPRECATED: Use POST /sections (create), PATCH /sections/:id (update),
+// DELETE /sections/:id (delete), and PUT /sections/reorder (reorder) instead.
+// This endpoint deletes all sections and re-inserts — it is kept for backwards
+// compatibility but should not be called by new code.
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ churchId: string; serviceId: string }> }

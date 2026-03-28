@@ -4,7 +4,6 @@ import { SectionRow } from "./section-row";
 import { AddSectionPicker } from "./add-section-picker";
 import { useServiceEditor } from "./service-editor-context";
 import { useSortableList } from "./use-sortable-list";
-import type { ServiceSection } from "./section-row";
 
 interface SectionEditorProps {
   churchId: string;
@@ -23,13 +22,12 @@ function MajorSectionDivider({ label }: { label: string }) {
   );
 }
 
-export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
+export function SectionEditor({ churchId }: SectionEditorProps) {
   const {
     sections,
     reorderSections,
     deleteSection,
     updateSection,
-    refreshSections,
   } = useServiceEditor();
 
   const { dragHandleProps, itemProps, overId } = useSortableList({
@@ -48,17 +46,8 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
     await deleteSection(sectionId);
   };
 
-  const handleSectionAdded = (_section: ServiceSection) => {
-    // AddSectionPicker uses its own PUT-all endpoint to add sections.
-    // Re-fetch from the server to sync context state with what was persisted.
-    // TODO: In a future phase, AddSectionPicker should use addSection from context.
-    refreshSections();
-  };
-
   // Group sections by majorSection for divider rendering
   const renderedMajorSections = new Set<string>();
-
-  const nextPositionOrder = sections.length;
 
   return (
     <div>
@@ -107,9 +96,6 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
 
       <AddSectionPicker
         churchId={churchId}
-        serviceId={serviceId}
-        nextPositionOrder={nextPositionOrder}
-        onSectionAdded={handleSectionAdded}
       />
     </div>
   );
