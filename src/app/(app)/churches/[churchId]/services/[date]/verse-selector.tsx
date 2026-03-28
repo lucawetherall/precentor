@@ -11,6 +11,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 
 interface Verse {
   id: string;
@@ -52,6 +53,7 @@ export function VerseSelector({
   selectedVerses: initialSelected,
   onSave,
 }: VerseSelectorProps) {
+  const { addToast } = useToast();
   const [open, setOpen] = useState(false);
   const [verses, setVerses] = useState<Verse[]>([]);
   const [loading, setLoading] = useState(false);
@@ -70,13 +72,13 @@ export function VerseSelector({
         const data = await r.json();
         if (Array.isArray(data)) setVerses(data);
       } catch {
-        // leave empty
+        addToast("Failed to load verses", "error");
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [open, hymnId, verses.length]);
+  }, [open, hymnId, verses.length, addToast]);
 
   const handleToggle = (verseNumber: number) => {
     setSelected((prev) => {
@@ -93,11 +95,13 @@ export function VerseSelector({
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Fetch all slots, update the target slot's selectedVerses, then PUT all back
       const res = await fetch(
         `/api/churches/${churchId}/services/${serviceId}/slots`
       );
-      if (!res.ok) return;
+      if (!res.ok) {
+        addToast("Failed to load slots", "error");
+        return;
+      }
       const slots: MusicSlot[] = await res.json();
 
       const selectedArr = Array.from(selected).sort((a, b) => a - b);
@@ -117,11 +121,14 @@ export function VerseSelector({
       if (putRes.ok) {
         onSave?.(selectedArr);
         setOpen(false);
+      } else {
+        addToast("Failed to save verse selection", "error");
       }
     } catch {
-      // silent
+      addToast("Network error saving verses", "error");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const handleOpenChange = (v: boolean) => {

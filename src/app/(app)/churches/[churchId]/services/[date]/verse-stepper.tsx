@@ -36,18 +36,18 @@ export function VerseStepper({ slotId, totalVerses }: VerseStepperProps) {
     setSaving(false);
   };
 
-  const handleDecrement = () => {
-    if (count <= 1) return;
+  const handleDecrement = async () => {
+    if (count <= 1 || saving) return;
     const next = count - 1;
     setCount(next);
-    handleUpdate(next);
+    await handleUpdate(next);
   };
 
-  const handleIncrement = () => {
-    if (count >= totalVerses) return;
+  const handleIncrement = async () => {
+    if (count >= totalVerses || saving) return;
     const next = count + 1;
     setCount(next);
-    handleUpdate(next);
+    await handleUpdate(next);
   };
 
   return (
