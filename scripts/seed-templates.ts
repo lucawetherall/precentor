@@ -257,6 +257,14 @@ const CW_EUCHARIST_SECTIONS: SectionDef[] = [
     optional: true,
   },
   {
+    id: "communion.communion_music",
+    title: "Communion Music",
+    blocks: [],
+    musicSlotType: "HYMN",
+    placeholder: "communion-music",
+    optional: true,
+  },
+  {
     id: "sacrament.post-communion-silence",
     title: "Prayer after Communion",
     blocks: [],
