@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement three high-impact UX changes — smart entry routing + church overview page, Sundays page service-visibility enhancement, and simplified grouped sidebar navigation — plus consistency fixes.
+**Goal:** Implement three high-impact UX changes — smart entry routing + church overview page, "no services" empty-state indicators, and simplified grouped sidebar navigation — plus consistency fixes.
 
 **Architecture:** Server-first Next.js App Router with Drizzle ORM. New overview page at `/churches/[churchId]` as the index route. Sidebar refactored to accept grouped nav items. Dashboard redirects single-church users directly to their church overview. All queries use existing schema — no migrations needed.
 
@@ -11,9 +11,9 @@
 **Spec:** `docs/superpowers/specs/2026-03-28-ux-improvements-design.md`
 
 **Important codebase context (from recent PRs #27-29):**
-- The Sundays page now uses a multi-view wrapper (`SundaysViewWrapper`) with list/agenda/calendar views and already joins services + availability per liturgical day
+- The `/sundays` route uses a multi-view wrapper (`SundaysViewWrapper`) with list/agenda/calendar views and already joins services + availability per liturgical day. The `/services` route is the DoM's planning page with completeness dots. Both exist; only "Services" appears in nav.
 - A reusable `AvailabilityWidget` component exists at `src/components/availability-widget.tsx`
-- The nav item "Sundays" has been renamed to "Services" and a new `/services/[date]` route exists for editing
+- The nav already says "Services" (not "Sundays") — all user-facing labels use "Services"
 - A `Templates` nav item now exists at `/settings/templates`
 - `src/lib/services/completeness.ts` exists for calculating service completeness
 - Schema is split into `schema-base.ts` + `schema-liturgy.ts` (re-exported from `schema.ts` — imports from `@/lib/db/schema` still work)
@@ -38,6 +38,7 @@
 | File | Change |
 |---|---|
 | `src/app/(app)/dashboard/page.tsx` | Smart entry: redirect single-church users |
+| `src/app/(app)/churches/[churchId]/services/page.tsx` | Add "No services created" indicator + responsive padding |
 | `src/app/(app)/churches/[churchId]/sundays/sundays-list.tsx` | Add "No services created" indicator for days without services |
 | `src/app/(app)/churches/[churchId]/sundays/sundays-agenda.tsx` | Add "No services created" indicator |
 | `src/app/(app)/churches/[churchId]/layout.tsx` | Grouped navItems with section metadata |
@@ -68,7 +69,7 @@ if (userChurches.length === 1) {
 
 - [ ] **Step 2: Update church card links for multi-church case**
 
-In the "Your Churches" section, church cards currently link to `/churches/${uc.churchId}/sundays`. Update to link to the overview:
+In the "Your Churches" section, church cards currently link to `/churches/${uc.churchId}/sundays` (line 223). Update to link to the overview:
 
 ```tsx
 href={`/churches/${uc.churchId}`}
@@ -97,7 +98,7 @@ git commit -m "feat: redirect single-church users to church overview from dashbo
 
 - [ ] **Step 1: Update navItems structure in layout.tsx**
 
-Replace the current flat `navItems` array with a grouped structure. Note that the first item is now "Services" (not "Sundays") pointing to `/churches/${churchId}/services`:
+Replace the current flat `navItems` array with a grouped structure. The primary nav item is "Services" (the DoM's planning page at `/services` with completeness dots). "Sundays" (the member-facing calendar/list/agenda at `/sundays`) moves to secondary:
 
 ```tsx
 interface NavGroup {
@@ -109,14 +110,13 @@ const navGroups: NavGroup[] = [
   {
     items: [
       { href: `/churches/${churchId}`, label: "Overview", iconName: "Home", exactMatch: true },
-      { href: `/churches/${churchId}/sundays`, label: "Sundays", iconName: "Calendar" },
+      { href: `/churches/${churchId}/services`, label: "Services", iconName: "Calendar" },
       { href: `/churches/${churchId}/rota`, label: "Rota", iconName: "Users" },
     ],
   },
   {
     label: "More",
     items: [
-      { href: `/churches/${churchId}/services`, label: "Services", iconName: "FileText" },
       { href: `/churches/${churchId}/repertoire`, label: "Repertoire", iconName: "Music" },
       { href: `/churches/${churchId}/service-sheets`, label: "Service Sheets", iconName: "FileText" },
     ],
@@ -131,7 +131,7 @@ const navGroups: NavGroup[] = [
 ];
 ```
 
-Note: Templates is absorbed into Settings (it's already a sub-route at `/settings/templates`). The Services (editor) page moves to "More" since the Sundays page is the primary browse view for upcoming services.
+Note: Templates is absorbed into Settings (it's already a sub-route at `/settings/templates`). "Sundays" is no longer a nav item — all user-facing pages use "Services".
 
 Update the `ChurchSidebar` prop from `navItems` to `navGroups`.
 
@@ -313,25 +313,31 @@ git commit -m "feat: restructure sidebar with grouped navigation and Overview li
 
 ---
 
-## Task 3: Sundays Page — "No Services" Indicator
+## Task 3: "No Services Created" Indicator
 
 **Files:**
+- Modify: `src/app/(app)/churches/[churchId]/services/page.tsx`
 - Modify: `src/app/(app)/churches/[churchId]/sundays/sundays-list.tsx`
 - Modify: `src/app/(app)/churches/[churchId]/sundays/sundays-agenda.tsx`
 
-The Sundays page already joins services per liturgical day and shows availability widgets. The `LiturgicalDayWithService` type has `service: ServiceSummary | null` — when `null`, no service exists for that day. Currently all rows look the same whether a service exists or not. We need to surface the "No services created" state.
+The Services page and the `/sundays` sub-views (list, agenda) both list upcoming liturgical days. When no services have been created for a day, there's currently no visual indicator — the row just shows no completeness dots (Services page) or no availability widget (`/sundays` views). We need a "No services created" callout in red italic on all views.
 
-- [ ] **Step 1: Update SundaysList to show empty state**
+- [ ] **Step 1: Update Services page for empty days**
 
-In `src/app/(app)/churches/[churchId]/sundays/sundays-list.tsx`, modify the row rendering. When `day.service` is null, show "No services created" in red italic instead of the availability widget:
+In `src/app/(app)/churches/[churchId]/services/page.tsx`, the completeness dots section (around line 100) only renders when `dayServices.length > 0`. After the completeness dots block, add a fallback for empty days:
 
-Find the section that conditionally renders the availability widget:
 ```tsx
-{day.service && (
-  <div className="px-3 flex-shrink-0 border-l border-border py-3 flex flex-col items-center gap-1" ...>
+{dayServices.length === 0 && (
+  <span className="text-xs text-destructive italic flex-shrink-0">No services created</span>
+)}
 ```
 
-After the closing `)}` of that block, add:
+Also update this page's responsive padding: change `className="p-8 max-w-4xl"` to `className="p-4 sm:p-6 lg:p-8 max-w-4xl"`.
+
+- [ ] **Step 2: Update SundaysList to show empty state**
+
+In `src/app/(app)/churches/[churchId]/sundays/sundays-list.tsx`, the availability widget only renders when `day.service` exists (line 50). After that `{day.service && (...)}` block, add:
+
 ```tsx
 {!day.service && (
   <div className="px-3 flex-shrink-0 border-l border-border py-3 flex items-center">
@@ -340,19 +346,33 @@ After the closing `)}` of that block, add:
 )}
 ```
 
-- [ ] **Step 2: Update SundaysAgenda similarly**
+- [ ] **Step 3: Update SundaysAgenda similarly**
 
-In `src/app/(app)/churches/[churchId]/sundays/sundays-agenda.tsx`, find where each day card is rendered. Add a "No services created" indicator for days where `day.service` is null. Follow the same pattern — red italic text in the relevant position.
+In `src/app/(app)/churches/[churchId]/sundays/sundays-agenda.tsx`, the availability widget section (line 100-115) only renders when `day.service` exists. After that block, add:
 
-- [ ] **Step 3: Verify**
+```tsx
+{!day.service && (
+  <div className="flex items-center justify-center px-4 border-l border-border flex-shrink-0">
+    <span className="text-xs text-destructive italic">No services created</span>
+  </div>
+)}
+```
 
-Run: `npm run dev`. Navigate to Sundays page. Days without services should show "No services created" in red. Days with services should look unchanged.
+Also in the body section (line 83-96), the `{day.service ? (...) : null}` currently renders nothing for null. Change the `: null` to show a message:
 
-- [ ] **Step 4: Commit**
+```tsx
+: <p className="text-xs text-destructive italic">No services planned yet</p>
+```
+
+- [ ] **Step 4: Verify**
+
+Run: `npm run dev`. Navigate to `/services` page and the `/sundays` sub-views (list, agenda). Days without services should show "No services created" in red. Days with services unchanged.
+
+- [ ] **Step 5: Commit**
 
 ```bash
-git add src/app/(app)/churches/[churchId]/sundays/sundays-list.tsx src/app/(app)/churches/[churchId]/sundays/sundays-agenda.tsx
-git commit -m "feat: show 'No services created' indicator on Sundays page for empty days"
+git add src/app/(app)/churches/[churchId]/services/page.tsx src/app/(app)/churches/[churchId]/sundays/sundays-list.tsx src/app/(app)/churches/[churchId]/sundays/sundays-agenda.tsx
+git commit -m "feat: show 'No services created' indicator on services pages"
 ```
 
 ---
@@ -747,8 +767,8 @@ Run: `npm run dev`
 1. Log in as single-church admin → redirects to overview
 2. Overview: "This Sunday" with service cards and rota summary
 3. "Needs attention" list shows incomplete weeks
-4. Sidebar: Overview (active), Sundays, Rota | More: Services, Repertoire, Service Sheets | Admin: Members, Settings
-5. Click Sundays → list/agenda/calendar views work, days without services show red "No services created"
+4. Sidebar: Overview (active), Services, Rota | More: Repertoire, Service Sheets | Admin: Members, Settings
+5. Click Services → completeness dots work, days without services show red "No services created"
 6. Log in as member → overview shows availability (AvailabilityWidget), music list, "My availability"
 
 - [ ] **Step 2: Type check**
