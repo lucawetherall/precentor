@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
 
 export function InviteMemberForm({ churchId }: { churchId: string }) {
   const [email, setEmail] = useState("");
@@ -79,23 +80,13 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
           </select>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleInvite(true)}
-            disabled={loading || !email}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-          >
+          <Button onClick={() => handleInvite(true)} disabled={loading || !email} size="sm">
             {loading && <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />}
             Send Email
-          </button>
-          <button
-            type="button"
-            onClick={() => handleInvite(false)}
-            disabled={loading || !email}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 text-sm bg-white text-foreground border border-border hover:bg-muted transition-colors disabled:opacity-50"
-          >
+          </Button>
+          <Button variant="outline" onClick={() => handleInvite(false)} disabled={loading || !email} size="sm">
             Get Link
-          </button>
+          </Button>
         </div>
       </div>
 
