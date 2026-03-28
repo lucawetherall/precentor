@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { LITURGICAL_COLOURS } from '@/types'
@@ -25,12 +25,6 @@ export function buildMonthGrid(year: number, month: number): Array<string | null
   }
   while (cells.length % 7 !== 0) cells.push(null)
   return cells
-}
-
-/** Returns true if the day is in HOLY_WEEK but is not a Sunday. */
-export function isHolyDay(dateStr: string, season: string): boolean {
-  if (season !== 'HOLY_WEEK') return false
-  return parseISO(dateStr).getDay() !== 0
 }
 
 interface ServicesCalendarProps {

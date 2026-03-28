@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildMonthGrid, isHolyDay } from '../services-calendar'
+import { buildMonthGrid } from '../services-calendar'
 
 describe('buildMonthGrid', () => {
   it('April 2026 starts Wednesday — 2 null cells before day 1', () => {
@@ -32,20 +32,3 @@ describe('buildMonthGrid', () => {
   })
 })
 
-describe('isHolyDay', () => {
-  it('returns true for Good Friday (HOLY_WEEK season, Friday)', () => {
-    expect(isHolyDay('2026-04-10', 'HOLY_WEEK')).toBe(true)
-  })
-
-  it('returns false for Palm Sunday (HOLY_WEEK season, Sunday)', () => {
-    expect(isHolyDay('2026-04-05', 'HOLY_WEEK')).toBe(false)
-  })
-
-  it('returns false for an ordinary Sunday (non HOLY_WEEK)', () => {
-    expect(isHolyDay('2026-05-03', 'EASTER')).toBe(false)
-  })
-
-  it('returns true for Maundy Thursday (HOLY_WEEK season, Thursday)', () => {
-    expect(isHolyDay('2026-04-09', 'HOLY_WEEK')).toBe(true)
-  })
-})

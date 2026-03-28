@@ -1,15 +1,9 @@
 "use client";
 
 import { useServiceEditor } from "./service-editor-context";
+import { CHOIR_STATUS_LABELS } from "../choir-status-constants";
 
 const EUCHARIST_TYPES = new Set(["SUNG_EUCHARIST", "SAID_EUCHARIST"]);
-
-const CHOIR_STATUS_LABELS: Record<string, string> = {
-  CHOIR_REQUIRED: "Choir required",
-  NO_CHOIR_NEEDED: "No choir needed",
-  SAID_SERVICE_ONLY: "Said service only",
-  NO_SERVICE: "No service",
-};
 
 interface ServiceSettingsProps {
   serviceType: string;
