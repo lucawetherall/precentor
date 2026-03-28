@@ -3,7 +3,7 @@ import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { serviceSections, services } from "@/lib/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, count } from "drizzle-orm";
 
 export async function PUT(
   request: Request,
@@ -52,6 +52,18 @@ export async function PUT(
     if (existing.length !== typedSectionIds.length) {
       return NextResponse.json(
         { error: "One or more sectionIds do not belong to this service" },
+        { status: 400 }
+      );
+    }
+
+    // Verify the provided list is complete (includes all sections for this service)
+    const [totalResult] = await db
+      .select({ total: count() })
+      .from(serviceSections)
+      .where(eq(serviceSections.serviceId, serviceId));
+    if ((totalResult?.total ?? 0) !== typedSectionIds.length) {
+      return NextResponse.json(
+        { error: "sectionIds must include all sections for this service" },
         { status: 400 }
       );
     }

@@ -42,16 +42,16 @@ export async function POST(
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { sectionType, title, musicSlotType, placeholderType, positionOrder } = body as {
-    sectionType?: unknown;
+  const { sectionKey, title, musicSlotType, placeholderType, positionOrder } = body as {
+    sectionKey?: unknown;
     title?: unknown;
     musicSlotType?: unknown;
     placeholderType?: unknown;
     positionOrder?: unknown;
   };
 
-  if (typeof sectionType !== "string" || !sectionType) {
-    return NextResponse.json({ error: "sectionType is required" }, { status: 400 });
+  if (typeof sectionKey !== "string" || !sectionKey) {
+    return NextResponse.json({ error: "sectionKey is required" }, { status: 400 });
   }
   if (typeof title !== "string" || !title) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
@@ -60,6 +60,9 @@ export async function POST(
     if (!musicSlotTypeEnum.enumValues.includes(musicSlotType as (typeof musicSlotTypeEnum.enumValues)[number])) {
       return NextResponse.json({ error: "Invalid musicSlotType" }, { status: 400 });
     }
+  }
+  if (positionOrder !== undefined && (!Number.isInteger(positionOrder) || (positionOrder as number) < 1)) {
+    return NextResponse.json({ error: "positionOrder must be a positive integer" }, { status: 400 });
   }
 
   try {
@@ -89,7 +92,7 @@ export async function POST(
       .insert(serviceSections)
       .values({
         serviceId,
-        sectionKey: sectionType,
+        sectionKey,
         title,
         positionOrder: resolvedPosition,
         musicSlotType: (musicSlotType ?? null) as (typeof musicSlotTypeEnum.enumValues)[number] | null,

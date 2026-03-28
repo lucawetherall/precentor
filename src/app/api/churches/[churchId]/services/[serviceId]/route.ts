@@ -118,6 +118,12 @@ export async function PATCH(
   }
 
   if ("choirStatus" in body) {
+    if (typeof body.choirStatus !== "string") {
+      return NextResponse.json(
+        { error: "choirStatus must be a string" },
+        { status: 400 }
+      );
+    }
     if (!choirStatusEnum.enumValues.includes(body.choirStatus as (typeof choirStatusEnum.enumValues)[number])) {
       return NextResponse.json(
         { error: `choirStatus must be one of: ${choirStatusEnum.enumValues.join(", ")}` },

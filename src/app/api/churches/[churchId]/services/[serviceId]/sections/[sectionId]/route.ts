@@ -52,6 +52,23 @@ export async function PATCH(
     }
 
     if ("textOverride" in body) {
+      if (body.textOverride !== null) {
+        if (
+          !Array.isArray(body.textOverride) ||
+          !body.textOverride.every(
+            (item) =>
+              typeof item === "object" &&
+              item !== null &&
+              typeof (item as Record<string, unknown>).speaker === "string" &&
+              typeof (item as Record<string, unknown>).text === "string"
+          )
+        ) {
+          return NextResponse.json(
+            { error: "textOverride must be null or an array of { speaker: string; text: string }" },
+            { status: 400 }
+          );
+        }
+      }
       updates.textOverride = body.textOverride;
     }
 
@@ -131,24 +148,27 @@ export async function DELETE(
       return NextResponse.json({ error: "Section not found" }, { status: 404 });
     }
 
-    // Delete the section
-    await db
-      .delete(serviceSections)
-      .where(and(eq(serviceSections.id, sectionId), eq(serviceSections.serviceId, serviceId)));
+    // Delete + recalculate positions atomically
+    await db.transaction(async (tx) => {
+      // Delete the section
+      await tx
+        .delete(serviceSections)
+        .where(and(eq(serviceSections.id, sectionId), eq(serviceSections.serviceId, serviceId)));
 
-    // Recalculate positionOrder for remaining sections (1-based, sequential)
-    const remaining = await db
-      .select({ id: serviceSections.id })
-      .from(serviceSections)
-      .where(eq(serviceSections.serviceId, serviceId))
-      .orderBy(asc(serviceSections.positionOrder));
+      // Recalculate positionOrder for remaining sections (1-based, sequential)
+      const remaining = await tx
+        .select({ id: serviceSections.id })
+        .from(serviceSections)
+        .where(eq(serviceSections.serviceId, serviceId))
+        .orderBy(asc(serviceSections.positionOrder));
 
-    for (let i = 0; i < remaining.length; i++) {
-      await db
-        .update(serviceSections)
-        .set({ positionOrder: i + 1 })
-        .where(eq(serviceSections.id, remaining[i].id));
-    }
+      for (let i = 0; i < remaining.length; i++) {
+        await tx
+          .update(serviceSections)
+          .set({ positionOrder: i + 1 })
+          .where(eq(serviceSections.id, remaining[i].id));
+      }
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
