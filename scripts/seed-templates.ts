@@ -133,7 +133,7 @@ const CW_EUCHARIST_SECTIONS: SectionDef[] = [
     id: "word.second-reading",
     title: "Second Reading",
     blocks: [],
-    placeholder: "reading-epistle",
+    placeholder: "reading-nt",
   },
   {
     id: "word.gradual-hymn",
@@ -376,7 +376,7 @@ const BCP_EVENSONG_SECTIONS: SectionDef[] = [
     id: "evensong.second-lesson",
     title: "The Second Lesson",
     blocks: [],
-    placeholder: "reading-epistle",
+    placeholder: "reading-nt",
   },
   {
     id: "evensong.nunc-dimittis",

@@ -127,7 +127,8 @@ async function resolveDbSections(
 
   const READING_POSITION_MAP: Record<string, string> = {
     "reading-ot": "OLD_TESTAMENT",
-    "reading-epistle": "EPISTLE",
+    "reading-nt": "NEW_TESTAMENT",
+    "reading-epistle": "NEW_TESTAMENT", // backward compat
     "reading-gospel": "GOSPEL",
     "reading-psalm": "PSALM",
   };

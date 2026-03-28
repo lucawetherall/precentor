@@ -7,6 +7,7 @@ import { hasMinRole } from '@/lib/auth/permissions'
 import type { PopulatedMusicSlot } from '@/types/service-views'
 import { AvailabilityWidget } from '@/components/availability-widget'
 import { ServiceMusicList } from './service-music-list'
+import { ReadingsByLectionary } from './readings-by-lectionary'
 import { CHOIR_STATUS_LABELS, CHOIR_STATUS_PILL_CLASSES } from '../choir-status-constants'
 
 interface Reading {
@@ -143,18 +144,7 @@ export function MemberServiceView({
                 Readings
               </h2>
             </div>
-            <div className="divide-y divide-border">
-              {readings.map((r) => (
-                <div key={r.id} className="flex gap-3 px-4 py-2.5 text-sm">
-                  <span className="text-muted-foreground w-24 flex-shrink-0 font-mono text-xs">
-                    {r.position
-                      .replace(/_/g, ' ')
-                      .replace(/\b\w/g, (c) => c.toUpperCase())}
-                  </span>
-                  <span className="font-heading">{r.reference}</span>
-                </div>
-              ))}
-            </div>
+            <ReadingsByLectionary readings={readings} />
           </div>
         )}
 

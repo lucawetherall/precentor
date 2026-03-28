@@ -11,7 +11,6 @@ type ViewMode = 'list' | 'calendar'
 interface ServicesViewWrapperProps {
   churchId: string
   liturgicalDays: LiturgicalDayWithService[]
-  userRole: string
 }
 
 const LS_KEY = 'precentor:services-view'
@@ -20,7 +19,6 @@ const VALID_VIEWS: ViewMode[] = ['list', 'calendar']
 export function ServicesViewWrapper({
   churchId,
   liturgicalDays,
-  userRole,
 }: ServicesViewWrapperProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -69,7 +67,7 @@ export function ServicesViewWrapper({
         </div>
       </div>
 
-      {view === 'list' && <ServicesList churchId={churchId} days={liturgicalDays} userRole={userRole} />}
+      {view === 'list' && <ServicesList churchId={churchId} days={liturgicalDays} />}
       {view === 'calendar' && <ServicesCalendar churchId={churchId} days={liturgicalDays} />}
     </>
   )

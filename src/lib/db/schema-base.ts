@@ -12,7 +12,7 @@ export const liturgicalColourEnum = pgEnum("liturgical_colour", [
 ]);
 export const lectionaryEnum = pgEnum("lectionary", ["PRINCIPAL", "SECOND", "THIRD"]);
 export const readingPositionEnum = pgEnum("reading_position", [
-  "OLD_TESTAMENT", "PSALM", "EPISTLE", "GOSPEL", "CANTICLE",
+  "OLD_TESTAMENT", "PSALM", "NEW_TESTAMENT", "GOSPEL", "CANTICLE",
 ]);
 export const serviceTypeEnum = pgEnum("service_type", [
   "SUNG_EUCHARIST", "CHORAL_EVENSONG", "SAID_EUCHARIST", "CHORAL_MATINS",

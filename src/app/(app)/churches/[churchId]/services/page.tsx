@@ -128,7 +128,6 @@ export default async function ServicesPage({ params }: Props) {
         <ServicesViewWrapper
           churchId={churchId}
           liturgicalDays={days}
-          userRole={role}
         />
       </Suspense>
     </div>

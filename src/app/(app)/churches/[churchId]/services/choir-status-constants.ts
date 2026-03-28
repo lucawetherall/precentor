@@ -5,6 +5,12 @@ export const CHOIR_STATUS_LABELS: Record<string, string> = {
   NO_SERVICE: "No service",
 }
 
+export const CHOIR_STATUS_NOTES: Record<string, string> = {
+  NO_CHOIR_NEEDED: "no choir",
+  SAID_SERVICE_ONLY: "said mass",
+  NO_SERVICE: "no service",
+}
+
 export const CHOIR_STATUS_PILL_CLASSES: Record<string, string> = {
   CHOIR_REQUIRED: "",  // visually inert
   NO_CHOIR_NEEDED: "bg-amber-100 text-amber-800 border border-amber-200",
