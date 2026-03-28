@@ -41,13 +41,19 @@ export function HymnPicker({ slotId, churchId }: HymnPickerProps) {
 
   const hymnId = slot?.hymnId ?? null;
 
-  // Load current hymn details when slot has a hymnId
-  useEffect(() => {
+  // Clear hymn state when hymnId is removed
+  const [prevHymnId, setPrevHymnId] = useState(hymnId);
+  if (hymnId !== prevHymnId) {
+    setPrevHymnId(hymnId);
     if (!hymnId) {
       setCurrentHymn(null);
       setTotalVerses(null);
-      return;
     }
+  }
+
+  // Load current hymn details when slot has a hymnId
+  useEffect(() => {
+    if (!hymnId) return;
     let cancelled = false;
     async function loadHymn() {
       setLoadingHymn(true);

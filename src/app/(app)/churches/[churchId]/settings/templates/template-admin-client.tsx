@@ -98,12 +98,10 @@ function SectionList({ sections }: { sections: TemplateSection[] }) {
 
 function TemplateCard({
   template,
-  churchId,
   onCustomise,
   onReset,
 }: {
   template: TemplateEntry;
-  churchId: string;
   onCustomise: (systemTemplateId: string) => Promise<void>;
   onReset: (churchTemplateId: string) => Promise<void>;
 }) {
@@ -297,7 +295,6 @@ export function TemplateAdminClient({
         <TemplateCard
           key={template.systemTemplateId}
           template={template}
-          churchId={churchId}
           onCustomise={handleCustomise}
           onReset={handleReset}
         />

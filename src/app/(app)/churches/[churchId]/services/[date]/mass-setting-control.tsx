@@ -14,13 +14,11 @@ interface MassSettingResult {
 interface MassSettingControlProps {
   slotId: string;
   churchId: string;
-  musicSlotType: string;
 }
 
 export function MassSettingControl({
   slotId,
   churchId,
-  musicSlotType,
 }: MassSettingControlProps) {
   const { musicSlots, updateSlot } = useServiceEditor();
   const slot = musicSlots.get(slotId);
@@ -38,19 +36,18 @@ export function MassSettingControl({
 
   const massSettingId = slot?.massSettingId ?? null;
 
-  // Extract the movement name from the slot type (e.g., MASS_SETTING_KYRIE -> Kyrie)
-  const movementLabel = musicSlotType
-    .replace("MASS_SETTING_", "")
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  // Sync current setting to null when massSettingId is cleared
+  const [prevMassSettingId, setPrevMassSettingId] = useState(massSettingId);
+  if (massSettingId !== prevMassSettingId) {
+    setPrevMassSettingId(massSettingId);
+    if (!massSettingId) {
+      setCurrentSetting(null);
+    }
+  }
 
   // Load current mass setting details
   useEffect(() => {
-    if (!massSettingId) {
-      setCurrentSetting(null);
-      return;
-    }
+    if (!massSettingId) return;
     let cancelled = false;
     async function loadSetting() {
       setLoadingSetting(true);
