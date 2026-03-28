@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
 import { SectionRow } from "./section-row";
 import { AddSectionPicker } from "./add-section-picker";
 import { useServiceEditor } from "./service-editor-context";
+import { useSortableList } from "./use-sortable-list";
 import type { ServiceSection } from "./section-row";
 
 interface SectionEditorProps {
@@ -32,9 +32,10 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
     refreshSections,
   } = useServiceEditor();
 
-  // Drag state
-  const dragSectionIdRef = useRef<string | null>(null);
-  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const { dragHandleProps, itemProps, overId } = useSortableList({
+    items: sections,
+    onReorder: reorderSections,
+  });
 
   const handleToggleVisible = async (sectionId: string) => {
     const section = sections.find((s) => s.id === sectionId);
@@ -52,39 +53,6 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
     // Re-fetch from the server to sync context state with what was persisted.
     // TODO: In a future phase, AddSectionPicker should use addSection from context.
     refreshSections();
-  };
-
-  // ── Drag and drop ──────────────────────────────────────────
-
-  const handleDragStart = (_e: React.DragEvent, sectionId: string) => {
-    dragSectionIdRef.current = sectionId;
-  };
-
-  const handleDragOver = (_e: React.DragEvent, sectionId: string) => {
-    if (dragSectionIdRef.current && dragSectionIdRef.current !== sectionId) {
-      setDragOverId(sectionId);
-    }
-  };
-
-  const handleDragEnd = async () => {
-    const dragId = dragSectionIdRef.current;
-    const overId = dragOverId;
-
-    dragSectionIdRef.current = null;
-    setDragOverId(null);
-
-    if (!dragId || !overId || dragId === overId) return;
-
-    const dragIndex = sections.findIndex((s) => s.id === dragId);
-    const overIndex = sections.findIndex((s) => s.id === overId);
-    if (dragIndex === -1 || overIndex === -1) return;
-
-    const reordered = [...sections];
-    const [moved] = reordered.splice(dragIndex, 1);
-    reordered.splice(overIndex, 0, moved);
-
-    const orderedIds = reordered.map((s) => s.id);
-    await reorderSections(orderedIds);
   };
 
   // Group sections by majorSection for divider rendering
@@ -127,10 +95,9 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
                   churchId={churchId}
                   onDelete={handleDelete}
                   onToggleVisible={handleToggleVisible}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDragEnd={handleDragEnd}
-                  isDragOver={dragOverId === section.id}
+                  dragHandleProps={dragHandleProps(section.id)}
+                  itemProps={itemProps(section.id)}
+                  isDragOver={overId === section.id}
                 />
               </div>
             );

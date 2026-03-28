@@ -25,9 +25,17 @@ interface SectionRowProps {
   churchId: string;
   onDelete: (sectionId: string) => void;
   onToggleVisible: (sectionId: string) => void;
-  onDragStart: (e: React.DragEvent, sectionId: string) => void;
-  onDragOver: (e: React.DragEvent, sectionId: string) => void;
-  onDragEnd: () => void;
+  dragHandleProps: React.HTMLAttributes<HTMLButtonElement> & {
+    style: React.CSSProperties;
+    "aria-label": string;
+    tabIndex: number;
+    role: string;
+  };
+  itemProps: {
+    "data-sortable-id": string;
+    style: React.CSSProperties;
+    "aria-grabbed": boolean;
+  };
   isDragOver: boolean;
 }
 
@@ -91,9 +99,8 @@ export function SectionRow({
   churchId,
   onDelete,
   onToggleVisible,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
+  dragHandleProps,
+  itemProps,
   isDragOver,
 }: SectionRowProps) {
   const { icon, colorClass, summary } = getSectionTypeInfo(section);
@@ -115,13 +122,7 @@ export function SectionRow({
       className={`group relative border border-border bg-card shadow-sm transition-opacity ${
         !section.visible ? "opacity-50" : ""
       } ${isDragOver ? "border-primary border-t-2" : ""}`}
-      draggable
-      onDragStart={(e) => onDragStart(e, section.id)}
-      onDragOver={(e) => {
-        e.preventDefault();
-        onDragOver(e, section.id);
-      }}
-      onDragEnd={onDragEnd}
+      {...itemProps}
     >
       {/* Drop indicator line */}
       {isDragOver && (
@@ -131,9 +132,8 @@ export function SectionRow({
       <div className="flex items-center gap-2 p-2 md:p-3">
         {/* Drag handle */}
         <button
-          className="flex-shrink-0 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing touch-none"
-          aria-label="Drag to reorder"
-          tabIndex={-1}
+          className="flex-shrink-0 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
+          {...dragHandleProps}
         >
           <GripVertical className="h-4 w-4" strokeWidth={1.5} />
         </button>
