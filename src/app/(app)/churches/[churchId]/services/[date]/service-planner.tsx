@@ -11,7 +11,8 @@ import { SaveStatusIndicator } from "./save-status-indicator";
 import { SectionCountBadge } from "./section-count-badge";
 import type { ServiceSection } from "./section-row";
 import type { MusicSlot } from "./use-service-editor";
-import { Plus, Loader2, Trash2, BookOpen, FileDown, FileText, Eye } from "lucide-react";
+import { Plus, Loader2, Trash2, BookOpen, FileDown, FileText, Eye, BookMarked } from "lucide-react";
+import { POSITION_LABELS } from "@/types";
 import { useToast } from "@/components/ui/toast";
 import {
   Dialog,
@@ -19,6 +20,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+interface Reading {
+  id: string;
+  position: string;
+  lectionary: string;
+  reference: string;
+  readingText: string | null;
+}
+
+const LECTIONARY_LABELS: Record<string, string> = {
+  PRINCIPAL: "Principal Service",
+  SECOND: "Second Service",
+};
+
+function getLectionaryForServiceType(serviceType: string): string {
+  switch (serviceType) {
+    case "CHORAL_EVENSONG":
+      return "SECOND";
+    case "SUNG_EUCHARIST":
+    case "SAID_EUCHARIST":
+    case "FAMILY_SERVICE":
+    case "CHORAL_MATINS":
+    default:
+      return "PRINCIPAL";
+  }
+}
 
 interface Service {
   id: string;
@@ -43,6 +70,7 @@ export function ServicePlanner({
   existingServices,
   editorSectionsMap = {},
   editorSlotsMap = {},
+  readings = [],
 }: {
   churchId: string;
   liturgicalDayId: string;
@@ -50,6 +78,7 @@ export function ServicePlanner({
   existingServices: Service[];
   editorSectionsMap?: Record<string, ServiceSection[]>;
   editorSlotsMap?: Record<string, MusicSlot[]>;
+  readings?: Reading[];
 }) {
   const [services, setServices] = useState<Service[]>(existingServices);
   const [activeTab, setActiveTab] = useState<string>(services[0]?.id || "");
@@ -235,6 +264,33 @@ export function ServicePlanner({
           </button>
         </div>
       </div>
+
+      {/* Readings for the active service's lectionary */}
+      {activeService && readings.length > 0 && (() => {
+        const lectionary = getLectionaryForServiceType(activeService.serviceType);
+        const filtered = readings.filter((r) => r.lectionary === lectionary);
+        if (filtered.length === 0) return null;
+        return (
+          <div className="border border-border bg-card mb-4">
+            <div className="px-4 py-2.5 border-b border-border bg-muted/30 flex items-center gap-2">
+              <BookMarked className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+              <h3 className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Readings — {LECTIONARY_LABELS[lectionary] ?? lectionary}
+              </h3>
+            </div>
+            <div className="divide-y divide-border">
+              {filtered.map((r) => (
+                <div key={r.id} className="flex gap-3 px-4 py-2.5 text-sm">
+                  <span className="text-muted-foreground w-24 flex-shrink-0 font-mono text-xs">
+                    {POSITION_LABELS[r.position] ?? r.position.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </span>
+                  <span className="font-heading">{r.reference}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Active service content */}
       {activeService && (

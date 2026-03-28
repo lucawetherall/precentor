@@ -183,6 +183,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
           existingServices={dayServices as Parameters<typeof ServicePlanner>[0]['existingServices']}
           editorSectionsMap={editorSectionsMap}
           editorSlotsMap={editorSlotsMap}
+          readings={dayReadings}
         />
       </div>
     )
