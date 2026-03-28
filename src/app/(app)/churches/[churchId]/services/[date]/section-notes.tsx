@@ -85,7 +85,7 @@ export function SectionNotes({ sectionId }: SectionNotesProps) {
       aria-label="Add note"
     >
       <Plus className="h-3 w-3" strokeWidth={1.5} />
-      <span>Note</span>
+      <span>Add note</span>
     </button>
   );
 }

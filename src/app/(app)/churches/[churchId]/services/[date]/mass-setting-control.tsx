@@ -170,7 +170,7 @@ export function MassSettingControl({
               onClick={() => setShowSearch(true)}
               className="text-xs text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
             >
-              Change for this {movementLabel.toLowerCase()}
+              Change for this movement
             </button>
           )}
         </div>
