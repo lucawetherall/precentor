@@ -12,6 +12,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateEmail = (value: string) => {
+    if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      return "Please enter a valid email";
+    }
+    return "";
+  };
+
+  const validatePassword = (value: string) => {
+    if (!value) {
+      return "Password is required";
+    }
+    return "";
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,10 +68,14 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setFieldErrors((prev) => ({ ...prev, email: validateEmail(email) }))}
               placeholder="director@parish.org.uk"
               required
               className="bg-white rounded-none"
             />
+            {fieldErrors.email && (
+              <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -71,10 +90,14 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onBlur={() => setFieldErrors((prev) => ({ ...prev, password: validatePassword(password) }))}
               placeholder="Enter your password"
               required
               className="bg-white rounded-none"
             />
+            {fieldErrors.password && (
+              <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
+            )}
           </div>
 
           {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
