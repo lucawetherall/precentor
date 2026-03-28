@@ -27,9 +27,12 @@ interface Service {
   notes: string | null;
   sheetMode: string;
   eucharisticPrayer: string | null;
+  eucharisticPrayerId: string | null;
   includeReadingText: boolean;
   choirStatus: string;
   defaultMassSettingId: string | null;
+  collectId: string | null;
+  collectOverride: string | null;
 }
 
 
@@ -81,9 +84,12 @@ export function ServicePlanner({
           ...service,
           sheetMode: service.sheetMode ?? "summary",
           eucharisticPrayer: service.eucharisticPrayer ?? null,
+          eucharisticPrayerId: service.eucharisticPrayerId ?? null,
           includeReadingText: service.includeReadingText ?? true,
           choirStatus: service.choirStatus ?? "CHOIR_REQUIRED",
           defaultMassSettingId: service.defaultMassSettingId ?? null,
+          collectId: service.collectId ?? null,
+          collectOverride: service.collectOverride ?? null,
         };
         setServices((prev) => [...prev, newService]);
         setActiveTab(newService.id);
@@ -240,9 +246,12 @@ export function ServicePlanner({
           initialSettings={{
             sheetMode: activeService.sheetMode,
             eucharisticPrayer: activeService.eucharisticPrayer,
+            eucharisticPrayerId: activeService.eucharisticPrayerId,
             includeReadingText: activeService.includeReadingText,
             choirStatus: activeService.choirStatus,
             defaultMassSettingId: activeService.defaultMassSettingId,
+            collectId: activeService.collectId,
+            collectOverride: activeService.collectOverride,
           }}
           initialSlots={(editorSlotsMap[activeService.id] ?? []) as MusicSlot[]}
         >

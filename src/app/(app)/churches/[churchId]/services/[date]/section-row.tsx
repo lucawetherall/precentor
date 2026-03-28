@@ -2,6 +2,7 @@
 
 import { GripVertical, Eye, EyeOff, Trash2, Music, BookOpen, FileText, AlignLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { SectionInlineControl } from "./section-inline-control";
 
 export interface ServiceSection {
   id: string;
@@ -16,10 +17,12 @@ export interface ServiceSection {
   placeholderValue: string | null;
   textOverride: unknown;
   visible: boolean;
+  notes: string | null;
 }
 
 interface SectionRowProps {
   section: ServiceSection;
+  churchId: string;
   onDelete: (sectionId: string) => void;
   onToggleVisible: (sectionId: string) => void;
   onDragStart: (e: React.DragEvent, sectionId: string) => void;
@@ -85,6 +88,7 @@ function getSectionTypeInfo(section: ServiceSection): {
 
 export function SectionRow({
   section,
+  churchId,
   onDelete,
   onToggleVisible,
   onDragStart,
@@ -108,7 +112,7 @@ export function SectionRow({
 
   return (
     <div
-      className={`relative border border-border bg-card shadow-sm transition-opacity ${
+      className={`group relative border border-border bg-card shadow-sm transition-opacity ${
         !section.visible ? "opacity-50" : ""
       } ${isDragOver ? "border-primary border-t-2" : ""}`}
       draggable
@@ -156,9 +160,9 @@ export function SectionRow({
           </Badge>
         )}
 
-        {/* Inline controls placeholder (Task 14) */}
+        {/* Inline controls */}
         <div className="flex-shrink-0 hidden md:block">
-          {/* Task 14: inline controls will go here */}
+          <SectionInlineControl section={section} churchId={churchId} />
         </div>
 
         {/* Action buttons */}

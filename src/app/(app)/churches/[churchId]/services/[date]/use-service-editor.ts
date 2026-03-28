@@ -9,9 +9,12 @@ export type SheetData = BookletServiceSheetData | SummaryServiceSheetData;
 export interface ServiceSettings {
   sheetMode: string;
   eucharisticPrayer: string | null;
+  eucharisticPrayerId: string | null;
   includeReadingText: boolean;
   choirStatus: string;
   defaultMassSettingId: string | null;
+  collectId: string | null;
+  collectOverride: string | null;
 }
 
 export interface MusicSlot {

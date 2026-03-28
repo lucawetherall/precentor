@@ -2,62 +2,27 @@
 
 import { useState } from "react";
 import { Minus, Plus, Loader2 } from "lucide-react";
+import { useServiceEditor } from "./service-editor-context";
 
-interface MusicSlot {
-  id: string;
-  slotType: string;
-  positionOrder: number;
-  hymnId: string | null;
-  anthemId: string | null;
-  massSettingId: string | null;
-  canticleSettingId: string | null;
-  responsesSettingId: string | null;
-  freeText: string | null;
-  notes: string | null;
-  verseCount: number | null;
-  selectedVerses: number[] | null;
-}
-
-interface VerseStepper {
-  musicSlotId: string;
-  churchId: string;
-  serviceId: string;
-  hymnId: string;
-  currentVerseCount: number;
+interface VerseStepperProps {
+  slotId: string;
   totalVerses: number;
 }
 
-export function VerseStepper({
-  musicSlotId,
-  churchId,
-  serviceId,
-  currentVerseCount,
-  totalVerses,
-}: VerseStepper) {
+export function VerseStepper({ slotId, totalVerses }: VerseStepperProps) {
+  const { musicSlots, updateSlot } = useServiceEditor();
+  const slot = musicSlots.get(slotId);
+
+  const currentVerseCount = slot?.verseCount ?? totalVerses;
   const [count, setCount] = useState(
     Math.min(Math.max(currentVerseCount, 1), totalVerses)
   );
   const [saving, setSaving] = useState(false);
 
-  const updateVerseCount = async (newCount: number) => {
+  const handleUpdate = async (newCount: number) => {
     setSaving(true);
     try {
-      // Fetch all slots, update the target slot's verseCount, then PUT all back
-      const res = await fetch(
-        `/api/churches/${churchId}/services/${serviceId}/slots`
-      );
-      if (!res.ok) return;
-      const slots: MusicSlot[] = await res.json();
-
-      const updated = slots.map((s) =>
-        s.id === musicSlotId ? { ...s, verseCount: newCount } : s
-      );
-
-      await fetch(`/api/churches/${churchId}/services/${serviceId}/slots`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slots: updated }),
-      });
+      await updateSlot(slotId, { verseCount: newCount });
     } catch {
       // silent — UI already shows the new value
     }
@@ -68,14 +33,14 @@ export function VerseStepper({
     if (count <= 1) return;
     const next = count - 1;
     setCount(next);
-    updateVerseCount(next);
+    handleUpdate(next);
   };
 
   const handleIncrement = () => {
     if (count >= totalVerses) return;
     const next = count + 1;
     setCount(next);
-    updateVerseCount(next);
+    handleUpdate(next);
   };
 
   return (

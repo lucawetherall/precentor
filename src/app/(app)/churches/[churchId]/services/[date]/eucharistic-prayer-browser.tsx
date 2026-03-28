@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useServiceEditor } from "./service-editor-context";
 
 interface Block {
   speaker: string;
@@ -24,13 +25,6 @@ interface EucharisticPrayer {
   rite: string;
   description: string;
   blocks: Block[];
-}
-
-interface EucharisticPrayerBrowserProps {
-  serviceId: string;
-  churchId: string;
-  currentPrayerId: string | null;
-  onSelect?: (prayerId: string) => void;
 }
 
 function RiteBadge({ rite }: { rite: string }) {
@@ -132,17 +126,16 @@ function PrayerRow({
   );
 }
 
-export function EucharisticPrayerBrowser({
-  serviceId,
-  churchId,
-  currentPrayerId,
-  onSelect,
-}: EucharisticPrayerBrowserProps) {
+export function EucharisticPrayerBrowser() {
+  const { settings, updateSettings } = useServiceEditor();
+
   const [open, setOpen] = useState(false);
   const [prayers, setPrayers] = useState<EucharisticPrayer[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(currentPrayerId);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    settings.eucharisticPrayerId
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -165,19 +158,9 @@ export function EucharisticPrayerBrowser({
   const handleSelect = async (prayerId: string) => {
     setSaving(true);
     try {
-      const res = await fetch(
-        `/api/churches/${churchId}/services/${serviceId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eucharisticPrayerId: prayerId }),
-        }
-      );
-      if (res.ok) {
-        setSelectedId(prayerId);
-        onSelect?.(prayerId);
-        setOpen(false);
-      }
+      await updateSettings({ eucharisticPrayerId: prayerId });
+      setSelectedId(prayerId);
+      setOpen(false);
     } catch {
       // silent
     }
@@ -189,7 +172,7 @@ export function EucharisticPrayerBrowser({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
-        {currentPrayer ? currentPrayer.name : "Choose prayer…"}
+        {currentPrayer ? currentPrayer.name : "Choose prayer..."}
       </SheetTrigger>
 
       <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
@@ -200,7 +183,7 @@ export function EucharisticPrayerBrowser({
         {saving && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
             <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} />
-            Saving…
+            Saving...
           </div>
         )}
 

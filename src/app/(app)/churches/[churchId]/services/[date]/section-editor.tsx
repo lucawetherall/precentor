@@ -124,6 +124,7 @@ export function SectionEditor({ churchId, serviceId }: SectionEditorProps) {
                 )}
                 <SectionRow
                   section={section}
+                  churchId={churchId}
                   onDelete={handleDelete}
                   onToggleVisible={handleToggleVisible}
                   onDragStart={handleDragStart}
