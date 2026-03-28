@@ -89,6 +89,7 @@ export const serviceSections = pgTable("service_sections", {
   placeholderType: text("placeholder_type"),
   placeholderValue: text("placeholder_value"),
   visible: boolean("visible").default(true).notNull(),
+  notes: text("notes"),
 }, (t) => [
   index("service_section_service_idx").on(t.serviceId),
 ]);

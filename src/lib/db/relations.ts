@@ -17,6 +17,7 @@ export const churchesRelations = relations(s.churches, ({ many }) => ({
   templates: many(s.serviceSheetTemplates),
   performanceLogs: many(s.performanceLogs),
   invites: many(s.invites),
+  servicePatterns: many(s.churchServicePatterns),
 }));
 
 // churchMemberships: belongs to user + church
@@ -118,4 +119,9 @@ export const performanceLogsRelations = relations(s.performanceLogs, ({ one }) =
 // serviceSheetTemplates: belongs to church
 export const serviceSheetTemplatesRelations = relations(s.serviceSheetTemplates, ({ one }) => ({
   church: one(s.churches, { fields: [s.serviceSheetTemplates.churchId], references: [s.churches.id] }),
+}));
+
+// churchServicePatterns: belongs to church
+export const churchServicePatternsRelations = relations(s.churchServicePatterns, ({ one }) => ({
+  church: one(s.churches, { fields: [s.churchServicePatterns.churchId], references: [s.churches.id] }),
 }));
