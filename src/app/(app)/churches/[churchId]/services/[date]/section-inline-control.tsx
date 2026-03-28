@@ -34,6 +34,15 @@ export function SectionInlineControl({ section, churchId }: SectionInlineControl
         <span className="text-xs text-muted-foreground italic">Anthem</span>
       )}
 
+      {musicSlotType &&
+        musicSlotType !== "HYMN" &&
+        !musicSlotType.startsWith("MASS_SETTING_") &&
+        musicSlotType !== "ANTHEM" && (
+          <span className="text-xs text-muted-foreground italic">
+            {musicSlotType.replace(/_/g, " ").toLowerCase()}
+          </span>
+        )}
+
       {/* Placeholder controls */}
       {placeholderType === "collect" && (
         <CollectChooser churchId={churchId} />

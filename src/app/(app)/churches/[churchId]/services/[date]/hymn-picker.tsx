@@ -12,6 +12,7 @@ interface HymnResult {
   firstLine: string;
   tuneName: string | null;
   author: string | null;
+  totalVerses?: number;
 }
 
 interface HymnPickerProps {
@@ -100,18 +101,9 @@ export function HymnPicker({ slotId, churchId }: HymnPickerProps) {
     setQuery("");
     setResults([]);
     setCurrentHymn(hymn);
+    // Use totalVerses from search result directly — no second fetch needed
+    setTotalVerses(hymn.totalVerses ?? null);
     await updateSlot(slotId, { hymnId: hymn.id });
-
-    // Load verse count for the selected hymn
-    try {
-      const res = await fetch(`/api/hymns/${hymn.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setTotalVerses(data.totalVerses ?? data.verseCount ?? null);
-      }
-    } catch {
-      // silent
-    }
   };
 
   const handleClear = async () => {

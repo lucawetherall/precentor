@@ -54,6 +54,10 @@ export function CollectChooser({
   const settingsCollectOverride = settings.collectOverride;
 
   useEffect(() => {
+    // Capture current settings values at mount time — do not re-run on settings changes
+    const initialCollectId = settingsCollectId;
+    const initialCollectOverride = settingsCollectOverride;
+
     async function loadCollects() {
       setLoading(true);
       try {
@@ -62,9 +66,9 @@ export function CollectChooser({
         if (res.ok) {
           const data: Collect[] = await res.json();
           setCollects(data);
-          setSource(detectSource(settingsCollectId, settingsCollectOverride, data));
-          setSelectedId(settingsCollectId);
-          setCustomText(settingsCollectOverride ?? "");
+          setSource(detectSource(initialCollectId, initialCollectOverride, data));
+          setSelectedId(initialCollectId);
+          setCustomText(initialCollectOverride ?? "");
         }
       } catch {
         // leave empty
@@ -72,7 +76,8 @@ export function CollectChooser({
       setLoading(false);
     }
     loadCollects();
-  }, [churchId, liturgicalDayId, settingsCollectId, settingsCollectOverride]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [churchId, liturgicalDayId]);
 
   const save = async (updates: Partial<{ collectId: string | null; collectOverride: string | null }>) => {
     setSaving(true);

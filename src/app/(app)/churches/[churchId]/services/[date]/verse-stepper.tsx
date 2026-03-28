@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Minus, Plus, Loader2 } from "lucide-react";
 import { useServiceEditor } from "./service-editor-context";
 
@@ -18,6 +18,13 @@ export function VerseStepper({ slotId, totalVerses }: VerseStepperProps) {
     Math.min(Math.max(currentVerseCount, 1), totalVerses)
   );
   const [saving, setSaving] = useState(false);
+
+  // Sync count from context when slot changes externally (e.g. undo)
+  useEffect(() => {
+    if (slot?.verseCount != null) {
+      setCount(slot.verseCount);
+    }
+  }, [slot?.verseCount]);
 
   const handleUpdate = async (newCount: number) => {
     setSaving(true);

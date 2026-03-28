@@ -55,15 +55,10 @@ export function MassSettingControl({
     async function loadSetting() {
       setLoadingSetting(true);
       try {
-        // Use search endpoint with empty query to find by id, or fetch directly
-        const res = await fetch(
-          `/api/search/mass-settings?q=&churchId=${encodeURIComponent(churchId)}`
-        );
+        const res = await fetch(`/api/mass-settings/${encodeURIComponent(massSettingId!)}`);
         if (res.ok && !cancelled) {
-          const data = await res.json();
-          const items: MassSettingResult[] = Array.isArray(data) ? data : data.results ?? [];
-          const found = items.find((s) => s.id === massSettingId);
-          if (found) setCurrentSetting(found);
+          const data: MassSettingResult = await res.json();
+          setCurrentSetting(data);
         }
       } catch {
         // silent
