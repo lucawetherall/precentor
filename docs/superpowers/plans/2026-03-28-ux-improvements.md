@@ -39,8 +39,6 @@
 |---|---|
 | `src/app/(app)/dashboard/page.tsx` | Smart entry: redirect single-church users |
 | `src/app/(app)/churches/[churchId]/services/page.tsx` | Add "No services created" indicator + responsive padding |
-| `src/app/(app)/churches/[churchId]/sundays/sundays-list.tsx` | Add "No services created" indicator for days without services |
-| `src/app/(app)/churches/[churchId]/sundays/sundays-agenda.tsx` | Add "No services created" indicator |
 | `src/app/(app)/churches/[churchId]/layout.tsx` | Grouped navItems with section metadata |
 | `src/components/church-sidebar.tsx` | Render nav groups with dividers, fix active state for Overview |
 | `src/app/(auth)/login/page.tsx` | Replace `<input>` with `Input` component |
@@ -57,15 +55,17 @@ The dashboard already fetches user church memberships and has responsive padding
 
 - [ ] **Step 1: Add redirect for single-church users**
 
-In `src/app/(app)/dashboard/page.tsx`, after the memberships query and the `memberships.length === 0` onboarding redirect, add:
+In `src/app/(app)/dashboard/page.tsx`, add the redirect immediately after `userChurches = memberships` (line 51) and BEFORE the upcoming services fetch loop (line 71+). This avoids wasting DB queries for single-church users who will be redirected anyway:
 
 ```tsx
+userChurches = memberships;
+// Redirect single-church users straight to their church overview
 if (userChurches.length === 1) {
   redirect(`/churches/${userChurches[0].churchId}`);
 }
 ```
 
-`redirect` is already imported from `next/navigation`.
+`redirect` is already imported from `next/navigation`. Place this inside the existing try/catch, right after `userChurches = memberships` on line 51.
 
 - [ ] **Step 2: Update church card links for multi-church case**
 
@@ -131,7 +131,7 @@ const navGroups: NavGroup[] = [
 ];
 ```
 
-Note: Templates is absorbed into Settings (it's already a sub-route at `/settings/templates`). "Sundays" is no longer a nav item — all user-facing pages use "Services".
+Note: Templates is absorbed into Settings (it's already a sub-route at `/settings/templates`). "Sundays" is no longer a nav item — the `/sundays` route is deprecated in favour of the new Overview page. All user-facing navigation uses "Services".
 
 Update the `ChurchSidebar` prop from `navItems` to `navGroups`.
 
@@ -313,14 +313,14 @@ git commit -m "feat: restructure sidebar with grouped navigation and Overview li
 
 ---
 
-## Task 3: "No Services Created" Indicator
+## Task 3: "No Services Created" Indicator on Services Page
 
 **Files:**
 - Modify: `src/app/(app)/churches/[churchId]/services/page.tsx`
-- Modify: `src/app/(app)/churches/[churchId]/sundays/sundays-list.tsx`
-- Modify: `src/app/(app)/churches/[churchId]/sundays/sundays-agenda.tsx`
 
-The Services page and the `/sundays` sub-views (list, agenda) both list upcoming liturgical days. When no services have been created for a day, there's currently no visual indicator — the row just shows no completeness dots (Services page) or no availability widget (`/sundays` views). We need a "No services created" callout in red italic on all views.
+The Services page lists upcoming liturgical days with completeness dots per service. When no services have been created for a day, there's currently no visual indicator — the row just shows no dots. We need a "No services created" callout in red italic.
+
+Note: The `/sundays` route is deprecated (replaced by the Overview page) and does not need updating.
 
 - [ ] **Step 1: Update Services page for empty days**
 
@@ -334,45 +334,15 @@ In `src/app/(app)/churches/[churchId]/services/page.tsx`, the completeness dots 
 
 Also update this page's responsive padding: change `className="p-8 max-w-4xl"` to `className="p-4 sm:p-6 lg:p-8 max-w-4xl"`.
 
-- [ ] **Step 2: Update SundaysList to show empty state**
+- [ ] **Step 2: Verify**
 
-In `src/app/(app)/churches/[churchId]/sundays/sundays-list.tsx`, the availability widget only renders when `day.service` exists (line 50). After that `{day.service && (...)}` block, add:
+Run: `npm run dev`. Navigate to `/services`. Days without services should show "No services created" in red. Days with services show completeness dots as before.
 
-```tsx
-{!day.service && (
-  <div className="px-3 flex-shrink-0 border-l border-border py-3 flex items-center">
-    <span className="text-xs text-destructive italic">No services created</span>
-  </div>
-)}
-```
-
-- [ ] **Step 3: Update SundaysAgenda similarly**
-
-In `src/app/(app)/churches/[churchId]/sundays/sundays-agenda.tsx`, the availability widget section (line 100-115) only renders when `day.service` exists. After that block, add:
-
-```tsx
-{!day.service && (
-  <div className="flex items-center justify-center px-4 border-l border-border flex-shrink-0">
-    <span className="text-xs text-destructive italic">No services created</span>
-  </div>
-)}
-```
-
-Also in the body section (line 83-96), the `{day.service ? (...) : null}` currently renders nothing for null. Change the `: null` to show a message:
-
-```tsx
-: <p className="text-xs text-destructive italic">No services planned yet</p>
-```
-
-- [ ] **Step 4: Verify**
-
-Run: `npm run dev`. Navigate to `/services` page and the `/sundays` sub-views (list, agenda). Days without services should show "No services created" in red. Days with services unchanged.
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add src/app/(app)/churches/[churchId]/services/page.tsx src/app/(app)/churches/[churchId]/sundays/sundays-list.tsx src/app/(app)/churches/[churchId]/sundays/sundays-agenda.tsx
-git commit -m "feat: show 'No services created' indicator on services pages"
+git add src/app/(app)/churches/[churchId]/services/page.tsx
+git commit -m "feat: show 'No services created' indicator on Services page"
 ```
 
 ---
@@ -392,7 +362,7 @@ This task creates the data-fetching functions for the overview page. These reuse
 import { db } from "@/lib/db";
 import {
   liturgicalDays, services, musicSlots, availability,
-  rotaEntries, churchMemberships,
+  rotaEntries, churchMemberships, hymns, anthems,
 } from "@/lib/db/schema";
 import { eq, and, gte, asc, inArray, sql } from "drizzle-orm";
 import { format } from "date-fns";
@@ -476,18 +446,24 @@ export async function getRotaSummary(serviceIds: string[], churchId: string) {
   return result;
 }
 
-/** Get upcoming days needing attention — no services or zero music slots filled */
+/** Get upcoming days needing attention — no services or no music content assigned.
+ *
+ * IMPORTANT: Services created from templates already have musicSlot rows
+ * (one per template section). A non-zero slot count does NOT mean music has been
+ * assigned. We must check whether any slot has actual content (hymnId, anthemId,
+ * freeText, massSettingId, canticleSettingId, or responsesSettingId).
+ */
 export async function getNeedsAttention(churchId: string, limit = 8) {
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const rows = await db
+  // Step 1: Get upcoming days with their services
+  const dayServiceRows = await db
     .select({
       dayId: liturgicalDays.id,
       date: liturgicalDays.date,
       cwName: liturgicalDays.cwName,
       colour: liturgicalDays.colour,
       serviceId: services.id,
-      slotCount: sql<number>`count(${musicSlots.id})`.as("slot_count"),
     })
     .from(liturgicalDays)
     .leftJoin(
@@ -497,17 +473,37 @@ export async function getNeedsAttention(churchId: string, limit = 8) {
         eq(services.churchId, churchId)
       )
     )
-    .leftJoin(musicSlots, eq(musicSlots.serviceId, services.id))
     .where(gte(liturgicalDays.date, today))
-    .groupBy(liturgicalDays.id, liturgicalDays.date, liturgicalDays.cwName, liturgicalDays.colour, services.id)
     .orderBy(asc(liturgicalDays.date))
-    .limit(80);
+    .limit(60);
 
-  // Group all rows per day, then check all services for each day
-  const dayRows = new Map<string, typeof rows>();
-  for (const row of rows) {
-    if (!dayRows.has(row.dayId)) dayRows.set(row.dayId, []);
-    dayRows.get(row.dayId)!.push(row);
+  // Collect all service IDs that exist
+  const serviceIds = dayServiceRows
+    .filter((r) => r.serviceId !== null)
+    .map((r) => r.serviceId!);
+
+  // Step 2: For services that exist, count slots with actual content assigned
+  let filledSlotCounts = new Map<string, number>();
+  if (serviceIds.length > 0) {
+    const slotRows = await db
+      .select({
+        serviceId: musicSlots.serviceId,
+        filledCount: sql<number>`count(case when ${musicSlots.hymnId} is not null or ${musicSlots.anthemId} is not null or ${musicSlots.freeText} is not null or ${musicSlots.massSettingId} is not null or ${musicSlots.canticleSettingId} is not null or ${musicSlots.responsesSettingId} is not null then 1 end)`.as("filled_count"),
+      })
+      .from(musicSlots)
+      .where(inArray(musicSlots.serviceId, serviceIds))
+      .groupBy(musicSlots.serviceId);
+
+    for (const row of slotRows) {
+      filledSlotCounts.set(row.serviceId, row.filledCount);
+    }
+  }
+
+  // Step 3: Group by day and determine attention status
+  const dayMap = new Map<string, typeof dayServiceRows>();
+  for (const row of dayServiceRows) {
+    if (!dayMap.has(row.dayId)) dayMap.set(row.dayId, []);
+    dayMap.get(row.dayId)!.push(row);
   }
 
   interface AttentionItem {
@@ -515,13 +511,18 @@ export async function getNeedsAttention(churchId: string, limit = 8) {
   }
   const result: AttentionItem[] = [];
 
-  for (const [dayId, dRows] of dayRows) {
+  for (const [dayId, dRows] of dayMap) {
     const first = dRows[0];
     if (!first.serviceId) {
       result.push({ id: dayId, date: first.date, cwName: first.cwName, colour: first.colour, reason: "No services created" });
       continue;
     }
-    const hasEmptyService = dRows.some((r) => r.serviceId && r.slotCount === 0);
+    // Check if ANY service for this day has zero filled music slots
+    const hasEmptyService = dRows.some((r) => {
+      if (!r.serviceId) return false;
+      const filled = filledSlotCounts.get(r.serviceId) ?? 0;
+      return filled === 0;
+    });
     if (hasEmptyService) {
       result.push({ id: dayId, date: first.date, cwName: first.cwName, colour: first.colour, reason: "No music assigned" });
     }
@@ -530,24 +531,32 @@ export async function getNeedsAttention(churchId: string, limit = 8) {
   return result.slice(0, limit);
 }
 
-/** Get music slots for services (for member view) */
+/** Get music slots for services with resolved hymn/anthem names (for member view).
+ * Follows the same join pattern as the Sundays page query. */
 export async function getMusicForServices(serviceIds: string[]) {
-  if (serviceIds.length === 0) return new Map<string, { slotType: string; freeText: string | null }[]>();
+  if (serviceIds.length === 0) return new Map<string, { slotType: string; title: string }[]>();
 
   const slots = await db
     .select({
       serviceId: musicSlots.serviceId,
       slotType: musicSlots.slotType,
       freeText: musicSlots.freeText,
+      hymnFirstLine: hymns.firstLine,
+      anthemTitle: anthems.title,
     })
     .from(musicSlots)
+    .leftJoin(hymns, eq(musicSlots.hymnId, hymns.id))
+    .leftJoin(anthems, eq(musicSlots.anthemId, anthems.id))
     .where(inArray(musicSlots.serviceId, serviceIds))
     .orderBy(asc(musicSlots.positionOrder));
 
-  const result = new Map<string, { slotType: string; freeText: string | null }[]>();
+  const result = new Map<string, { slotType: string; title: string }[]>();
   for (const slot of slots) {
+    // Only include slots that have content assigned
+    const title = slot.hymnFirstLine ?? slot.anthemTitle ?? slot.freeText;
+    if (!title) continue;
     if (!result.has(slot.serviceId)) result.set(slot.serviceId, []);
-    result.get(slot.serviceId)!.push({ slotType: slot.slotType, freeText: slot.freeText });
+    result.get(slot.serviceId)!.push({ slotType: slot.slotType, title });
   }
   return result;
 }
@@ -712,11 +721,12 @@ Server component that ties everything together. Uses `requireChurchRole` (same a
 - [ ] **Step 1: Create the overview page**
 
 Key points:
-- Auth via `requireChurchRole(churchId, "MEMBER")` — same as Sundays page
-- Role check: `membership.role === "MEMBER"` for member view, else DoM view
+- Auth via `requireChurchRole(churchId, "MEMBER")` — if error, `redirect("/login")` (same pattern as the existing pages)
+- Role check: `membership!.role === "MEMBER"` for member view, else DoM view
 - Fetches data via the query functions from Task 4
 - Renders `DomThisSunday` + `NeedsAttention` for DoM, or `MemberThisSunday` + `MyAvailabilityList` for members
 - Uses responsive padding `p-4 sm:p-6 lg:p-8 max-w-4xl`
+- **Empty state:** When `getThisSunday` returns null (no liturgical data), show a centred message: "No liturgical calendar data available. Run the database seed to populate the calendar." — matching the Services page empty state
 
 - [ ] **Step 2: Verify the overview page**
 
@@ -739,11 +749,11 @@ git commit -m "feat: add church overview page with role-aware DoM and member vie
 
 - [ ] **Step 1: Replace inline inputs on login page**
 
-Add `import { Input } from "@/components/ui/input";` and replace all `<input>` elements with `<Input>` — keep all existing props, add `className="bg-white"`.
+Add `import { Input } from "@/components/ui/input";` and replace all `<input>` elements with `<Input>` — keep all existing props, add `className="bg-white rounded-none"` (the `rounded-none` overrides the `Input` component's default `rounded-md`, matching the project's zero-border-radius design system).
 
 - [ ] **Step 2: Replace inline inputs on signup page**
 
-Same pattern for all four input fields (name, email, password, confirm-password).
+Same pattern for all four input fields (name, email, password, confirm-password). Use `className="bg-white rounded-none"` on each.
 
 - [ ] **Step 3: Verify auth pages**
 
@@ -769,7 +779,8 @@ Run: `npm run dev`
 3. "Needs attention" list shows incomplete weeks
 4. Sidebar: Overview (active), Services, Rota | More: Repertoire, Service Sheets | Admin: Members, Settings
 5. Click Services → completeness dots work, days without services show red "No services created"
-6. Log in as member → overview shows availability (AvailabilityWidget), music list, "My availability"
+6. Log in as member → overview shows availability (AvailabilityWidget), music list with resolved hymn/anthem names, "My availability"
+7. The `/sundays` route still works if accessed directly (not broken) but is no longer in the nav
 
 - [ ] **Step 2: Type check**
 
