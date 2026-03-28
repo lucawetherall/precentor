@@ -662,13 +662,146 @@ Server component for the DoM's view. Uses existing `LITURGICAL_COLOURS` and `SER
 
 - [ ] **Step 1: Create the DoM overview component**
 
-This component renders two sections: service cards with rota summary for "This Sunday", and the "Needs Attention" list. See spec for design details. Key points:
-- Voice part gaps shown directly (e.g. "no bass, no tenor")
-- Service cards link to the Sunday detail page at `/churches/${churchId}/sundays/${day.date}`
-- Attention items link to the same route
-- Liturgical colour bar on attention items
+```tsx
+import Link from "next/link";
+import { format, parseISO } from "date-fns";
+import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from "@/types";
+import type { LiturgicalColour, ServiceType } from "@/types";
 
-Full implementation in `overview-dom.tsx` — imports from `@/types`, `date-fns`, `next/link`.
+const VOICE_PARTS = ["SOPRANO", "ALTO", "TENOR", "BASS"] as const;
+
+interface ServiceCard {
+  serviceId: string;
+  serviceType: string;
+  time: string | null;
+}
+
+interface RotaSummary {
+  total: number;
+  byPart: Record<string, number>;
+}
+
+interface AttentionItem {
+  id: string;
+  date: string;
+  cwName: string;
+  colour: string;
+  reason: string;
+}
+
+export function DomThisSunday({
+  churchId,
+  day,
+  services,
+  rotaSummaries,
+}: {
+  churchId: string;
+  day: { date: string; cwName: string; colour: string; season: string };
+  services: ServiceCard[];
+  rotaSummaries: Map<string, RotaSummary>;
+}) {
+  return (
+    <div className="mb-8">
+      <div className="flex flex-col sm:flex-row gap-3">
+        {services.map((s) => {
+          const summary = rotaSummaries.get(s.serviceId);
+          const missingParts = VOICE_PARTS.filter(
+            (p) => !summary?.byPart[p]
+          );
+
+          return (
+            <Link
+              key={s.serviceId}
+              href={`/churches/${churchId}/services/${day.date}`}
+              className="flex-1 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-heading text-base font-semibold">
+                  {SERVICE_TYPE_LABELS[s.serviceType as ServiceType] || s.serviceType}
+                </span>
+                {s.time && (
+                  <span className="text-xs text-muted-foreground">{s.time}</span>
+                )}
+              </div>
+              {summary && (
+                <p className="text-xs text-muted-foreground">
+                  {summary.total} on rota
+                  {missingParts.length > 0 && (
+                    <span className="text-destructive">
+                      {" "}· no {missingParts.map((p) => p.toLowerCase()).join(", ")}
+                    </span>
+                  )}
+                </p>
+              )}
+              {!summary && (
+                <p className="text-xs text-muted-foreground">No rota data</p>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+
+      {services.length === 0 && (
+        <div className="border border-border bg-card p-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            No services created for this Sunday.{" "}
+            <Link
+              href={`/churches/${churchId}/services/${day.date}`}
+              className="text-primary underline"
+            >
+              Plan services
+            </Link>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function NeedsAttention({
+  churchId,
+  items,
+}: {
+  churchId: string;
+  items: AttentionItem[];
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <div>
+      <h2 className="font-heading text-lg font-semibold mb-3">Needs attention</h2>
+      <div className="border border-border bg-card divide-y divide-border">
+        {items.map((item) => (
+          <Link
+            key={item.id}
+            href={`/churches/${churchId}/services/${item.date}`}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+          >
+            <span
+              aria-hidden="true"
+              className="w-1 h-6 flex-shrink-0"
+              style={{
+                backgroundColor:
+                  LITURGICAL_COLOURS[item.colour as LiturgicalColour] ?? "#4A6741",
+              }}
+            />
+            <div className="flex-1 min-w-0">
+              <span className="text-sm">
+                {format(parseISO(item.date), "d MMM")} — {item.cwName}
+              </span>
+            </div>
+            <span className="text-xs text-destructive flex-shrink-0">
+              {item.reason}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+Note: All DoM links go to `/services/${day.date}` (the editor page), NOT `/sundays/${day.date}`.
 
 - [ ] **Step 2: Verify it compiles**
 
@@ -692,10 +825,161 @@ Client component. **Reuses the existing `AvailabilityWidget`** from `src/compone
 
 - [ ] **Step 1: Create the member overview component**
 
+```tsx
+"use client";
+
+import Link from "next/link";
+import { format, parseISO } from "date-fns";
+import { FileText } from "lucide-react";
+import { LITURGICAL_COLOURS, MUSIC_SLOT_LABELS } from "@/types";
+import type { LiturgicalColour, MusicSlotType } from "@/types";
+import { AvailabilityWidget } from "@/components/availability-widget";
+import { SERVICE_TYPE_LABELS } from "@/types";
+import type { ServiceType } from "@/types";
+
+interface ServiceWithMusic {
+  serviceId: string;
+  serviceType: string;
+  time: string | null;
+  musicSlots: { slotType: string; title: string }[];
+}
+
+interface UpcomingDay {
+  id: string;
+  date: string;
+  cwName: string;
+  colour: string;
+  serviceIds: string[];
+}
+
+export function MemberThisSunday({
+  churchId,
+  day,
+  services,
+  userAvailability,
+}: {
+  churchId: string;
+  day: { date: string; cwName: string };
+  services: ServiceWithMusic[];
+  userAvailability: Record<string, "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE" | null>;
+}) {
+  return (
+    <div className="mb-8 space-y-2">
+      {services.map((s) => (
+        <div key={s.serviceId} className="border border-border bg-card p-4 shadow-sm">
+          <div className="flex justify-between items-center mb-3">
+            <div>
+              <span className="font-heading text-base font-semibold">
+                {SERVICE_TYPE_LABELS[s.serviceType as ServiceType] || s.serviceType}
+              </span>
+              {s.time && (
+                <span className="text-xs text-muted-foreground ml-2">{s.time}</span>
+              )}
+            </div>
+            {/* Reuse AvailabilityWidget — handles API, optimistic updates, error toasts */}
+            <AvailabilityWidget
+              serviceId={s.serviceId}
+              churchId={churchId}
+              currentStatus={userAvailability[s.serviceId] ?? null}
+              size="md"
+            />
+          </div>
+
+          {/* Music list */}
+          {s.musicSlots.length > 0 ? (
+            <div className="space-y-1 mb-3">
+              {s.musicSlots.map((slot, i) => (
+                <div key={i} className="flex gap-2 text-xs">
+                  <span className="font-mono text-muted-foreground uppercase tracking-wider min-w-[70px]">
+                    {MUSIC_SLOT_LABELS[slot.slotType as MusicSlotType] || slot.slotType}
+                  </span>
+                  <span className="text-foreground">{slot.title}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic mb-3">Music not yet planned</p>
+          )}
+
+          {/* Service sheet download link */}
+          <div className="pt-3 border-t border-border">
+            <a
+              href={`/api/churches/${churchId}/services/${s.serviceId}/sheet?format=pdf`}
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FileText className="h-3 w-3" strokeWidth={1.5} aria-hidden="true" />
+              Download service sheet
+            </a>
+          </div>
+        </div>
+      ))}
+
+      {services.length === 0 && (
+        <div className="border border-border bg-card p-6 text-center">
+          <p className="text-sm text-muted-foreground">No services planned for this Sunday yet.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function MyAvailabilityList({
+  churchId,
+  days,
+  userAvailability,
+}: {
+  churchId: string;
+  days: UpcomingDay[];
+  userAvailability: Record<string, "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE" | null>;
+}) {
+  // Skip the first day (already shown in "This Sunday" hero)
+  const remainingDays = days.slice(1);
+  if (remainingDays.length === 0) return null;
+
+  return (
+    <div>
+      <h2 className="font-heading text-lg font-semibold mb-3">My availability</h2>
+      <div className="border border-border bg-card divide-y divide-border">
+        {remainingDays.map((day) => (
+          <div key={day.id} className="flex items-center gap-3 px-4 py-3">
+            <span
+              aria-hidden="true"
+              className="w-1 h-6 flex-shrink-0"
+              style={{
+                backgroundColor:
+                  LITURGICAL_COLOURS[day.colour as LiturgicalColour] ?? "#4A6741",
+              }}
+            />
+            <div className="flex-1 min-w-0">
+              <span className="text-sm">
+                {format(parseISO(day.date), "d MMM")} — {day.cwName}
+              </span>
+            </div>
+            {day.serviceIds.length > 0 ? (
+              <AvailabilityWidget
+                serviceId={day.serviceIds[0]}
+                churchId={churchId}
+                currentStatus={userAvailability[day.serviceIds[0]] ?? null}
+                size="sm"
+              />
+            ) : (
+              <span className="text-xs text-muted-foreground italic">No services</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
 Key design decisions:
-- Uses `AvailabilityWidget` component (already handles POST/DELETE to availability API, optimistic updates, error toasts)
-- Music slots shown per service using `MUSIC_SLOT_LABELS` from `@/types`
-- "My availability" list shows next 6 Sundays with `AvailabilityWidget` per row
+- **Reuses `AvailabilityWidget`** (handles POST/DELETE, optimistic updates, error toasts — no custom toggle code)
+- **Music slots use resolved titles** from the `getMusicForServices` query (hymn names, anthem titles)
+- **Service sheet download link** on each service card — links directly to the sheet API (`/api/churches/${churchId}/services/${serviceId}/sheet?format=pdf`)
+- **"My availability" list** uses `AvailabilityWidget` at `sm` size for compact display
 - Skips the first day in the availability list (already shown as "This Sunday")
 
 - [ ] **Step 2: Verify it compiles**
@@ -720,13 +1004,136 @@ Server component that ties everything together. Uses `requireChurchRole` (same a
 
 - [ ] **Step 1: Create the overview page**
 
-Key points:
-- Auth via `requireChurchRole(churchId, "MEMBER")` — if error, `redirect("/login")` (same pattern as the existing pages)
-- Role check: `membership!.role === "MEMBER"` for member view, else DoM view
-- Fetches data via the query functions from Task 4
-- Renders `DomThisSunday` + `NeedsAttention` for DoM, or `MemberThisSunday` + `MyAvailabilityList` for members
-- Uses responsive padding `p-4 sm:p-6 lg:p-8 max-w-4xl`
-- **Empty state:** When `getThisSunday` returns null (no liturgical data), show a centred message: "No liturgical calendar data available. Run the database seed to populate the calendar." — matching the Services page empty state
+```tsx
+import { redirect } from "next/navigation";
+import { format, parseISO } from "date-fns";
+import { requireChurchRole } from "@/lib/auth/permissions";
+import {
+  getThisSunday,
+  getRotaSummary,
+  getNeedsAttention,
+  getMusicForServices,
+  getUserAvailability,
+  getUpcomingDaysWithServices,
+} from "@/lib/db/queries/overview";
+import { DomThisSunday, NeedsAttention } from "./overview-dom";
+import { MemberThisSunday, MyAvailabilityList } from "./overview-member";
+
+interface Props {
+  params: Promise<{ churchId: string }>;
+}
+
+export default async function ChurchOverviewPage({ params }: Props) {
+  const { churchId } = await params;
+  const { user, membership, error } = await requireChurchRole(churchId, "MEMBER");
+  if (error) redirect("/login");
+
+  const isMember = membership!.role === "MEMBER";
+  const userId = user!.id;
+
+  // Fetch "This Sunday" data
+  let thisSunday: Awaited<ReturnType<typeof getThisSunday>> = null;
+  try {
+    thisSunday = await getThisSunday(churchId);
+  } catch { /* DB not available */ }
+
+  // Empty state — no liturgical data at all
+  if (!thisSunday) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+        <div className="border border-border bg-card p-8 text-center">
+          <p className="text-muted-foreground">
+            No liturgical calendar data available. Run the database seed to populate the calendar.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const serviceIds = thisSunday.services.map((s) => s.serviceId);
+
+  if (isMember) {
+    // ── Member view ──
+    let musicByService = new Map<string, { slotType: string; title: string }[]>();
+    let userAvail = new Map<string, string>();
+    let upcomingDays: Awaited<ReturnType<typeof getUpcomingDaysWithServices>> = [];
+
+    try {
+      [musicByService, upcomingDays] = await Promise.all([
+        getMusicForServices(serviceIds),
+        getUpcomingDaysWithServices(churchId, 7),
+      ]);
+
+      const allServiceIds = [
+        ...serviceIds,
+        ...upcomingDays.flatMap((d) => d.serviceIds),
+      ];
+      const uniqueServiceIds = [...new Set(allServiceIds)];
+      userAvail = await getUserAvailability(userId, uniqueServiceIds);
+    } catch { /* DB not available */ }
+
+    const initialAvail: Record<string, "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE" | null> = {};
+    for (const [sid, status] of userAvail) {
+      initialAvail[sid] = status as "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE";
+    }
+
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+        <h1 className="font-heading text-2xl font-semibold mb-1">This Sunday</h1>
+        <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider mb-6">
+          {format(parseISO(thisSunday.date), "d MMM yyyy")} · {thisSunday.cwName}
+        </p>
+        <MemberThisSunday
+          churchId={churchId}
+          day={thisSunday}
+          services={thisSunday.services.map((s) => ({
+            ...s,
+            musicSlots: musicByService.get(s.serviceId) || [],
+          }))}
+          userAvailability={initialAvail}
+        />
+        <MyAvailabilityList
+          churchId={churchId}
+          days={upcomingDays}
+          userAvailability={initialAvail}
+        />
+      </div>
+    );
+  }
+
+  // ── DoM view (ADMIN / EDITOR) ──
+  let rotaSummaries = new Map<string, { total: number; byPart: Record<string, number> }>();
+  let attentionItems: Awaited<ReturnType<typeof getNeedsAttention>> = [];
+
+  try {
+    [rotaSummaries, attentionItems] = await Promise.all([
+      getRotaSummary(serviceIds, churchId),
+      getNeedsAttention(churchId),
+    ]);
+  } catch { /* DB not available */ }
+
+  // Exclude "this Sunday" from the attention list (already shown as hero)
+  const filteredAttention = attentionItems.filter(
+    (item) => item.id !== thisSunday?.id
+  );
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+      <h1 className="font-heading text-2xl font-semibold mb-1">This Sunday</h1>
+      <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider mb-6">
+        {format(parseISO(thisSunday.date), "d MMM yyyy")} · {thisSunday.cwName}
+      </p>
+      <DomThisSunday
+        churchId={churchId}
+        day={thisSunday}
+        services={thisSunday.services}
+        rotaSummaries={rotaSummaries}
+      />
+      <NeedsAttention churchId={churchId} items={filteredAttention} />
+    </div>
+  );
+}
+```
 
 - [ ] **Step 2: Verify the overview page**
 
