@@ -58,7 +58,7 @@ export default async function MembersPage({ params }: Props) {
       .from(churchMemberships)
       .innerJoin(users, eq(churchMemberships.userId, users.id))
       .where(eq(churchMemberships.churchId, churchId));
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   const isAdmin = hasMinRole(userRole, "ADMIN");
 

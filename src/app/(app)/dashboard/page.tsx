@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Church, Calendar, Users, Music, ArrowRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { users, churchMemberships, churches, services, liturgicalDays } from "@/lib/db/schema";
-import { eq, and, gte, asc } from "drizzle-orm";
+import { eq, and, gte, asc, inArray } from "drizzle-orm";
 import { format, parseISO } from "date-fns";
 import { SERVICE_TYPE_LABELS, LITURGICAL_COLOURS } from "@/types";
 import type { ServiceType, LiturgicalColour } from "@/types";
@@ -26,7 +26,6 @@ export default async function DashboardPage() {
     role: string;
   }
   let userChurches: UserChurch[] = [];
-
   try {
     const dbUser = await db
       .select()
@@ -50,8 +49,8 @@ export default async function DashboardPage() {
       }
       userChurches = memberships;
     }
-  } catch {
-    // DB not available, continue
+  } catch (err) {
+    console.error("Failed to load data:", err);
   }
 
   // Fetch upcoming services across all churches
@@ -70,35 +69,33 @@ export default async function DashboardPage() {
 
   try {
     if (userChurches.length > 0) {
-      // Get upcoming services for all user's churches
-      for (const uc of userChurches.slice(0, 5)) {
-        const churchServices = await db
-          .select({
-            serviceId: services.id,
-            serviceType: services.serviceType,
-            time: services.time,
-            date: liturgicalDays.date,
-            cwName: liturgicalDays.cwName,
-            colour: liturgicalDays.colour,
-            churchId: services.churchId,
-          })
-          .from(services)
-          .innerJoin(liturgicalDays, eq(services.liturgicalDayId, liturgicalDays.id))
-          .where(and(eq(services.churchId, uc.churchId), gte(liturgicalDays.date, today)))
-          .orderBy(asc(liturgicalDays.date))
-          .limit(4);
+      const churchIds = userChurches.slice(0, 5).map((uc) => uc.churchId);
+      const churchNameMap = new Map(userChurches.map((uc) => [uc.churchId, uc.churchName]));
 
-        upcomingServices.push(
-          ...churchServices.map((s) => ({ ...s, churchName: uc.churchName }))
-        );
-      }
+      // Single query for all churches
+      const allServices = await db
+        .select({
+          serviceId: services.id,
+          serviceType: services.serviceType,
+          time: services.time,
+          date: liturgicalDays.date,
+          cwName: liturgicalDays.cwName,
+          colour: liturgicalDays.colour,
+          churchId: services.churchId,
+        })
+        .from(services)
+        .innerJoin(liturgicalDays, eq(services.liturgicalDayId, liturgicalDays.id))
+        .where(and(inArray(services.churchId, churchIds), gte(liturgicalDays.date, today)))
+        .orderBy(asc(liturgicalDays.date))
+        .limit(6);
 
-      // Sort and limit
-      upcomingServices.sort((a, b) => a.date.localeCompare(b.date));
-      upcomingServices = upcomingServices.slice(0, 6);
+      upcomingServices = allServices.map((s) => ({
+        ...s,
+        churchName: churchNameMap.get(s.churchId) || "",
+      }));
     }
-  } catch {
-    // DB not available
+  } catch (err) {
+    console.error("Failed to load data:", err);
   }
 
   const userName = user.user_metadata?.name || user.email?.split("@")[0] || "there";

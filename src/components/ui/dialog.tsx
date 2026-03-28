@@ -39,7 +39,7 @@ function Dialog({
 
 function DialogTrigger({
   children,
-  asChild: _asChild,
+  asChild: _asChild,  
   className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }) {

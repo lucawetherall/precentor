@@ -44,7 +44,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
       .where(eq(services.churchId, churchId))
       .orderBy(desc(liturgicalDays.date))
       .limit(20);
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   const serviceIds = recentServices.map((s) => s.serviceId);
 

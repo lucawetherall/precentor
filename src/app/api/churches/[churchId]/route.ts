@@ -21,15 +21,15 @@ export async function PATCH(
   }
 
   try {
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if ("name" in body) updates.name = body.name;
+    if ("diocese" in body) updates.diocese = body.diocese || null;
+    if ("address" in body) updates.address = body.address || null;
+    if ("ccliNumber" in body) updates.ccliNumber = body.ccliNumber || null;
+
     const [updated] = await db
       .update(churches)
-      .set({
-        name: body.name,
-        diocese: body.diocese || null,
-        address: body.address || null,
-        ccliNumber: body.ccliNumber || null,
-        updatedAt: new Date(),
-      })
+      .set(updates)
       .where(eq(churches.id, churchId))
       .returning();
 
