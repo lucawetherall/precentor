@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { musicSlots, musicSlotTypeEnum } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { musicSlots, musicSlotTypeEnum, services } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export async function GET(
   request: Request,
@@ -14,6 +14,16 @@ export async function GET(
   if (error) return error;
 
   try {
+    // Verify the service belongs to this church
+    const [service] = await db
+      .select({ id: services.id })
+      .from(services)
+      .where(and(eq(services.id, serviceId), eq(services.churchId, churchId)))
+      .limit(1);
+    if (!service) {
+      return NextResponse.json({ error: "Service not found" }, { status: 404 });
+    }
+
     const slots = await db
       .select()
       .from(musicSlots)
@@ -44,24 +54,49 @@ export async function PUT(
   const { slots } = body;
 
   try {
-    await db.delete(musicSlots).where(eq(musicSlots.serviceId, serviceId));
-
-    if (slots && slots.length > 0) {
-      await db.insert(musicSlots).values(
-        slots.map((slot: { slotType: string; hymnId?: string; anthemId?: string; massSettingId?: string; canticleSettingId?: string; responsesSettingId?: string; freeText?: string; notes?: string }, i: number) => ({
-          serviceId,
-          slotType: slot.slotType as (typeof musicSlotTypeEnum.enumValues)[number],
-          positionOrder: i,
-          hymnId: slot.hymnId || null,
-          anthemId: slot.anthemId || null,
-          massSettingId: slot.massSettingId || null,
-          canticleSettingId: slot.canticleSettingId || null,
-          responsesSettingId: slot.responsesSettingId || null,
-          freeText: slot.freeText || null,
-          notes: slot.notes || null,
-        }))
-      );
+    // Verify the service belongs to this church
+    const [service] = await db
+      .select({ id: services.id })
+      .from(services)
+      .where(and(eq(services.id, serviceId), eq(services.churchId, churchId)))
+      .limit(1);
+    if (!service) {
+      return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
+
+    // Validate slotType values before writing
+    if (slots && slots.length > 0) {
+      const validSlotTypes = musicSlotTypeEnum.enumValues;
+      for (const slot of slots) {
+        if (!validSlotTypes.includes(slot.slotType)) {
+          return NextResponse.json(
+            { error: `Invalid slot type: ${slot.slotType}` },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    await db.transaction(async (tx) => {
+      await tx.delete(musicSlots).where(eq(musicSlots.serviceId, serviceId));
+
+      if (slots && slots.length > 0) {
+        await tx.insert(musicSlots).values(
+          slots.map((slot: { slotType: string; hymnId?: string; anthemId?: string; massSettingId?: string; canticleSettingId?: string; responsesSettingId?: string; freeText?: string; notes?: string }, i: number) => ({
+            serviceId,
+            slotType: slot.slotType as (typeof musicSlotTypeEnum.enumValues)[number],
+            positionOrder: i,
+            hymnId: slot.hymnId || null,
+            anthemId: slot.anthemId || null,
+            massSettingId: slot.massSettingId || null,
+            canticleSettingId: slot.canticleSettingId || null,
+            responsesSettingId: slot.responsesSettingId || null,
+            freeText: slot.freeText || null,
+            notes: slot.notes || null,
+          }))
+        );
+      }
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { churchMemberships } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 
 const VALID_ROLES = ["ADMIN", "EDITOR", "MEMBER"] as const;
@@ -28,6 +28,36 @@ export async function PATCH(
   if ("role" in body) {
     if (!VALID_ROLES.includes(body.role)) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    }
+    // Prevent demoting the last admin
+    if (body.role !== "ADMIN") {
+      const membership = await db
+        .select()
+        .from(churchMemberships)
+        .where(
+          and(
+            eq(churchMemberships.id, memberId),
+            eq(churchMemberships.churchId, churchId)
+          )
+        )
+        .limit(1);
+      if (membership.length > 0 && membership[0].role === "ADMIN") {
+        const adminCount = await db
+          .select({ count: sql`count(*)` })
+          .from(churchMemberships)
+          .where(
+            and(
+              eq(churchMemberships.churchId, churchId),
+              eq(churchMemberships.role, "ADMIN")
+            )
+          );
+        if (Number(adminCount[0].count) <= 1) {
+          return NextResponse.json(
+            { error: "Cannot remove the last admin" },
+            { status: 400 }
+          );
+        }
+      }
     }
     updates.role = body.role;
   }
@@ -75,6 +105,35 @@ export async function DELETE(
   if (error) return error;
 
   try {
+    // Prevent deleting the last admin
+    const membership = await db
+      .select()
+      .from(churchMemberships)
+      .where(
+        and(
+          eq(churchMemberships.id, memberId),
+          eq(churchMemberships.churchId, churchId)
+        )
+      )
+      .limit(1);
+    if (membership.length > 0 && membership[0].role === "ADMIN") {
+      const adminCount = await db
+        .select({ count: sql`count(*)` })
+        .from(churchMemberships)
+        .where(
+          and(
+            eq(churchMemberships.churchId, churchId),
+            eq(churchMemberships.role, "ADMIN")
+          )
+        );
+      if (Number(adminCount[0].count) <= 1) {
+        return NextResponse.json(
+          { error: "Cannot remove the last admin" },
+          { status: 400 }
+        );
+      }
+    }
+
     const result = await db
       .delete(churchMemberships)
       .where(

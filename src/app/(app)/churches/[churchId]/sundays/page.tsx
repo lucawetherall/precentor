@@ -117,8 +117,8 @@ export default async function SundaysPage({ params }: Props) {
         },
       }
     })
-  } catch {
-    /* DB not available — days stays [] */
+  } catch (err) {
+    console.error("Failed to load data:", err)
   }
 
   return (

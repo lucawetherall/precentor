@@ -2,11 +2,16 @@ import { db } from "@/lib/db";
 import { hymns } from "@/lib/db/schema";
 import { ilike, or, eq, and, type SQL } from "drizzle-orm";
 
+function escapeLike(str: string): string {
+  return str.replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
 export async function searchHymns(query: string, book?: "NEH" | "AM", offset = 0) {
+  const escaped = escapeLike(query);
   const conditions: SQL[] = [
-    ilike(hymns.firstLine, `%${query}%`),
-    ilike(hymns.tuneName, `%${query}%`),
-    ilike(hymns.author, `%${query}%`),
+    ilike(hymns.firstLine, `%${escaped}%`),
+    ilike(hymns.tuneName, `%${escaped}%`),
+    ilike(hymns.author, `%${escaped}%`),
   ];
 
   // Match by number if query is numeric

@@ -20,7 +20,7 @@ export default async function ChurchSettingsPage({ params }: Props) {
   try {
     const result = await db.select().from(churches).where(eq(churches.id, churchId)).limit(1);
     church = result[0] || null;
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   if (!church) redirect("/churches");
 
