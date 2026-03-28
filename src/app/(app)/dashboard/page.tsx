@@ -49,6 +49,11 @@ export default async function DashboardPage() {
         redirect("/onboarding");
       }
       userChurches = memberships;
+
+      // Redirect single-church users straight to their church overview
+      if (userChurches.length === 1) {
+        redirect(`/churches/${userChurches[0].churchId}`);
+      }
     }
   } catch {
     // DB not available, continue
@@ -220,7 +225,7 @@ export default async function DashboardPage() {
           {userChurches.map((uc) => (
             <Link
               key={uc.churchId}
-              href={`/churches/${uc.churchId}/sundays`}
+              href={`/churches/${uc.churchId}`}
               className="flex items-center gap-3 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
             >
               <Church className="h-6 w-6 text-muted-foreground flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />

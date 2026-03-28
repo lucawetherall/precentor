@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -47,14 +48,14 @@ export default function LoginPage() {
             <label htmlFor="email" className="text-sm font-body">
               Email address
             </label>
-            <input
+            <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="director@parish.org.uk"
               required
-              className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+              className="bg-white rounded-none"
             />
           </div>
 
@@ -65,14 +66,14 @@ export default function LoginPage() {
                 Forgot password?
               </Link>
             </div>
-            <input
+            <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
               required
-              className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+              className="bg-white rounded-none"
             />
           </div>
 

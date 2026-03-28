@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -64,33 +65,33 @@ export default function SignupPage() {
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="name" className="text-sm font-body">Full name</label>
-              <input
+              <Input
                 id="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Smith"
                 required
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                className="bg-white rounded-none"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-body">Email address</label>
-              <input
+              <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="director@parish.org.uk"
                 required
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                className="bg-white rounded-none"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-body">Password</label>
-              <input
+              <Input
                 id="password"
                 type="password"
                 value={password}
@@ -98,13 +99,13 @@ export default function SignupPage() {
                 placeholder="Min. 8 characters"
                 required
                 minLength={8}
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                className="bg-white rounded-none"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="confirm-password" className="text-sm font-body">Confirm password</label>
-              <input
+              <Input
                 id="confirm-password"
                 type="password"
                 value={confirmPassword}
@@ -112,7 +113,7 @@ export default function SignupPage() {
                 placeholder="Confirm your password"
                 required
                 minLength={8}
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                className="bg-white rounded-none"
               />
             </div>
 

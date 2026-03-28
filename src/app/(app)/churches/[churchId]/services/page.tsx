@@ -69,7 +69,7 @@ export default async function ServicesPage({ params }: Props) {
   } catch { /* DB not available */ }
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <h1 className="text-3xl font-heading font-semibold mb-6">Upcoming Services</h1>
 
       {upcomingDays.length === 0 ? (
@@ -139,6 +139,10 @@ export default async function ServicesPage({ params }: Props) {
                       );
                     })}
                   </div>
+                )}
+
+                {dayServices.length === 0 && (
+                  <span className="text-xs text-destructive italic flex-shrink-0">No services created</span>
                 )}
 
                 <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">

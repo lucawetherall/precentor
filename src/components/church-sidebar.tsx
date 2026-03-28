@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "@/components/sign-out-button";
 import {
@@ -11,57 +11,78 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Home, Calendar, Users, Music, FileText, Settings } from "lucide-react";
 
 interface NavItem {
   href: string;
   label: string;
   iconName: string;
+  exactMatch?: boolean;
 }
 
-// We pass icon names as strings and render them here to keep the server component simple
-import { Calendar, Users, Music, FileText, Settings, Layout } from "lucide-react";
+interface NavGroup {
+  label?: string;
+  items: NavItem[];
+}
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
+  Home,
   Calendar,
   Users,
   Music,
   FileText,
   Settings,
-  Layout,
 };
 
-function NavLinks({
-  navItems,
+function NavGroups({
+  navGroups,
   pathname,
   onNavigate,
 }: {
-  navItems: NavItem[];
+  navGroups: NavGroup[];
   pathname: string;
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="flex flex-col gap-1 flex-1">
-      {navItems.map((item) => {
-        const Icon = iconMap[item.iconName] || Calendar;
-        const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            aria-current={isActive ? "page" : undefined}
-            className={cn(
-              "flex items-center gap-2 px-2 py-1.5 text-sm transition-colors",
-              isActive
-                ? "bg-primary/10 text-primary font-medium"
-                : "hover:bg-sidebar-accent text-foreground"
-            )}
-          >
-            <Icon className="h-4 w-4" strokeWidth={1.5} />
-            {item.label}
-          </Link>
-        );
-      })}
+    <nav className="flex flex-col flex-1">
+      {navGroups.map((group, gi) => (
+        <div key={gi}>
+          {gi > 0 && <div className="border-t border-border my-3" />}
+          {group.label && (
+            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1 px-2">
+              {group.label}
+            </p>
+          )}
+          <div className="flex flex-col gap-1">
+            {group.items.map((item) => {
+              const Icon = iconMap[item.iconName] || Calendar;
+              const isActive = item.exactMatch
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(item.href + "/");
+              const isMuted = !!group.label;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1.5 text-sm transition-colors",
+                    isActive
+                      ? "bg-primary/10 text-primary font-medium"
+                      : isMuted
+                      ? "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                      : "hover:bg-sidebar-accent text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4" strokeWidth={1.5} />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </nav>
   );
 }
@@ -70,13 +91,13 @@ export function ChurchSidebar({
   churchName,
   userRole,
   userEmail,
-  navItems,
+  navGroups,
 }: {
   churchId: string;
   churchName: string;
   userRole: string;
   userEmail: string;
-  navItems: NavItem[];
+  navGroups: NavGroup[];
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -87,22 +108,13 @@ export function ChurchSidebar({
 
   const sidebarContent = (
     <>
-      <Link
-        href="/churches"
-        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-        onClick={() => setMobileOpen(false)}
-      >
-        <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-        All Churches
-      </Link>
-
       <h2 className="font-heading text-lg font-semibold mb-1 truncate" title={churchName}>
         {churchName}
       </h2>
       <p className="text-xs text-muted-foreground mb-6">{roleLabel}</p>
 
-      <NavLinks
-        navItems={navItems}
+      <NavGroups
+        navGroups={navGroups}
         pathname={pathname}
         onNavigate={() => setMobileOpen(false)}
       />
@@ -116,7 +128,6 @@ export function ChurchSidebar({
 
   return (
     <>
-      {/* Mobile top bar */}
       <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border bg-sidebar">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
@@ -133,8 +144,6 @@ export function ChurchSidebar({
         </Sheet>
         <span className="font-heading font-semibold truncate">{churchName}</span>
       </div>
-
-      {/* Desktop sidebar */}
       <aside className="hidden md:flex w-56 border-r border-border bg-sidebar p-4 flex-col">
         {sidebarContent}
       </aside>
