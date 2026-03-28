@@ -282,9 +282,7 @@ export function SectionRow({
 
       {/* Expandable inline controls panel */}
       <div
-        className={`overflow-hidden transition-all duration-200 ${
-          isExpanded ? "max-h-[500px]" : "max-h-0"
-        }`}
+        className={`overflow-y-auto transition-all duration-200 ${isExpanded ? "max-h-[500px]" : "max-h-0"}`}
       >
         <div className="px-10 pb-3 pt-1 border-t border-border/40 bg-muted/20">
           <SectionInlineControl section={section} churchId={churchId} />
