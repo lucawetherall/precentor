@@ -89,6 +89,13 @@ const CW_EUCHARIST_SECTIONS: SectionDef[] = [
     allowOverride: true,
   },
   {
+    id: "gathering.kyrie",
+    title: "Kyrie",
+    blocks: [],
+    musicSlotType: "MASS_SETTING_KYRIE",
+    optional: true,
+  },
+  {
     id: "gathering.gloria",
     title: "Gloria in Excelsis",
     blocks: [],
