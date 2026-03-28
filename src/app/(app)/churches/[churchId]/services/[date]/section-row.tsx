@@ -5,6 +5,14 @@ import { GripVertical, Eye, EyeOff, Trash2, Music, BookOpen, FileText, AlignLeft
 import { Badge } from "@/components/ui/badge";
 import { SectionInlineControl } from "./section-inline-control";
 
+function formatSlotLabel(raw: string): string {
+  return raw
+    .replace(/_/g, " ")
+    .replace(/-/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export interface ServiceSection {
   id: string;
   sectionKey: string;
@@ -45,53 +53,38 @@ const MUSIC_PLACEHOLDER_TYPES = new Set(["hymn", "psalm", "anthem"]);
 function getSectionTypeInfo(section: ServiceSection): {
   icon: React.ReactNode;
   colorClass: string;
-  summary: string;
 } {
   // Client-side musicSlotType (from template sections) or music placeholder types
   if (
     section.musicSlotType ||
     (section.placeholderType && MUSIC_PLACEHOLDER_TYPES.has(section.placeholderType))
   ) {
-    const raw = section.musicSlotType ?? section.placeholderType ?? "";
-    const label = raw
-      .replace(/_/g, " ")
-      .replace(/-/g, " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
     return {
       icon: <Music className="h-4 w-4" strokeWidth={1.5} />,
       colorClass: "text-primary",
-      summary: label,
     };
   }
   if (section.liturgicalTextId) {
     return {
       icon: <BookOpen className="h-4 w-4" strokeWidth={1.5} />,
       colorClass: "text-blue-700",
-      summary: "Liturgical text",
     };
   }
   if (section.placeholderType) {
-    const label = section.placeholderType
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
     return {
       icon: <FileText className="h-4 w-4" strokeWidth={1.5} />,
       colorClass: "text-amber-700",
-      summary: section.placeholderValue ? section.placeholderValue : label,
     };
   }
   if (section.textOverride) {
     return {
       icon: <AlignLeft className="h-4 w-4" strokeWidth={1.5} />,
       colorClass: "text-slate-600",
-      summary: "Custom text",
     };
   }
   return {
     icon: <FileText className="h-4 w-4" strokeWidth={1.5} />,
     colorClass: "text-muted-foreground",
-    summary: section.sectionKey,
   };
 }
 
@@ -130,12 +123,7 @@ function getAssignmentSummary(section: ServiceSection): {
 } | null {
   // Music slot assigned
   if (section.musicSlotId !== null && section.musicSlotType !== null) {
-    const label = section.musicSlotType
-      .replace(/_/g, " ")
-      .replace(/-/g, " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-    return { text: label, isAssigned: true };
+    return { text: formatSlotLabel(section.musicSlotType), isAssigned: true };
   }
 
   // Empty music slot
@@ -146,15 +134,9 @@ function getAssignmentSummary(section: ServiceSection): {
   // Placeholder with value
   if (section.placeholderType) {
     if (section.placeholderValue) {
-      const label = section.placeholderType
-        .replace(/-/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-      return { text: `${label} set`, isAssigned: true };
+      return { text: `${formatSlotLabel(section.placeholderType)} set`, isAssigned: true };
     }
-    const label = section.placeholderType
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-    return { text: label, isAssigned: false };
+    return { text: formatSlotLabel(section.placeholderType), isAssigned: false };
   }
 
   return null;
@@ -176,6 +158,7 @@ export function SectionRow({
   // Auto-expand if music slot type is set but not assigned (needs attention)
   const shouldAutoExpand =
     section.musicSlotType !== null && section.musicSlotId === null;
+  // intentionally not reactive: once mounted, user controls expand/collapse manually
   const [isExpanded, setIsExpanded] = useState(shouldAutoExpand);
 
   const handleDeleteClick = () => {
@@ -300,7 +283,7 @@ export function SectionRow({
       {/* Expandable inline controls panel */}
       <div
         className={`overflow-hidden transition-all duration-200 ${
-          isExpanded ? "max-h-96" : "max-h-0"
+          isExpanded ? "max-h-[500px]" : "max-h-0"
         }`}
       >
         <div className="px-10 pb-3 pt-1 border-t border-border/40 bg-muted/20">

@@ -40,7 +40,6 @@ interface Service {
 export function ServicePlanner({
   churchId,
   liturgicalDayId,
-  date,
   existingServices,
   editorSectionsMap = {},
   editorSlotsMap = {},
@@ -193,7 +192,7 @@ export function ServicePlanner({
               key={s.id}
               role="tab"
               aria-selected={activeTab === s.id}
-              onClick={() => setActiveTab(s.id)}
+              onClick={() => { setActiveTab(s.id); setEditorTab("order"); }}
               className={`px-3 py-2 font-heading text-sm border-b-2 transition-colors ${
                 activeTab === s.id
                   ? "border-primary text-primary"

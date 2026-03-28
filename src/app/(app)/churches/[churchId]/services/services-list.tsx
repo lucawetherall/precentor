@@ -96,11 +96,9 @@ export function ServicesList({ churchId, days, userRole }: ServicesListProps) {
                           {day.service.time ? ` · ${day.service.time}` : ''}
                         </span>
                       )}
-                      {day.service && (
+                      {day.service && day.service.musicPreview.length > 0 && (
                         <span className="text-[10px] font-mono text-muted-foreground/70">
-                          {day.service.musicPreview.length > 0
-                            ? `${day.service.musicPreview.length} music`
-                            : '0 music'}
+                          {day.service.musicPreview.length} music
                         </span>
                       )}
                     </div>
