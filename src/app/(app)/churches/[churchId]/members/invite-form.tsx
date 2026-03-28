@@ -62,7 +62,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
             placeholder="singer@parish.org.uk"
             autoComplete="email"
             required
-            className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+            className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:ring-1 focus:ring-ring"
           />
         </div>
         <div>
@@ -71,7 +71,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
             id="invite-role"
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="w-full sm:w-auto px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+            className="w-full sm:w-auto px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:ring-1 focus:ring-ring"
           >
             <option value="MEMBER">Member</option>
             <option value="EDITOR">Editor</option>

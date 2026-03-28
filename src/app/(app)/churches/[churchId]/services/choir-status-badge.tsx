@@ -40,7 +40,7 @@ export function ChoirStatusBadge({
       <select
         value={currentStatus}
         onChange={(e) => handleChange(e.target.value)}
-        className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 border border-border bg-background hover:border-foreground transition-colors"
+        className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 border border-border bg-background hover:border-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Choir status"
       >
         {Object.entries(CHOIR_STATUS_LABELS).map(([value, label]) => (

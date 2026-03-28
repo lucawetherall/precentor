@@ -113,7 +113,7 @@ export function MembersTable({
                     value={m.role}
                     onChange={(e) => updateMember(m.id, "role", e.target.value)}
                     aria-label={`Role for ${m.userName || m.userEmail}`}
-                    className="text-xs border border-border px-1.5 py-1 bg-white focus:border-primary focus:outline-none"
+                    className="text-xs border border-border px-1.5 py-1 bg-white focus:border-primary focus:ring-1 focus:ring-ring"
                   >
                     {ROLES.map((r) => (
                       <option key={r} value={r}>{r}</option>
@@ -129,7 +129,7 @@ export function MembersTable({
                     value={m.voicePart || ""}
                     onChange={(e) => updateMember(m.id, "voicePart", e.target.value || null)}
                     aria-label={`Voice part for ${m.userName || m.userEmail}`}
-                    className="text-xs border border-border px-1.5 py-1 bg-white focus:border-primary focus:outline-none"
+                    className="text-xs border border-border px-1.5 py-1 bg-white focus:border-primary focus:ring-1 focus:ring-ring"
                   >
                     <option value="">—</option>
                     {VOICE_PARTS.map((vp) => (
