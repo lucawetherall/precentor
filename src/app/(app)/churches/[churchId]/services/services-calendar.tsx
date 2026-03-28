@@ -95,11 +95,17 @@ export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
           const isSundayCol = colIndex === 6
           const liturgicalDay = dateStr ? (dayMap.get(dateStr) ?? null) : null
           const hasService = Boolean(liturgicalDay?.service)
-          const isHolyDayCell =
-            liturgicalDay && !hasService && isHolyDay(dateStr!, liturgicalDay.season)
           const colour = liturgicalDay
             ? (LITURGICAL_COLOURS[liturgicalDay.colour as LiturgicalColour] ?? '#4A6741')
             : null
+
+          // Choir status colour coding for service cells
+          const choirStatus = liturgicalDay?.service?.choirStatus
+          const choirBorderColour =
+            choirStatus === 'NO_CHOIR_NEEDED' ? '#B45309'
+            : choirStatus === 'SAID_SERVICE_ONLY' ? '#6B7280'
+            : choirStatus === 'NO_SERVICE' ? '#DC2626'
+            : colour
 
           return (
             <div
@@ -122,14 +128,8 @@ export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
                     {parseInt(dateStr.slice(8), 10)}
                   </span>
 
-                  {isHolyDayCell && liturgicalDay && (
-                    <div
-                      className="text-[9px] font-mono px-1 py-0.5 mb-1 leading-tight"
-                      style={{
-                        color: colour!,
-                        backgroundColor: colour! + '22',
-                      }}
-                    >
+                  {liturgicalDay && !hasService && (
+                    <div className="text-[9px] font-mono text-muted-foreground/60 px-1 py-0.5 mb-1 leading-tight">
                       {liturgicalDay.cwName}
                     </div>
                   )}
@@ -139,7 +139,7 @@ export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
                       <Link href={`/churches/${churchId}/services/${dateStr}`}>
                         <div
                           className="border-l-[3px] pl-1.5 mb-1.5 hover:opacity-80"
-                          style={{ borderColor: colour! }}
+                          style={{ borderColor: choirBorderColour! }}
                         >
                           <p className="font-heading text-[11px] leading-snug">
                             {liturgicalDay.cwName}

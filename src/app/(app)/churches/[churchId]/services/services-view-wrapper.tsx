@@ -4,22 +4,23 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { ServicesList } from './services-list'
-import { ServicesAgenda } from './services-agenda'
 import { ServicesCalendar } from './services-calendar'
 import type { LiturgicalDayWithService } from '@/types/service-views'
-type ViewMode = 'list' | 'agenda' | 'calendar'
+type ViewMode = 'list' | 'calendar'
 
 interface ServicesViewWrapperProps {
   churchId: string
   liturgicalDays: LiturgicalDayWithService[]
+  userRole: string
 }
 
 const LS_KEY = 'precentor:services-view'
-const VALID_VIEWS: ViewMode[] = ['list', 'agenda', 'calendar']
+const VALID_VIEWS: ViewMode[] = ['list', 'calendar']
 
 export function ServicesViewWrapper({
   churchId,
   liturgicalDays,
+  userRole,
 }: ServicesViewWrapperProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -68,8 +69,7 @@ export function ServicesViewWrapper({
         </div>
       </div>
 
-      {view === 'list' && <ServicesList churchId={churchId} days={liturgicalDays} />}
-      {view === 'agenda' && <ServicesAgenda churchId={churchId} days={liturgicalDays} />}
+      {view === 'list' && <ServicesList churchId={churchId} days={liturgicalDays} userRole={userRole} />}
       {view === 'calendar' && <ServicesCalendar churchId={churchId} days={liturgicalDays} />}
     </>
   )

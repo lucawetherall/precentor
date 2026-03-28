@@ -16,10 +16,24 @@ interface Reading {
   readingText: string | null
 }
 
+const CHOIR_STATUS_LABELS: Record<string, string> = {
+  CHOIR_REQUIRED: 'Choir required',
+  NO_CHOIR_NEEDED: 'No choir needed',
+  SAID_SERVICE_ONLY: 'Said service only',
+  NO_SERVICE: 'No service',
+}
+
+const CHOIR_STATUS_PILL_CLASSES: Record<string, string> = {
+  NO_CHOIR_NEEDED: 'bg-amber-100 text-amber-800 border border-amber-300',
+  SAID_SERVICE_ONLY: 'bg-gray-100 text-gray-600 border border-gray-300',
+  NO_SERVICE: 'bg-red-50 text-red-700 border border-red-200',
+}
+
 interface ServiceInfo {
   id: string
   serviceType: string
   time: string | null
+  choirStatus: string
 }
 
 interface MemberServiceViewProps {
@@ -79,6 +93,17 @@ export function MemberServiceView({
           >
             ✎ Edit music & details
           </Link>
+        </div>
+      )}
+
+      {/* Choir status badge (all roles, only if service exists and non-default) */}
+      {service && service.choirStatus !== 'CHOIR_REQUIRED' && (
+        <div className="mb-4">
+          <span
+            className={`text-xs font-mono uppercase tracking-wider px-2 py-1 ${CHOIR_STATUS_PILL_CLASSES[service.choirStatus] ?? 'bg-gray-100 text-gray-600 border border-gray-300'}`}
+          >
+            {CHOIR_STATUS_LABELS[service.choirStatus] ?? service.choirStatus}
+          </span>
         </div>
       )}
 
