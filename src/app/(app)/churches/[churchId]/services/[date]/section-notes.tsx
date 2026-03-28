@@ -13,14 +13,16 @@ export function SectionNotes({ sectionId }: SectionNotesProps) {
   const section = sections.find((s) => s.id === sectionId);
 
   const [expanded, setExpanded] = useState(false);
-  const [value, setValue] = useState(section?.notes ?? "");
+  const notes = section?.notes ?? "";
+  const [value, setValue] = useState(notes);
+  const [prevNotes, setPrevNotes] = useState(notes);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Sync value when section notes change externally (e.g. undo)
-  useEffect(() => {
-    const notes = section?.notes ?? "";
+  if (notes !== prevNotes) {
+    setPrevNotes(notes);
     setValue(notes);
-  }, [section?.notes]);
+  }
 
   // Auto-focus textarea when expanded
   useEffect(() => {

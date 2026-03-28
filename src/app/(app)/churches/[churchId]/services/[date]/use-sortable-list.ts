@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 
 interface UseSortableListOptions {
   items: { id: string }[];
@@ -46,7 +46,7 @@ export function useSortableList({
 
   // Keep items in a ref so callbacks always see the latest list
   const itemsRef = useRef(items);
-  itemsRef.current = items;
+  useEffect(() => { itemsRef.current = items; });
 
   const getItemIdFromElement = useCallback((el: Element | null): string | null => {
     if (!el) return null;

@@ -46,8 +46,8 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   let userAvail: 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null = null
   let confirmedCount = 0
   // Editor data: per-service sections and raw music slots
-  let editorSectionsMap: Record<string, InferSelectModel<typeof serviceSections>[]> = {}
-  let editorSlotsMap: Record<string, InferSelectModel<typeof musicSlots>[]> = {}
+  const editorSectionsMap: Record<string, InferSelectModel<typeof serviceSections>[]> = {}
+  const editorSlotsMap: Record<string, InferSelectModel<typeof musicSlots>[]> = {}
 
   try {
     const days = await db

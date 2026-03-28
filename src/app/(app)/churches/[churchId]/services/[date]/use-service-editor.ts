@@ -1,4 +1,4 @@
-import { useReducer, useCallback, useRef } from "react";
+import { useReducer, useCallback, useRef, useEffect } from "react";
 import type { ServiceSection } from "./section-row";
 import type { BookletServiceSheetData, SummaryServiceSheetData } from "@/types/service-sheet";
 
@@ -269,7 +269,7 @@ export function useServiceEditorReducer({
   // We need access to the current state inside async callbacks.
   // Use a ref so the closure always has the latest state.
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useEffect(() => { stateRef.current = state; });
 
   // ── Mutation functions ──────────────────────────────────────
 

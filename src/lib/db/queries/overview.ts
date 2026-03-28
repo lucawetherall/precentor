@@ -122,7 +122,7 @@ export async function getNeedsAttention(churchId: string, limit = 8) {
     .map((r) => r.serviceId!);
 
   // Step 2: For services that exist, count slots with actual content assigned
-  let filledSlotCounts = new Map<string, number>();
+  const filledSlotCounts = new Map<string, number>();
   if (serviceIds.length > 0) {
     const slotRows = await db
       .select({

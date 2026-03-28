@@ -48,7 +48,6 @@ export function SectionInlineControl({ section, churchId }: SectionInlineControl
         <MassSettingControl
           slotId={musicSlotId}
           churchId={churchId}
-          musicSlotType={musicSlotType}
         />
       )}
 
