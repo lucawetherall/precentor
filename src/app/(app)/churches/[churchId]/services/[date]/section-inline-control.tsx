@@ -16,15 +16,17 @@ interface SectionInlineControlProps {
 
 export function SectionInlineControl({ section, churchId }: SectionInlineControlProps) {
   const { musicSlotType, musicSlotId, placeholderType } = section;
-  const { addSection } = useServiceEditor();
+  const { addSection, sections } = useServiceEditor();
 
   const handleAddCommunionMusic = () => {
+    // Use max of all current section positions to avoid collisions on repeated clicks
+    const maxPosition = sections.reduce((m, s) => Math.max(m, s.positionOrder), 0)
     addSection({
       sectionKey: "communion.communion_music",
       title: "Communion Music",
       musicSlotType: "HYMN",
       placeholderType: "communion-music",
-      positionOrder: section.positionOrder + 1,
+      positionOrder: maxPosition + 1,
       majorSection: null,
       liturgicalTextId: null,
       musicSlotId: null,
