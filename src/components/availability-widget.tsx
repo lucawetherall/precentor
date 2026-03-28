@@ -64,7 +64,7 @@ export function AvailabilityWidget({
   const sizeClasses = {
     sm: 'h-5 w-5 text-[9px] font-bold',
     md: 'h-8 w-8 text-xs font-bold',
-    lg: 'h-14 w-[72px] flex-col gap-0.5 text-xs font-bold',
+    lg: 'h-14 w-20 flex-col gap-0.5 text-xs font-bold',
   }
 
   return (

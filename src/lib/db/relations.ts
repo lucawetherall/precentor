@@ -17,6 +17,7 @@ export const churchesRelations = relations(s.churches, ({ many }) => ({
   templates: many(s.serviceSheetTemplates),
   performanceLogs: many(s.performanceLogs),
   invites: many(s.invites),
+  servicePatterns: many(s.churchServicePatterns),
 }));
 
 // churchMemberships: belongs to user + church
@@ -40,6 +41,7 @@ export const readingsRelations = relations(s.readings, ({ one }) => ({
 export const servicesRelations = relations(s.services, ({ one, many }) => ({
   church: one(s.churches, { fields: [s.services.churchId], references: [s.churches.id] }),
   liturgicalDay: one(s.liturgicalDays, { fields: [s.services.liturgicalDayId], references: [s.liturgicalDays.id] }),
+  defaultMassSetting: one(s.massSettings, { fields: [s.services.defaultMassSettingId], references: [s.massSettings.id] }),
   musicSlots: many(s.musicSlots),
   availability: many(s.availability),
   rotaEntries: many(s.rotaEntries),
@@ -67,10 +69,11 @@ export const anthemsRelations = relations(s.anthems, ({ one, many }) => ({
   musicSlots: many(s.musicSlots),
 }));
 
-// massSettings: has many churchMassSettings, musicSlots
+// massSettings: has many churchMassSettings, musicSlots, services (via defaultMassSettingId)
 export const massSettingsRelations = relations(s.massSettings, ({ many }) => ({
   churchMassSettings: many(s.churchMassSettings),
   musicSlots: many(s.musicSlots),
+  services: many(s.services),
 }));
 
 // churchMassSettings: belongs to church + massSetting
@@ -118,4 +121,9 @@ export const performanceLogsRelations = relations(s.performanceLogs, ({ one }) =
 // serviceSheetTemplates: belongs to church
 export const serviceSheetTemplatesRelations = relations(s.serviceSheetTemplates, ({ one }) => ({
   church: one(s.churches, { fields: [s.serviceSheetTemplates.churchId], references: [s.churches.id] }),
+}));
+
+// churchServicePatterns: belongs to church
+export const churchServicePatternsRelations = relations(s.churchServicePatterns, ({ one }) => ({
+  church: one(s.churches, { fields: [s.churchServicePatterns.churchId], references: [s.churches.id] }),
 }));

@@ -89,6 +89,13 @@ const CW_EUCHARIST_SECTIONS: SectionDef[] = [
     allowOverride: true,
   },
   {
+    id: "gathering.kyrie",
+    title: "Kyrie",
+    blocks: [],
+    musicSlotType: "MASS_SETTING_KYRIE",
+    optional: true,
+  },
+  {
     id: "gathering.gloria",
     title: "Gloria in Excelsis",
     blocks: [],
@@ -247,6 +254,14 @@ const CW_EUCHARIST_SECTIONS: SectionDef[] = [
     title: "Communion Hymn",
     blocks: [],
     musicSlotType: "HYMN",
+    optional: true,
+  },
+  {
+    id: "communion.communion_music",
+    title: "Communion Music",
+    blocks: [],
+    musicSlotType: "HYMN",
+    placeholder: "communion-music",
     optional: true,
   },
   {

@@ -1,7 +1,17 @@
 "use client";
 
-import { GripVertical, Eye, EyeOff, Trash2, Music, BookOpen, FileText, AlignLeft } from "lucide-react";
+import { useState } from "react";
+import { GripVertical, Eye, EyeOff, Trash2, Music, BookOpen, FileText, AlignLeft, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { SectionInlineControl } from "./section-inline-control";
+
+function formatSlotLabel(raw: string): string {
+  return raw
+    .replace(/_/g, " ")
+    .replace(/-/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export interface ServiceSection {
   id: string;
@@ -16,15 +26,25 @@ export interface ServiceSection {
   placeholderValue: string | null;
   textOverride: unknown;
   visible: boolean;
+  notes: string | null;
 }
 
 interface SectionRowProps {
   section: ServiceSection;
+  churchId: string;
   onDelete: (sectionId: string) => void;
   onToggleVisible: (sectionId: string) => void;
-  onDragStart: (e: React.DragEvent, sectionId: string) => void;
-  onDragOver: (e: React.DragEvent, sectionId: string) => void;
-  onDragEnd: () => void;
+  dragHandleProps: React.HTMLAttributes<HTMLButtonElement> & {
+    style: React.CSSProperties;
+    "aria-label": string;
+    tabIndex: number;
+    role: string;
+  };
+  itemProps: {
+    "data-sortable-id": string;
+    style: React.CSSProperties;
+    "aria-grabbed": boolean;
+  };
   isDragOver: boolean;
 }
 
@@ -33,66 +53,113 @@ const MUSIC_PLACEHOLDER_TYPES = new Set(["hymn", "psalm", "anthem"]);
 function getSectionTypeInfo(section: ServiceSection): {
   icon: React.ReactNode;
   colorClass: string;
-  summary: string;
 } {
   // Client-side musicSlotType (from template sections) or music placeholder types
   if (
     section.musicSlotType ||
     (section.placeholderType && MUSIC_PLACEHOLDER_TYPES.has(section.placeholderType))
   ) {
-    const raw = section.musicSlotType ?? section.placeholderType ?? "";
-    const label = raw
-      .replace(/_/g, " ")
-      .replace(/-/g, " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
     return {
       icon: <Music className="h-4 w-4" strokeWidth={1.5} />,
       colorClass: "text-primary",
-      summary: label,
     };
   }
   if (section.liturgicalTextId) {
     return {
       icon: <BookOpen className="h-4 w-4" strokeWidth={1.5} />,
       colorClass: "text-blue-700",
-      summary: "Liturgical text",
     };
   }
   if (section.placeholderType) {
-    const label = section.placeholderType
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
     return {
       icon: <FileText className="h-4 w-4" strokeWidth={1.5} />,
       colorClass: "text-amber-700",
-      summary: section.placeholderValue ? section.placeholderValue : label,
     };
   }
   if (section.textOverride) {
     return {
       icon: <AlignLeft className="h-4 w-4" strokeWidth={1.5} />,
       colorClass: "text-slate-600",
-      summary: "Custom text",
     };
   }
   return {
     icon: <FileText className="h-4 w-4" strokeWidth={1.5} />,
     colorClass: "text-muted-foreground",
-    summary: section.sectionKey,
   };
+}
+
+/**
+ * Get the status dot color for a section.
+ * - Green: section has complete content
+ * - Amber: section is a placeholder/music slot but not yet filled
+ * - null: liturgical text section (always complete by definition)
+ */
+function getStatusDot(section: ServiceSection): "green" | "amber" | null {
+  // Liturgical text sections are always complete — no dot needed
+  if (section.liturgicalTextId) return null;
+
+  // Music slot: check if assigned
+  if (section.musicSlotType) {
+    return section.musicSlotId ? "green" : "amber";
+  }
+
+  // Placeholder: check if value is set
+  if (section.placeholderType) {
+    return section.placeholderValue ? "green" : "amber";
+  }
+
+  // Custom text or generic sections — complete if they have content
+  if (section.textOverride) return "green";
+
+  return null;
+}
+
+/**
+ * Get a compact assignment summary for the collapsed row.
+ */
+function getAssignmentSummary(section: ServiceSection): {
+  text: string;
+  isAssigned: boolean;
+} | null {
+  // Music slot assigned
+  if (section.musicSlotId !== null && section.musicSlotType !== null) {
+    return { text: formatSlotLabel(section.musicSlotType), isAssigned: true };
+  }
+
+  // Empty music slot
+  if (section.musicSlotId === null && section.musicSlotType !== null) {
+    return { text: "Not assigned", isAssigned: false };
+  }
+
+  // Placeholder with value
+  if (section.placeholderType) {
+    if (section.placeholderValue) {
+      return { text: `${formatSlotLabel(section.placeholderType)} set`, isAssigned: true };
+    }
+    return { text: formatSlotLabel(section.placeholderType), isAssigned: false };
+  }
+
+  return null;
 }
 
 export function SectionRow({
   section,
+  churchId,
   onDelete,
   onToggleVisible,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
+  dragHandleProps,
+  itemProps,
   isDragOver,
 }: SectionRowProps) {
-  const { icon, colorClass, summary } = getSectionTypeInfo(section);
+  const { icon, colorClass } = getSectionTypeInfo(section);
+  const statusDot = getStatusDot(section);
+  const assignmentSummary = getAssignmentSummary(section);
+
+  // Auto-expand if music slot type is set but not assigned (needs attention)
+  const shouldAutoExpand =
+    section.musicSlotType !== null && section.musicSlotId === null;
+  // intentionally not reactive: once mounted, user controls expand/collapse manually
+  const [isExpanded, setIsExpanded] = useState(shouldAutoExpand);
 
   const handleDeleteClick = () => {
     const isLiturgical = !!section.liturgicalTextId;
@@ -106,47 +173,69 @@ export function SectionRow({
     }
   };
 
+  const handleHeaderClick = (e: React.MouseEvent) => {
+    // Don't toggle if clicking on action buttons or drag handle
+    const target = e.target as HTMLElement;
+    if (target.closest("button")) return;
+    setIsExpanded((prev) => !prev);
+  };
+
   return (
     <div
-      className={`relative border border-border bg-card shadow-sm transition-opacity ${
+      className={`group relative border border-border bg-card shadow-sm transition-opacity ${
         !section.visible ? "opacity-50" : ""
       } ${isDragOver ? "border-primary border-t-2" : ""}`}
-      draggable
-      onDragStart={(e) => onDragStart(e, section.id)}
-      onDragOver={(e) => {
-        e.preventDefault();
-        onDragOver(e, section.id);
-      }}
-      onDragEnd={onDragEnd}
+      {...itemProps}
     >
       {/* Drop indicator line */}
       {isDragOver && (
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary" />
       )}
 
-      <div className="flex items-center gap-2 p-2 md:p-3">
+      {/* Header row — click to expand/collapse */}
+      <div
+        className="flex items-center gap-2 p-2 md:p-3 cursor-pointer select-none"
+        onClick={handleHeaderClick}
+      >
         {/* Drag handle */}
         <button
-          className="flex-shrink-0 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing touch-none"
-          aria-label="Drag to reorder"
-          tabIndex={-1}
+          className="flex-shrink-0 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
+          {...dragHandleProps}
         >
           <GripVertical className="h-4 w-4" strokeWidth={1.5} />
         </button>
+
+        {/* Status dot */}
+        {statusDot && (
+          <span
+            className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${
+              statusDot === "green" ? "bg-green-500" : "bg-amber-500"
+            }`}
+            aria-hidden
+          />
+        )}
 
         {/* Type icon */}
         <span className={`flex-shrink-0 ${colorClass}`} aria-hidden>
           {icon}
         </span>
 
-        {/* Title + summary */}
+        {/* Title + assignment summary */}
         <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center md:gap-3">
           <span className="text-sm font-heading font-semibold truncate">
             {section.title}
           </span>
-          <span className="text-xs text-muted-foreground truncate">
-            {summary}
-          </span>
+          {assignmentSummary && (
+            <span
+              className={`text-[11px] truncate ${
+                assignmentSummary.isAssigned
+                  ? "text-muted-foreground"
+                  : "italic text-muted-foreground/70"
+              }`}
+            >
+              {assignmentSummary.text}
+            </span>
+          )}
         </div>
 
         {/* Hidden badge */}
@@ -156,13 +245,17 @@ export function SectionRow({
           </Badge>
         )}
 
-        {/* Inline controls placeholder (Task 14) */}
-        <div className="flex-shrink-0 hidden md:block">
-          {/* Task 14: inline controls will go here */}
-        </div>
+        {/* Expand/collapse chevron */}
+        <ChevronDown
+          className={`h-3.5 w-3.5 flex-shrink-0 text-muted-foreground transition-transform duration-200 ${
+            isExpanded ? "rotate-180" : ""
+          }`}
+          strokeWidth={1.5}
+          aria-hidden
+        />
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-1 flex-shrink-0">
+        {/* Action buttons — visible on hover only */}
+        <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <button
             onClick={() => onToggleVisible(section.id)}
             className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
@@ -184,6 +277,17 @@ export function SectionRow({
           >
             <Trash2 className="h-4 w-4" strokeWidth={1.5} />
           </button>
+        </div>
+      </div>
+
+      {/* Expandable inline controls panel */}
+      <div
+        className={`overflow-hidden transition-all duration-200 ${
+          isExpanded ? "max-h-[500px]" : "max-h-0"
+        }`}
+      >
+        <div className="px-10 pb-3 pt-1 border-t border-border/40 bg-muted/20">
+          <SectionInlineControl section={section} churchId={churchId} />
         </div>
       </div>
     </div>

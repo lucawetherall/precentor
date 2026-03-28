@@ -7,6 +7,7 @@ import { hasMinRole } from '@/lib/auth/permissions'
 import type { PopulatedMusicSlot } from '@/types/service-views'
 import { AvailabilityWidget } from '@/components/availability-widget'
 import { ServiceMusicList } from './service-music-list'
+import { CHOIR_STATUS_LABELS, CHOIR_STATUS_PILL_CLASSES } from '../choir-status-constants'
 
 interface Reading {
   id: string
@@ -20,6 +21,7 @@ interface ServiceInfo {
   id: string
   serviceType: string
   time: string | null
+  choirStatus: string
 }
 
 interface MemberServiceViewProps {
@@ -79,6 +81,17 @@ export function MemberServiceView({
           >
             ✎ Edit music & details
           </Link>
+        </div>
+      )}
+
+      {/* Choir status badge (all roles, only if service exists and non-default) */}
+      {service && service.choirStatus !== 'CHOIR_REQUIRED' && (
+        <div className="mb-4">
+          <span
+            className={`text-xs font-mono uppercase tracking-wider px-2 py-1 ${CHOIR_STATUS_PILL_CLASSES[service.choirStatus] ?? 'bg-gray-100 text-gray-600 border border-gray-300'}`}
+          >
+            {CHOIR_STATUS_LABELS[service.choirStatus] ?? service.choirStatus}
+          </span>
         </div>
       )}
 

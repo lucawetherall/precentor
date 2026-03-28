@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Loader2, Check } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useServiceEditor } from "./service-editor-context";
 
 interface Collect {
   id: string;
@@ -13,11 +14,8 @@ interface Collect {
 }
 
 interface CollectChooserProps {
-  serviceId: string;
   churchId: string;
-  liturgicalDayId: string | null;
-  collectId: string | null;
-  collectOverride: string | null;
+  liturgicalDayId?: string | null;
 }
 
 type CollectSource = "cw" | "bcp" | "custom";
@@ -37,12 +35,11 @@ function detectSource(
 }
 
 export function CollectChooser({
-  serviceId,
   churchId,
   liturgicalDayId,
-  collectId: initialCollectId,
-  collectOverride: initialCollectOverride,
 }: CollectChooserProps) {
+  const { settings, updateSettings } = useServiceEditor();
+
   const [collects, setCollects] = useState<Collect[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,10 +47,17 @@ export function CollectChooser({
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const [source, setSource] = useState<CollectSource>("cw");
-  const [selectedId, setSelectedId] = useState<string | null>(initialCollectId);
-  const [customText, setCustomText] = useState<string>(initialCollectOverride ?? "");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [customText, setCustomText] = useState<string>("");
+
+  const settingsCollectId = settings.collectId;
+  const settingsCollectOverride = settings.collectOverride;
 
   useEffect(() => {
+    // Capture current settings values at mount time — do not re-run on settings changes
+    const initialCollectId = settingsCollectId;
+    const initialCollectOverride = settingsCollectOverride;
+
     async function loadCollects() {
       setLoading(true);
       try {
@@ -63,6 +67,8 @@ export function CollectChooser({
           const data: Collect[] = await res.json();
           setCollects(data);
           setSource(detectSource(initialCollectId, initialCollectOverride, data));
+          setSelectedId(initialCollectId);
+          setCustomText(initialCollectOverride ?? "");
         }
       } catch {
         // leave empty
@@ -70,27 +76,19 @@ export function CollectChooser({
       setLoading(false);
     }
     loadCollects();
-  }, [churchId, liturgicalDayId, initialCollectId, initialCollectOverride]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [churchId, liturgicalDayId]);
 
-  const patch = async (updates: Record<string, unknown>) => {
+  const save = async (updates: Partial<{ collectId: string | null; collectOverride: string | null }>) => {
     setSaving(true);
     setSaved(false);
     setSaveError(null);
     try {
-      const res = await fetch(`/api/churches/${churchId}/services/${serviceId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      });
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-      } else {
-        const data = await res.json().catch(() => null);
-        setSaveError(data?.error ?? "Failed to save");
-      }
+      await updateSettings(updates);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     } catch {
-      setSaveError("Network error — could not save");
+      setSaveError("Failed to save");
     }
     setSaving(false);
   };
@@ -98,23 +96,21 @@ export function CollectChooser({
   const handleSourceChange = (newSource: CollectSource) => {
     setSource(newSource);
     if (newSource === "custom") {
-      // Clear collectId, keep or init override
       setSelectedId(null);
-      patch({ collectId: null, collectOverride: customText || null });
+      save({ collectId: null, collectOverride: customText || null });
     } else {
-      // Pick first collect of that rite, clear override
       setCustomText("");
       const riteFilter = newSource === "bcp" ? "BCP" : "CW";
       const first = collects.find((c) => c.rite === riteFilter || (newSource === "cw" && c.rite === "COMMON"));
       const id = first?.id ?? null;
       setSelectedId(id);
-      patch({ collectId: id, collectOverride: null });
+      save({ collectId: id, collectOverride: null });
     }
   };
 
   const handleCollectSelect = (id: string) => {
     setSelectedId(id);
-    patch({ collectId: id, collectOverride: null });
+    save({ collectId: id, collectOverride: null });
   };
 
   const handleCustomChange = (text: string) => {
@@ -122,7 +118,7 @@ export function CollectChooser({
   };
 
   const handleCustomBlur = () => {
-    patch({ collectId: null, collectOverride: customText || null });
+    save({ collectId: null, collectOverride: customText || null });
   };
 
   const cwCollects = collects.filter((c) => c.rite === "CW" || c.rite === "COMMON");
@@ -160,7 +156,7 @@ export function CollectChooser({
             aria-label="Select collect"
           >
             {loading ? (
-              <option value="">Loading…</option>
+              <option value="">Loading...</option>
             ) : visibleCollects.length === 0 ? (
               <option value="">No collects available</option>
             ) : (
@@ -193,7 +189,7 @@ export function CollectChooser({
           value={customText}
           onChange={(e) => handleCustomChange(e.target.value)}
           onBlur={handleCustomBlur}
-          placeholder="Enter custom collect text…"
+          placeholder="Enter custom collect text..."
           rows={4}
           className="text-sm rounded-sm"
           aria-label="Custom collect text"

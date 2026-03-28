@@ -8,8 +8,8 @@ import {
 import type { MusicSlotType, ServiceType } from "../index";
 
 describe("EUCHARIST_SLOTS", () => {
-  it("has 12 entries", () => {
-    expect(EUCHARIST_SLOTS).toHaveLength(12);
+  it("has 13 entries", () => {
+    expect(EUCHARIST_SLOTS).toHaveLength(13);
   });
 
   it("starts with ORGAN_VOLUNTARY_PRE and ends with ORGAN_VOLUNTARY_POST", () => {
@@ -45,6 +45,7 @@ describe("MUSIC_SLOT_LABELS", () => {
       "HYMN",
       "PSALM",
       "ANTHEM",
+      "MASS_SETTING_KYRIE",
       "MASS_SETTING_GLORIA",
       "MASS_SETTING_SANCTUS",
       "MASS_SETTING_AGNUS",

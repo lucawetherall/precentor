@@ -8,6 +8,7 @@ import {
   anthems,
   availability,
   rotaEntries,
+  serviceSections,
 } from '@/lib/db/schema'
 import { eq, and, asc } from 'drizzle-orm'
 import type { InferSelectModel } from 'drizzle-orm'
@@ -44,6 +45,9 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   let populatedSlots: PopulatedMusicSlot[] = []
   let userAvail: 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null = null
   let confirmedCount = 0
+  // Editor data: per-service sections and raw music slots
+  let editorSectionsMap: Record<string, InferSelectModel<typeof serviceSections>[]> = {}
+  let editorSlotsMap: Record<string, InferSelectModel<typeof musicSlots>[]> = {}
 
   try {
     const days = await db
@@ -115,6 +119,26 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
           confirmedCount = rota.length
         }
       }
+
+      // Fetch sections and raw slots for all services (for editor mode)
+      if (isEditMode) {
+        for (const svc of dayServices) {
+          const [svcSections, svcSlots] = await Promise.all([
+            db
+              .select()
+              .from(serviceSections)
+              .where(eq(serviceSections.serviceId, svc.id))
+              .orderBy(asc(serviceSections.positionOrder)),
+            db
+              .select()
+              .from(musicSlots)
+              .where(eq(musicSlots.serviceId, svc.id))
+              .orderBy(asc(musicSlots.positionOrder)),
+          ])
+          editorSectionsMap[svc.id] = svcSections
+          editorSlotsMap[svc.id] = svcSlots
+        }
+      }
     }
   } catch {
     /* DB not available */
@@ -136,7 +160,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   }
 
   const service = (dayServices[0] as {
-    id: string; serviceType: string; time: string | null
+    id: string; serviceType: string; time: string | null; choirStatus: string
   } | undefined) ?? null
 
   // Edit mode: existing planner (editors/admins only)
@@ -155,6 +179,8 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
           liturgicalDayId={day.id}
           date={date}
           existingServices={dayServices as Parameters<typeof ServicePlanner>[0]['existingServices']}
+          editorSectionsMap={editorSectionsMap}
+          editorSlotsMap={editorSlotsMap}
         />
       </div>
     )

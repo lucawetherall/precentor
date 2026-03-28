@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { services } from "@/lib/db/schema";
+import { services, choirStatusEnum } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 
 const VALID_PRAYERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
@@ -115,6 +115,32 @@ export async function PATCH(
       );
     }
     updates.collectOverride = body.collectOverride;
+  }
+
+  if ("defaultMassSettingId" in body) {
+    if (body.defaultMassSettingId !== null && typeof body.defaultMassSettingId !== "string") {
+      return NextResponse.json(
+        { error: "defaultMassSettingId must be a string or null" },
+        { status: 400 }
+      );
+    }
+    updates.defaultMassSettingId = body.defaultMassSettingId;
+  }
+
+  if ("choirStatus" in body) {
+    if (typeof body.choirStatus !== "string") {
+      return NextResponse.json(
+        { error: "choirStatus must be a string" },
+        { status: 400 }
+      );
+    }
+    if (!choirStatusEnum.enumValues.includes(body.choirStatus as (typeof choirStatusEnum.enumValues)[number])) {
+      return NextResponse.json(
+        { error: `choirStatus must be one of: ${choirStatusEnum.enumValues.join(", ")}` },
+        { status: 400 }
+      );
+    }
+    updates.choirStatus = body.choirStatus;
   }
 
   if (Object.keys(updates).length === 0) {

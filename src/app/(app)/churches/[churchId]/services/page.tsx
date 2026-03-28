@@ -110,6 +110,7 @@ export default async function ServicesPage({ params }: Props) {
           serviceType: service.serviceType,
           time: service.time,
           status: service.status,
+          choirStatus: service.choirStatus,
           userAvailability:
             (avail?.status as 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null) ??
             null,
@@ -127,6 +128,7 @@ export default async function ServicesPage({ params }: Props) {
         <ServicesViewWrapper
           churchId={churchId}
           liturgicalDays={days}
+          userRole={role}
         />
       </Suspense>
     </div>
