@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, X, Loader2, RotateCcw } from "lucide-react";
 import { useServiceEditor } from "./service-editor-context";
+import { useToast } from "@/components/ui/toast";
 
 interface MassSettingResult {
   id: string;
@@ -21,6 +22,7 @@ export function MassSettingControl({
   churchId,
 }: MassSettingControlProps) {
   const { musicSlots, updateSlot } = useServiceEditor();
+  const { addToast } = useToast();
   const slot = musicSlots.get(slotId);
 
   const [showSearch, setShowSearch] = useState(false);
@@ -58,13 +60,13 @@ export function MassSettingControl({
           setCurrentSetting(data);
         }
       } catch {
-        // silent
+        addToast("Failed to load mass setting", "error");
       }
       if (!cancelled) setLoadingSetting(false);
     }
     loadSetting();
     return () => { cancelled = true; };
-  }, [massSettingId, churchId]);
+  }, [massSettingId, churchId, addToast]);
 
   const handleSearch = useCallback((q: string) => {
     setQuery(q);
@@ -89,11 +91,11 @@ export function MassSettingControl({
           setShowDropdown(true);
         }
       } catch {
-        // silent
+        addToast("Search failed", "error");
       }
       setSearching(false);
     }, 300);
-  }, [churchId]);
+  }, [churchId, addToast]);
 
   const handleSelect = async (setting: MassSettingResult) => {
     setShowDropdown(false);

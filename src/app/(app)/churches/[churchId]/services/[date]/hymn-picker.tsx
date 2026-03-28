@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, X, Loader2 } from "lucide-react";
 import { useServiceEditor } from "./service-editor-context";
 import { VerseStepper } from "./verse-stepper";
+import { useToast } from "@/components/ui/toast";
 
 interface HymnResult {
   id: string;
@@ -26,6 +27,7 @@ function formatHymn(hymn: { book: string; number: number; firstLine: string }) {
 
 export function HymnPicker({ slotId, churchId }: HymnPickerProps) {
   const { musicSlots, updateSlot } = useServiceEditor();
+  const { addToast } = useToast();
   const slot = musicSlots.get(slotId);
 
   const [query, setQuery] = useState("");
@@ -65,13 +67,13 @@ export function HymnPicker({ slotId, churchId }: HymnPickerProps) {
           setTotalVerses(data.totalVerses ?? data.verseCount ?? null);
         }
       } catch {
-        // silent
+        addToast("Failed to load hymn details", "error");
       }
       if (!cancelled) setLoadingHymn(false);
     }
     loadHymn();
     return () => { cancelled = true; };
-  }, [hymnId]);
+  }, [hymnId, addToast]);
 
   const handleSearch = useCallback((q: string) => {
     setQuery(q);
@@ -96,11 +98,11 @@ export function HymnPicker({ slotId, churchId }: HymnPickerProps) {
           setShowDropdown(true);
         }
       } catch {
-        // silent
+        addToast("Hymn search failed", "error");
       }
       setSearching(false);
     }, 300);
-  }, []);
+  }, [addToast]);
 
   const handleSelect = async (hymn: HymnResult) => {
     setShowDropdown(false);

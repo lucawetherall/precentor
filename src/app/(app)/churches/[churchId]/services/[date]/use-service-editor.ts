@@ -1,6 +1,7 @@
 import { useReducer, useCallback, useRef, useEffect } from "react";
 import type { ServiceSection } from "./section-row";
 import type { BookletServiceSheetData, SummaryServiceSheetData } from "@/types/service-sheet";
+import { logger } from "@/lib/logger";
 
 export type SheetData = BookletServiceSheetData | SummaryServiceSheetData;
 
@@ -465,8 +466,8 @@ export function useServiceEditorReducer({
         const fetched: ServiceSection[] = await res.json();
         dispatch({ type: "SET_SECTIONS", sections: fetched });
       }
-    } catch {
-      // silent
+    } catch (err) {
+      logger.error("Failed to refresh sections", err);
     }
   }, [baseUrl]);
 
