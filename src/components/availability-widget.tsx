@@ -64,11 +64,11 @@ export function AvailabilityWidget({
   const sizeClasses = {
     sm: 'h-5 w-5 text-[9px] font-bold',
     md: 'h-8 w-8 text-xs font-bold',
-    lg: 'h-14 w-20 flex-col gap-0.5 text-xs font-bold',
+    lg: 'h-12 w-24 flex-col gap-1 text-xs font-bold',
   }
 
   return (
-    <div className="flex gap-1" role="group" aria-label="Availability">
+    <div className={cn("flex", size === "lg" ? "gap-2" : "gap-1")} role="group" aria-label="Availability">
       {BUTTONS.map(({ status: btnStatus, label, symbol, activeClass }) => {
         const isActive = status === btnStatus
         return (
@@ -87,7 +87,7 @@ export function AvailabilityWidget({
           >
             <span>{symbol}</span>
             {size === 'lg' && (
-              <span className="text-[9px] uppercase tracking-wider">{label}</span>
+              <span className="text-[10px] uppercase tracking-wider leading-none">{label}</span>
             )}
           </button>
         )
