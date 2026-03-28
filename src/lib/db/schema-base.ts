@@ -265,6 +265,7 @@ export const availability = pgTable("availability", {
   status: availabilityStatusEnum("status").notNull(),
 }, (t) => [
   uniqueIndex("availability_unique").on(t.userId, t.serviceId),
+  index("availability_service_idx").on(t.serviceId),
 ]);
 
 export const rotaEntries = pgTable("rota_entries", {
@@ -274,6 +275,7 @@ export const rotaEntries = pgTable("rota_entries", {
   confirmed: boolean("confirmed").default(false).notNull(),
 }, (t) => [
   uniqueIndex("rota_unique").on(t.serviceId, t.userId),
+  index("rota_service_idx").on(t.serviceId),
 ]);
 
 // ─── Performance Log ─────────────────────────────────────────
@@ -286,7 +288,10 @@ export const performanceLogs = pgTable("performance_logs", {
   anthemId: uuid("anthem_id"),
   freeText: text("free_text"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("perf_log_church_idx").on(t.churchId),
+  index("perf_log_date_idx").on(t.date),
+]);
 
 // ─── Service Sheet Templates ──────────────────────────────────
 export const serviceSheetTemplates = pgTable("service_sheet_templates", {
