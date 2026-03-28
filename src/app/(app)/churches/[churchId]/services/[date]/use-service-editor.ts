@@ -370,12 +370,24 @@ export function useServiceEditorReducer({
           return null;
         }
         const created: ServiceSection = await res.json();
-        // Replace temp ID with real ID
+        // Replace temp ID with real ID — guard against concurrent edits
         const currentState = stateRef.current;
-        const replaced = currentState.sections.map((s) =>
-          s.id === tempId ? created : s
-        );
-        dispatch({ type: "SET_SECTIONS", sections: replaced });
+        const tempExists = currentState.sections.some((s) => s.id === tempId);
+        if (tempExists) {
+          const replaced = currentState.sections.map((s) =>
+            s.id === tempId ? created : s
+          );
+          dispatch({ type: "SET_SECTIONS", sections: replaced });
+        } else {
+          // Temp section was modified/removed — refetch from server
+          try {
+            const res2 = await apiFetch(`${baseUrl}/sections`, { method: "GET" });
+            if (res2.ok) {
+              const fetched: ServiceSection[] = await res2.json();
+              dispatch({ type: "SET_SECTIONS", sections: fetched });
+            }
+          } catch { /* best-effort */ }
+        }
         markSaved();
         return created;
       } catch {
