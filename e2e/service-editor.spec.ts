@@ -15,6 +15,8 @@ import { test, expect } from "@playwright/test";
 // Authentication: tests assume an active browser session cookie is present.
 // You can achieve this by storing auth state with Playwright's storageState.
 
+const HAS_AUTH = !!process.env.E2E_EMAIL && !!process.env.E2E_PASSWORD;
+
 const CHURCH_ID = process.env.E2E_CHURCH_ID ?? "test-church-id";
 const SERVICE_DATE = process.env.E2E_SERVICE_DATE ?? "2026-03-29";
 const SERVICE_DETAIL_URL = `/churches/${CHURCH_ID}/services/${SERVICE_DATE}`;
@@ -23,6 +25,7 @@ const TEMPLATES_URL = `/churches/${CHURCH_ID}/settings/templates`;
 
 test.describe("Service Editor", () => {
   test.beforeEach(async ({ page }) => {
+    test.skip(!HAS_AUTH, "Requires E2E_EMAIL and E2E_PASSWORD");
     // Navigate to a service detail page.
     // Assumes test fixtures: a church, a liturgical day, and a service.
     await page.goto(SERVICE_DETAIL_URL);
@@ -123,10 +126,6 @@ test.describe("Service Editor", () => {
       .getByRole("button", { name: /^hide/i })
       .first();
     await expect(hideButton).toBeVisible();
-
-    // Get the section row containing this button
-    // The hide button's parent row has opacity-50 when hidden
-    const sectionRow = hideButton.locator("xpath=../../.."); // traverse up to .relative.border div
 
     await hideButton.click();
 
@@ -404,7 +403,6 @@ test.describe("Service Editor", () => {
 
     if (blockCount > 0) {
       const firstBlock = editableBlocks.first();
-      const originalText = await firstBlock.textContent();
       await firstBlock.click();
 
       // A textarea should appear for editing
@@ -557,6 +555,10 @@ test.describe("Service Editor", () => {
 });
 
 test.describe("Church Template Admin", () => {
+  test.beforeEach(() => {
+    test.skip(!HAS_AUTH, "Requires E2E_EMAIL and E2E_PASSWORD");
+  });
+
   test("should list service type templates", async ({ page }) => {
     // Navigate to settings/templates
     await page.goto(TEMPLATES_URL);
@@ -623,11 +625,7 @@ test.describe("Church Template Admin", () => {
     ).toBeVisible({ timeout: 5_000 });
 
     // Expand the card to see sections
-    const expandButton = page
-      .getByRole("button", { name: /customise|expand/i })
-      .first();
-    // Actually the expand trigger is the chevron button on the card header
-    // Look for the card's toggle button (has aria-expanded)
+    // The expand trigger is the chevron button on the card header
     const cardToggle = page
       .locator('[aria-expanded]')
       .first();
