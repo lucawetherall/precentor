@@ -1,66 +1,134 @@
-import { db } from "@/lib/db";
-import { liturgicalDays } from "@/lib/db/schema";
-import { gte, asc } from "drizzle-orm";
-import type { InferSelectModel } from "drizzle-orm";
-import { format, parseISO } from "date-fns";
-import Link from "next/link";
-import { LITURGICAL_COLOURS } from "@/types";
-import type { LiturgicalColour } from "@/types";
+import { db } from '@/lib/db'
+import {
+  liturgicalDays,
+  services,
+  availability,
+  musicSlots,
+  hymns,
+  anthems,
+} from '@/lib/db/schema'
+import { gte, asc, eq, and, inArray } from 'drizzle-orm'
+import { format } from 'date-fns'
+import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
+import { requireChurchRole } from '@/lib/auth/permissions'
+import type { MemberRole } from '@/types'
+import type { LiturgicalDayWithService, MusicSlotPreview } from '@/types/service-views'
+import { SundaysViewWrapper } from './sundays-view-wrapper'
 
 interface Props {
-  params: Promise<{ churchId: string }>;
+  params: Promise<{ churchId: string }>
 }
 
 export default async function SundaysPage({ params }: Props) {
-  const { churchId } = await params;
-  const today = format(new Date(), "yyyy-MM-dd");
+  const { churchId } = await params
+  const { user, membership, error } = await requireChurchRole(churchId, 'MEMBER')
+  if (error) redirect('/login')
 
-  let upcomingDays: InferSelectModel<typeof liturgicalDays>[] = [];
+  const userId = user!.id
+  const role = membership!.role as MemberRole
+  const today = format(new Date(), 'yyyy-MM-dd')
+
+  let days: LiturgicalDayWithService[] = []
+
   try {
-    upcomingDays = await db
+    const upcomingDays = await db
       .select()
       .from(liturgicalDays)
       .where(gte(liturgicalDays.date, today))
       .orderBy(asc(liturgicalDays.date))
-      .limit(20);
-  } catch { /* DB not available */ }
+      .limit(20)
+
+    const dayIds = upcomingDays.map((d) => d.id)
+
+    const churchServices =
+      dayIds.length > 0
+        ? await db
+            .select()
+            .from(services)
+            .where(
+              and(
+                eq(services.churchId, churchId),
+                inArray(services.liturgicalDayId, dayIds)
+              )
+            )
+        : []
+
+    const serviceIds = churchServices.map((s) => s.id)
+
+    const userAvailability =
+      serviceIds.length > 0
+        ? await db
+            .select()
+            .from(availability)
+            .where(
+              and(
+                eq(availability.userId, userId),
+                inArray(availability.serviceId, serviceIds)
+              )
+            )
+        : []
+
+    const slots =
+      serviceIds.length > 0
+        ? await db
+            .select({
+              id: musicSlots.id,
+              serviceId: musicSlots.serviceId,
+              slotType: musicSlots.slotType,
+              positionOrder: musicSlots.positionOrder,
+              freeText: musicSlots.freeText,
+              hymnFirstLine: hymns.firstLine,
+              anthemTitle: anthems.title,
+            })
+            .from(musicSlots)
+            .leftJoin(hymns, eq(musicSlots.hymnId, hymns.id))
+            .leftJoin(anthems, eq(musicSlots.anthemId, anthems.id))
+            .where(inArray(musicSlots.serviceId, serviceIds))
+            .orderBy(asc(musicSlots.positionOrder))
+        : []
+
+    days = upcomingDays.map((day) => {
+      const service = churchServices.find((s) => s.liturgicalDayId === day.id) ?? null
+      if (!service) return { ...day, service: null }
+
+      const avail = userAvailability.find((a) => a.serviceId === service.id)
+      const serviceSlots = slots.filter((s) => s.serviceId === service.id)
+
+      const musicPreview: MusicSlotPreview[] = serviceSlots.slice(0, 4).map((slot) => ({
+        id: slot.id,
+        slotType: slot.slotType as MusicSlotPreview['slotType'],
+        positionOrder: slot.positionOrder,
+        title:
+          slot.hymnFirstLine ?? slot.anthemTitle ?? slot.freeText ?? slot.slotType,
+      }))
+
+      return {
+        ...day,
+        service: {
+          id: service.id,
+          serviceType: service.serviceType,
+          time: service.time,
+          status: service.status,
+          userAvailability:
+            (avail?.status as 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null) ??
+            null,
+          musicPreview,
+        },
+      }
+    })
+  } catch {
+    /* DB not available — days stays [] */
+  }
 
   return (
     <div className="p-8 max-w-4xl">
-      <h1 className="text-3xl font-heading font-semibold mb-6">Upcoming Sundays</h1>
-
-      {upcomingDays.length === 0 ? (
-        <div className="border border-border bg-card p-8 text-center">
-          <p className="text-muted-foreground">
-            No liturgical calendar data available. Run the database seed to populate the calendar.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {upcomingDays.map((day) => (
-            <Link
-              key={day.id}
-              href={`/churches/${churchId}/sundays/${day.date}`}
-              className="flex items-center gap-4 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
-            >
-              <span
-                aria-hidden="true"
-                className="w-2 h-8 flex-shrink-0"
-                style={{
-                  backgroundColor: LITURGICAL_COLOURS[day.colour as LiturgicalColour] ?? "#4A6741",
-                }}
-              />
-              <div className="flex-1">
-                <p className="font-mono text-xs text-muted-foreground">{format(parseISO(day.date), "EEE d MMM yyyy")}</p>
-                <p className="font-heading text-lg">{day.cwName}</p>
-              </div>
-              <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
-                {day.season.replace(/_/g, " ")}
-              </span>
-            </Link>
-          ))}
-        </div>
-      )}
+      <Suspense>
+        <SundaysViewWrapper
+          churchId={churchId}
+          liturgicalDays={days}
+        />
+      </Suspense>
     </div>
-  );
+  )
 }

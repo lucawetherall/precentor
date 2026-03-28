@@ -55,13 +55,14 @@ export default async function ChurchLayout({ children, params }: Props) {
   const isAdmin = hasMinRole(userRole, "ADMIN");
 
   const navItems = [
-    { href: `/churches/${churchId}/sundays`, label: "Sundays", iconName: "Calendar" },
+    { href: `/churches/${churchId}/services`, label: "Services", iconName: "Calendar" },
     { href: `/churches/${churchId}/rota`, label: "Rota", iconName: "Users" },
     { href: `/churches/${churchId}/repertoire`, label: "Repertoire", iconName: "Music" },
     { href: `/churches/${churchId}/service-sheets`, label: "Service Sheets", iconName: "FileText" },
     ...(isAdmin ? [
       { href: `/churches/${churchId}/members`, label: "Members", iconName: "Users" },
       { href: `/churches/${churchId}/settings`, label: "Settings", iconName: "Settings" },
+      { href: `/churches/${churchId}/settings/templates`, label: "Templates", iconName: "Layout" },
     ] : []),
   ];
 

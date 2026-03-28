@@ -12,7 +12,14 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "db:seed": "tsx scripts/seed-lectionary.ts"
+    "db:seed": "tsx scripts/seed-lectionary.ts",
+    "db:seed-texts": "tsx scripts/seed-liturgical-texts.ts",
+    "db:seed-templates": "tsx scripts/seed-templates.ts",
+    "db:seed-prayers": "tsx scripts/seed-eucharistic-prayers.ts",
+    "db:seed-collects": "tsx scripts/seed-collects.ts",
+    "db:scrape-hymns": "tsx scripts/scrape-hymn-text.ts",
+    "db:scrape-collects": "tsx scripts/scrape-collects.ts",
+    "db:migrate-services": "tsx scripts/migrate-existing-services.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

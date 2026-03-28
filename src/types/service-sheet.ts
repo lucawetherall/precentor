@@ -1,7 +1,7 @@
 // Service sheet data types for PDF/DOCX generation
 
 import type { MusicSlotType, ServiceType, LiturgicalColour } from "@/types";
-import type { LiturgicalSection, ServiceTemplate } from "@/data/liturgy/types";
+import type { LiturgicalSection, ServiceTemplate, LiturgicalTextBlock } from "@/data/liturgy/types";
 
 // ─── Template Layout (per-church customisation) ─────────────────
 
@@ -33,6 +33,26 @@ export const DEFAULT_TEMPLATE_LAYOUT: TemplateLayout = {
 // ─── Sheet Mode ─────────────────────────────────────────────────
 
 export type SheetMode = "booklet" | "summary";
+
+// ─── DB-driven section (resolved from service_sections table) ───
+
+/** A section resolved from the service_sections DB table, ready for PDF rendering */
+export interface ResolvedDbSection {
+  /** DB id of the service_section row */
+  id: string;
+  sectionKey: string;
+  title: string;
+  majorSection?: string | null;
+  positionOrder: number;
+  /** Resolved text blocks (from textOverride, liturgicalTexts, or placeholder resolution) */
+  blocks: LiturgicalTextBlock[];
+  /** Reading data if this is a reading placeholder section */
+  reading?: ReadingEntry;
+  /** Music slot data if this section has a musicSlotId */
+  musicSlot?: MusicSlotEntry;
+  /** The placeholder type for this section, if any */
+  placeholderType?: string | null;
+}
 
 // ─── Music Slot Entry (resolved with joined data) ───────────────
 
@@ -94,6 +114,8 @@ export interface BookletServiceSheetData {
   musicSlots: MusicSlotEntry[];
   // Styling
   templateLayout: TemplateLayout;
+  // DB-driven sections (if null, renderer falls back to template-based approach)
+  resolvedDbSections?: ResolvedDbSection[] | null;
 }
 
 // ─── Summary Data ───────────────────────────────────────────────

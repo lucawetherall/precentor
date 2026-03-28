@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Save } from "lucide-react";
-import { useToast } from "@/components/ui/toast";
+import { Loader2, Save, Check } from "lucide-react";
 
 type SheetMode = "summary" | "booklet";
 
@@ -35,13 +34,16 @@ export function ServiceSettings({
     initialSettings.includeReadingText
   );
   const [saving, setSaving] = useState(false);
-  const { addToast } = useToast();
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const isEucharist = EUCHARIST_TYPES.has(serviceType);
   const showBookletOptions = sheetMode === "booklet";
 
   const handleSave = async () => {
     setSaving(true);
+    setSaved(false);
+    setSaveError(null);
     try {
       const body: Record<string, unknown> = { sheetMode };
       if (isEucharist) {
@@ -61,13 +63,14 @@ export function ServiceSettings({
       );
 
       if (res.ok) {
-        addToast("Settings saved", "success");
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
       } else {
         const data = await res.json().catch(() => null);
-        addToast(data?.error ?? "Failed to save settings", "error");
+        setSaveError(data?.error ?? "Failed to save settings");
       }
     } catch {
-      addToast("Network error — could not save", "error");
+      setSaveError("Network error — could not save");
     }
     setSaving(false);
   };
@@ -123,18 +126,29 @@ export function ServiceSettings({
           </label>
         )}
 
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50 ml-auto"
-        >
-          {saving ? (
-            <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
-          ) : (
-            <Save className="h-3 w-3" strokeWidth={1.5} />
+        <div className="ml-auto flex items-center gap-2">
+          {saved && (
+            <span className="flex items-center gap-1 text-xs text-green-600">
+              <Check className="h-3 w-3" strokeWidth={2} />
+              Saved
+            </span>
           )}
-          Save
-        </button>
+          {saveError && (
+            <span className="text-xs text-destructive">{saveError}</span>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
+          >
+            {saving ? (
+              <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
+            ) : (
+              <Save className="h-3 w-3" strokeWidth={1.5} />
+            )}
+            Save
+          </button>
+        </div>
       </div>
     </div>
   );

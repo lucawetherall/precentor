@@ -72,7 +72,7 @@ export default function NewChurchPage() {
   };
 
   return (
-    <main id="main-content" className="p-8 max-w-lg">
+    <main id="main-content" className="p-4 sm:p-6 lg:p-8 max-w-lg">
       <h1 className="text-3xl font-heading font-semibold mb-6">Add Church</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
