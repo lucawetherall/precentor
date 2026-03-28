@@ -62,6 +62,21 @@ export function ServicesList({ churchId, days, userRole }: ServicesListProps) {
                     </span>
                   </div>
 
+                  {/* Choir status — first after date column */}
+                  {day.service && (
+                    <div
+                      className="flex flex-col items-center justify-center gap-1 px-3 border-r border-border flex-shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ChoirStatusBadge
+                        serviceId={day.service.id}
+                        churchId={churchId}
+                        choirStatus={day.service.choirStatus}
+                        userRole={userRole}
+                      />
+                    </div>
+                  )}
+
                   {/* Body */}
                   <Link
                     href={`/churches/${churchId}/services/${day.date}`}
@@ -79,6 +94,13 @@ export function ServicesList({ churchId, days, userRole }: ServicesListProps) {
                         <span className="text-xs text-muted-foreground">
                           {SERVICE_TYPE_LABELS[day.service.serviceType as keyof typeof SERVICE_TYPE_LABELS] ?? day.service.serviceType}
                           {day.service.time ? ` · ${day.service.time}` : ''}
+                        </span>
+                      )}
+                      {day.service && (
+                        <span className="text-[10px] font-mono text-muted-foreground/70">
+                          {day.service.musicPreview.length > 0
+                            ? `${day.service.musicPreview.length} music`
+                            : '0 music'}
                         </span>
                       )}
                     </div>
@@ -100,18 +122,12 @@ export function ServicesList({ churchId, days, userRole }: ServicesListProps) {
                     )}
                   </Link>
 
-                  {/* Choir status + Availability */}
+                  {/* Availability */}
                   {day.service && (
                     <div
-                      className="flex flex-col items-center justify-center gap-2 px-4 border-l border-border flex-shrink-0"
+                      className="flex flex-col items-center justify-center gap-1 px-4 border-l border-border flex-shrink-0"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <ChoirStatusBadge
-                        serviceId={day.service.id}
-                        churchId={churchId}
-                        choirStatus={day.service.choirStatus}
-                        userRole={userRole}
-                      />
                       <div className="flex flex-col items-center gap-1">
                         <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
                           Availability

@@ -50,17 +50,10 @@ export function SectionEditor({ churchId }: SectionEditorProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-heading font-semibold text-muted-foreground uppercase tracking-wide">
-          Running Order
-        </h3>
-      </div>
-
       {sections.length === 0 ? (
-        <div className="border border-border bg-card p-8 text-center rounded-sm">
-          <p className="text-muted-foreground text-sm">
-            No sections yet. Add one below.
-          </p>
+        <div className="border border-dashed border-border bg-card/50 p-12 text-center">
+          <p className="font-heading text-xl text-muted-foreground mb-1">Ready to plan</p>
+          <p className="text-sm text-muted-foreground/70">Add sections to build the running order</p>
         </div>
       ) : (
         <div className="space-y-1">
