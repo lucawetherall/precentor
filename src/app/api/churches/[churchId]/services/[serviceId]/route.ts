@@ -117,6 +117,16 @@ export async function PATCH(
     updates.collectOverride = body.collectOverride;
   }
 
+  if ("defaultMassSettingId" in body) {
+    if (body.defaultMassSettingId !== null && typeof body.defaultMassSettingId !== "string") {
+      return NextResponse.json(
+        { error: "defaultMassSettingId must be a string or null" },
+        { status: 400 }
+      );
+    }
+    updates.defaultMassSettingId = body.defaultMassSettingId;
+  }
+
   if ("choirStatus" in body) {
     if (typeof body.choirStatus !== "string") {
       return NextResponse.json(
