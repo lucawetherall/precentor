@@ -12,7 +12,6 @@ import { format } from 'date-fns'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { requireChurchRole } from '@/lib/auth/permissions'
-import type { MemberRole } from '@/types'
 import type { LiturgicalDayWithService, MusicSlotPreview } from '@/types/service-views'
 import { ServicesViewWrapper } from './services-view-wrapper'
 
@@ -22,11 +21,10 @@ interface Props {
 
 export default async function ServicesPage({ params }: Props) {
   const { churchId } = await params
-  const { user, membership, error } = await requireChurchRole(churchId, 'MEMBER')
+  const { user, error } = await requireChurchRole(churchId, 'MEMBER')
   if (error) redirect('/login')
 
   const userId = user!.id
-  const role = membership!.role as MemberRole
   const today = format(new Date(), 'yyyy-MM-dd')
 
   let days: LiturgicalDayWithService[] = []

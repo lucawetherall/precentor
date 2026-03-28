@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { FileText } from "lucide-react";
 import { LITURGICAL_COLOURS, MUSIC_SLOT_LABELS, SERVICE_TYPE_LABELS } from "@/types";
@@ -24,7 +23,7 @@ interface UpcomingDay {
 
 export function MemberThisSunday({
   churchId,
-  day,
+  day: _day,
   services,
   userAvailability,
 }: {
