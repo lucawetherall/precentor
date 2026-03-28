@@ -104,7 +104,7 @@ export function MembersTable({
             <tr key={m.id} className={i % 2 === 0 ? "bg-white" : "bg-background"}>
               <td className="px-3 py-2">
                 <div>{m.userName || "—"}</div>
-                <div className="font-mono text-xs text-muted-foreground sm:hidden">{m.userEmail}</div>
+                <div className="font-mono text-sm text-muted-foreground sm:hidden">{m.userEmail}</div>
               </td>
               <td className="px-3 py-2 font-mono text-xs hidden sm:table-cell">{m.userEmail}</td>
               <td className="px-3 py-2">
