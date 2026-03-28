@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildMonthGrid, isHolyDay } from '../sundays-calendar'
+import { buildMonthGrid, isHolyDay } from '../services-calendar'
 
 describe('buildMonthGrid', () => {
   it('April 2026 starts Wednesday — 2 null cells before day 1', () => {

@@ -59,7 +59,7 @@ export default async function ChurchesPage() {
           {userChurches.map((church: UserChurch) => (
             <Link
               key={church.id}
-              href={`/churches/${church.id}/sundays`}
+              href={`/churches/${church.id}/services`}
               className="block border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
             >
               <div className="flex items-center justify-between">

@@ -105,7 +105,7 @@ export default function InviteAcceptPage() {
     const res = await fetch(`/api/invites/${token}/accept`, { method: "POST" });
     if (res.ok) {
       const data = await res.json();
-      router.push(`/churches/${data.churchId}/sundays`);
+      router.push(`/churches/${data.churchId}/services`);
     } else {
       const data = await res.json();
       setError(data.error || "Failed to accept invite.");

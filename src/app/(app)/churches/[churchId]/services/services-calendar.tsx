@@ -33,12 +33,12 @@ export function isHolyDay(dateStr: string, season: string): boolean {
   return parseISO(dateStr).getDay() !== 0
 }
 
-interface SundaysCalendarProps {
+interface ServicesCalendarProps {
   churchId: string
   days: LiturgicalDayWithService[]
 }
 
-export function SundaysCalendar({ churchId, days }: SundaysCalendarProps) {
+export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
@@ -136,7 +136,7 @@ export function SundaysCalendar({ churchId, days }: SundaysCalendarProps) {
 
                   {hasService && liturgicalDay && (
                     <div>
-                      <Link href={`/churches/${churchId}/sundays/${dateStr}`}>
+                      <Link href={`/churches/${churchId}/services/${dateStr}`}>
                         <div
                           className="border-l-[3px] pl-1.5 mb-1.5 hover:opacity-80"
                           style={{ borderColor: colour! }}

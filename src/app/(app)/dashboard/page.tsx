@@ -119,7 +119,7 @@ export default async function DashboardPage() {
         {userChurches.slice(0, 1).map((uc) => (
           <Link
             key={`sundays-${uc.churchId}`}
-            href={`/churches/${uc.churchId}/sundays`}
+            href={`/churches/${uc.churchId}/services`}
             className="flex items-center gap-3 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
           >
             <Calendar className="h-5 w-5 text-primary flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
@@ -166,7 +166,7 @@ export default async function DashboardPage() {
             <p className="text-muted-foreground">
               No upcoming services planned.{" "}
               {userChurches.length > 0 && (
-                <Link href={`/churches/${userChurches[0].churchId}/sundays`} className="text-primary underline">
+                <Link href={`/churches/${userChurches[0].churchId}/services`} className="text-primary underline">
                   Plan your first service
                 </Link>
               )}
@@ -179,7 +179,7 @@ export default async function DashboardPage() {
               return (
                 <Link
                   key={s.serviceId}
-                  href={`/churches/${s.churchId}/sundays/${s.date}`}
+                  href={`/churches/${s.churchId}/services/${s.date}`}
                   className="flex items-center gap-4 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
                 >
                   <span

@@ -59,7 +59,7 @@ export default function NewChurchPage() {
 
     if (res.ok) {
       const data = await res.json();
-      router.push(`/churches/${data.id}/sundays`);
+      router.push(`/churches/${data.id}/services`);
     } else {
       try {
         const data = await res.json();
