@@ -15,7 +15,7 @@ import {
   hymnVerses,
   collects,
 } from "@/lib/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, inArray } from "drizzle-orm";
 import type {
   BookletServiceSheetData,
   SummaryServiceSheetData,
@@ -84,10 +84,36 @@ async function resolveDbSections(
     .select({ slot: musicSlots })
     .from(musicSlots)
     .where(eq(musicSlots.serviceId, serviceId));
+  // Build rawSlotById for O(1) lookup
+  const rawSlotById = new Map<string, typeof rawSlotRows[number]["slot"]>();
   for (const row of rawSlotRows) {
+    rawSlotById.set(row.slot.id, row.slot);
     // Find the already-resolved MusicSlotEntry by positionOrder
     const resolved = resolvedSlots.find((s) => s.positionOrder === row.slot.positionOrder);
     if (resolved) slotById.set(row.slot.id, resolved);
+  }
+
+  // Collect all hymnIds that need verses (upfront) and batch-fetch
+  const hymnIdsNeedingVerses = new Set<string>();
+  for (const row of rawSlotRows) {
+    const { hymnId, verseCount, selectedVerses } = row.slot;
+    if (hymnId && (verseCount || (selectedVerses as unknown[] | null)?.length)) {
+      hymnIdsNeedingVerses.add(hymnId);
+    }
+  }
+
+  const versesByHymnId = new Map<string, (typeof hymnVerses.$inferSelect)[]>();
+  if (hymnIdsNeedingVerses.size > 0) {
+    const allVerseRows = await db
+      .select()
+      .from(hymnVerses)
+      .where(inArray(hymnVerses.hymnId, [...hymnIdsNeedingVerses]))
+      .orderBy(asc(hymnVerses.verseNumber));
+    for (const verse of allVerseRows) {
+      const list = versesByHymnId.get(verse.hymnId) ?? [];
+      list.push(verse);
+      versesByHymnId.set(verse.hymnId, list);
+    }
   }
 
   // Resolve eucharistic prayer from DB if eucharisticPrayerId is set
@@ -170,34 +196,17 @@ async function resolveDbSections(
     // 4. Resolve music slot
     if (section.musicSlotId) {
       musicSlot = slotById.get(section.musicSlotId);
+      const rawSlot = rawSlotById.get(section.musicSlotId);
 
-      // If hymn and we have verse selection data, resolve verse text
-      if (musicSlot?.hymn) {
-        const hymnId = rawSlotRows.find(
-          (r) => slotById.get(r.slot.id) === musicSlot
-        )?.slot?.hymnId;
-        const verseCount = rawSlotRows.find(
-          (r) => slotById.get(r.slot.id) === musicSlot
-        )?.slot?.verseCount;
-        const selectedVerses = rawSlotRows.find(
-          (r) => slotById.get(r.slot.id) === musicSlot
-        )?.slot?.selectedVerses;
-
-        if (hymnId && (verseCount || selectedVerses?.length)) {
-          const allVerses = await db
-            .select()
-            .from(hymnVerses)
-            .where(eq(hymnVerses.hymnId, hymnId))
-            .orderBy(asc(hymnVerses.verseNumber));
-
-          if (allVerses.length > 0) {
+      if (musicSlot?.hymn && rawSlot?.hymnId) {
+        const { hymnId, verseCount, selectedVerses } = rawSlot;
+        if (verseCount || selectedVerses?.length) {
+          const verses = versesByHymnId.get(hymnId) ?? [];
+          if (verses.length > 0) {
             const chosen = selectVerses(
-              allVerses.length,
-              verseCount ?? allVerses.length,
-              selectedVerses ?? null,
-            );
+              verses.length, verseCount ?? verses.length, selectedVerses ?? null);
             const chosenSet = new Set(chosen);
-            const verseBlocks: LiturgicalTextBlock[] = allVerses
+            const verseBlocks: LiturgicalTextBlock[] = verses
               .filter((v) => chosenSet.has(v.verseNumber))
               .map((v) => ({ speaker: "all" as const, text: v.text }));
             if (verseBlocks.length > 0) blocks = verseBlocks;

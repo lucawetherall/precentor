@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { services, choirStatusEnum } from "@/lib/db/schema";
+import { services } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-
-const VALID_PRAYERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
+import { serviceUpdateSchema } from "@/lib/validation/schemas";
+import { apiError } from "@/lib/api-helpers";
 
 export async function GET(
   _request: Request,
@@ -54,94 +54,26 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const parsed = serviceUpdateSchema.safeParse(body);
+  if (!parsed.success) return apiError(parsed.error.issues[0].message, 400);
+
   // Build update object from allowed fields
   const updates: Record<string, unknown> = {};
+  const data = parsed.data;
 
-  if ("sheetMode" in body) {
-    if (body.sheetMode !== "booklet" && body.sheetMode !== "summary") {
-      return NextResponse.json(
-        { error: "sheetMode must be 'booklet' or 'summary'" },
-        { status: 400 }
-      );
-    }
-    updates.sheetMode = body.sheetMode;
-  }
-
-  if ("eucharisticPrayer" in body) {
-    if (body.eucharisticPrayer !== null && !VALID_PRAYERS.includes(body.eucharisticPrayer as string)) {
-      return NextResponse.json(
-        { error: "eucharisticPrayer must be A-H or null" },
-        { status: 400 }
-      );
-    }
-    updates.eucharisticPrayer = body.eucharisticPrayer;
-  }
-
-  if ("includeReadingText" in body) {
-    if (typeof body.includeReadingText !== "boolean") {
-      return NextResponse.json(
-        { error: "includeReadingText must be a boolean" },
-        { status: 400 }
-      );
-    }
-    updates.includeReadingText = body.includeReadingText;
-  }
-
-  if ("eucharisticPrayerId" in body) {
-    if (body.eucharisticPrayerId !== null && typeof body.eucharisticPrayerId !== "string") {
-      return NextResponse.json(
-        { error: "eucharisticPrayerId must be a string or null" },
-        { status: 400 }
-      );
-    }
-    updates.eucharisticPrayerId = body.eucharisticPrayerId;
-  }
-
-  if ("collectId" in body) {
-    if (body.collectId !== null && typeof body.collectId !== "string") {
-      return NextResponse.json(
-        { error: "collectId must be a string or null" },
-        { status: 400 }
-      );
-    }
-    updates.collectId = body.collectId;
-  }
-
-  if ("collectOverride" in body) {
-    if (body.collectOverride !== null && typeof body.collectOverride !== "string") {
-      return NextResponse.json(
-        { error: "collectOverride must be a string or null" },
-        { status: 400 }
-      );
-    }
-    updates.collectOverride = body.collectOverride;
-  }
-
-  if ("defaultMassSettingId" in body) {
-    if (body.defaultMassSettingId !== null && typeof body.defaultMassSettingId !== "string") {
-      return NextResponse.json(
-        { error: "defaultMassSettingId must be a string or null" },
-        { status: 400 }
-      );
-    }
-    updates.defaultMassSettingId = body.defaultMassSettingId;
-  }
-
-  if ("choirStatus" in body) {
-    if (typeof body.choirStatus !== "string") {
-      return NextResponse.json(
-        { error: "choirStatus must be a string" },
-        { status: 400 }
-      );
-    }
-    if (!choirStatusEnum.enumValues.includes(body.choirStatus as (typeof choirStatusEnum.enumValues)[number])) {
-      return NextResponse.json(
-        { error: `choirStatus must be one of: ${choirStatusEnum.enumValues.join(", ")}` },
-        { status: 400 }
-      );
-    }
-    updates.choirStatus = body.choirStatus;
-  }
+  if ("sheetMode" in data) updates.sheetMode = data.sheetMode;
+  if ("eucharisticPrayer" in data) updates.eucharisticPrayer = data.eucharisticPrayer;
+  if ("includeReadingText" in data) updates.includeReadingText = data.includeReadingText;
+  if ("eucharisticPrayerId" in data) updates.eucharisticPrayerId = data.eucharisticPrayerId;
+  if ("collectId" in data) updates.collectId = data.collectId;
+  if ("collectOverride" in data) updates.collectOverride = data.collectOverride;
+  if ("defaultMassSettingId" in data) updates.defaultMassSettingId = data.defaultMassSettingId;
+  if ("choirStatus" in data) updates.choirStatus = data.choirStatus;
+  if ("serviceType" in data) updates.serviceType = data.serviceType;
+  if ("time" in data) updates.time = data.time;
+  if ("status" in data) updates.status = data.status;
+  if ("notes" in data) updates.notes = data.notes;
+  if ("liturgicalOverrides" in data) updates.liturgicalOverrides = data.liturgicalOverrides;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

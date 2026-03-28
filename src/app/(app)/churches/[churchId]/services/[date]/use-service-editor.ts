@@ -1,6 +1,7 @@
 import { useReducer, useCallback, useRef, useEffect } from "react";
 import type { ServiceSection } from "./section-row";
 import type { BookletServiceSheetData, SummaryServiceSheetData } from "@/types/service-sheet";
+import { logger } from "@/lib/logger";
 
 export type SheetData = BookletServiceSheetData | SummaryServiceSheetData;
 
@@ -41,7 +42,7 @@ interface ServiceEditorSnapshot {
   musicSlots: Map<string, MusicSlot>;
 }
 
-interface ServiceEditorState {
+export interface ServiceEditorState {
   sections: ServiceSection[];
   settings: ServiceSettings;
   musicSlots: Map<string, MusicSlot>;
@@ -68,7 +69,7 @@ type ServiceEditorAction =
 
 const MAX_UNDO = 20;
 
-function takeSnapshot(state: ServiceEditorState): ServiceEditorSnapshot {
+export function takeSnapshot(state: ServiceEditorState): ServiceEditorSnapshot {
   return {
     sections: state.sections,
     settings: state.settings,
@@ -85,7 +86,7 @@ function pushUndo(
   return next;
 }
 
-function reducer(
+export function reducer(
   state: ServiceEditorState,
   action: ServiceEditorAction
 ): ServiceEditorState {
@@ -271,6 +272,13 @@ export function useServiceEditorReducer({
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; });
 
+  useEffect(() => {
+    return () => {
+      clearTimeout(debounceRef.current);
+      clearTimeout(savedTimerRef.current);
+    };
+  }, []);
+
   // ── Mutation functions ──────────────────────────────────────
 
   const updateSection = useCallback(
@@ -362,12 +370,24 @@ export function useServiceEditorReducer({
           return null;
         }
         const created: ServiceSection = await res.json();
-        // Replace temp ID with real ID
+        // Replace temp ID with real ID — guard against concurrent edits
         const currentState = stateRef.current;
-        const replaced = currentState.sections.map((s) =>
-          s.id === tempId ? created : s
-        );
-        dispatch({ type: "SET_SECTIONS", sections: replaced });
+        const tempExists = currentState.sections.some((s) => s.id === tempId);
+        if (tempExists) {
+          const replaced = currentState.sections.map((s) =>
+            s.id === tempId ? created : s
+          );
+          dispatch({ type: "SET_SECTIONS", sections: replaced });
+        } else {
+          // Temp section was modified/removed — refetch from server
+          try {
+            const res2 = await apiFetch(`${baseUrl}/sections`, { method: "GET" });
+            if (res2.ok) {
+              const fetched: ServiceSection[] = await res2.json();
+              dispatch({ type: "SET_SECTIONS", sections: fetched });
+            }
+          } catch { /* best-effort */ }
+        }
         markSaved();
         return created;
       } catch {
@@ -399,17 +419,24 @@ export function useServiceEditorReducer({
 
   const debouncedUpdateSettings = useCallback(
     (fields: Partial<ServiceSettings>) => {
-      // Optimistically update immediately for responsiveness
       const current = stateRef.current;
+      const snapshot = takeSnapshot(current);           // captured BEFORE dispatch
       const updated = { ...current.settings, ...fields };
-      dispatch({ type: "SET_SETTINGS", settings: updated });
+      dispatch({ type: "SNAPSHOT_AND_UPDATE_SETTINGS", settings: updated });
 
       clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        updateSettings(fields);
+        runMutation(
+          () =>
+            apiFetch(`${baseUrl}`, {
+              method: "PATCH",
+              body: JSON.stringify(fields),
+            }),
+          snapshot                                      // closed over, always correct
+        );
       }, 500);
     },
-    [updateSettings]
+    [baseUrl, runMutation]
   );
 
   const updateSlot = useCallback(
@@ -451,8 +478,8 @@ export function useServiceEditorReducer({
         const fetched: ServiceSection[] = await res.json();
         dispatch({ type: "SET_SECTIONS", sections: fetched });
       }
-    } catch {
-      // silent
+    } catch (err) {
+      logger.error("Failed to refresh sections", err);
     }
   }, [baseUrl]);
 

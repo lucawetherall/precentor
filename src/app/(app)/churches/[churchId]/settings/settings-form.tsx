@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 interface Church {
   id: string;
@@ -89,13 +90,9 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
 
       {message && <p role="alert" className="text-sm text-muted-foreground">{message}</p>}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-      >
+      <Button type="submit" disabled={loading}>
         {loading ? "Saving..." : "Save Settings"}
-      </button>
+      </Button>
     </form>
   );
 }

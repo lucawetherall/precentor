@@ -193,7 +193,7 @@ export function RotaGrid({
                             <button
                               onClick={() => cycleAvailability(member.userId, s.serviceId)}
                               title={`${AVAIL_LABEL[status]} — click to change`}
-                              className={`w-6 h-6 flex items-center justify-center border text-xs ${
+                              className={`w-8 h-8 flex items-center justify-center border text-xs ${
                                 status === "AVAILABLE"
                                   ? "border-success text-success"
                                   : status === "UNAVAILABLE"
@@ -213,7 +213,7 @@ export function RotaGrid({
                             <button
                               onClick={() => toggleRota(member.userId, s.serviceId)}
                               title={onRota ? "Remove from rota" : "Add to rota"}
-                              className={`w-5 h-5 flex items-center justify-center border ${
+                              className={`w-8 h-8 flex items-center justify-center border ${
                                 onRota
                                   ? "bg-primary text-primary-foreground border-primary"
                                   : "border-border text-muted-foreground hover:border-primary hover:text-primary"

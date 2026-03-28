@@ -13,6 +13,24 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateName = (value: string) => {
+    if (!value) return "Name is required";
+    return "";
+  };
+
+  const validateEmail = (value: string) => {
+    if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      return "Please enter a valid email";
+    }
+    return "";
+  };
+
+  const validatePassword = (value: string) => {
+    if (value.length < 8) return "Password must be at least 8 characters";
+    return "";
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,10 +88,14 @@ export default function SignupPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onBlur={() => setFieldErrors((prev) => ({ ...prev, name: validateName(name) }))}
                 placeholder="John Smith"
                 required
                 className="bg-white rounded-none"
               />
+              {fieldErrors.name && (
+                <p className="text-xs text-destructive mt-1">{fieldErrors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -83,10 +105,14 @@ export default function SignupPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setFieldErrors((prev) => ({ ...prev, email: validateEmail(email) }))}
                 placeholder="director@parish.org.uk"
                 required
                 className="bg-white rounded-none"
               />
+              {fieldErrors.email && (
+                <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -96,11 +122,15 @@ export default function SignupPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => setFieldErrors((prev) => ({ ...prev, password: validatePassword(password) }))}
                 placeholder="Min. 8 characters"
                 required
                 minLength={8}
                 className="bg-white rounded-none"
               />
+              {fieldErrors.password && (
+                <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
+              )}
             </div>
 
             <div className="space-y-2">
