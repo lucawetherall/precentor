@@ -41,7 +41,7 @@ interface ServiceEditorSnapshot {
   musicSlots: Map<string, MusicSlot>;
 }
 
-interface ServiceEditorState {
+export interface ServiceEditorState {
   sections: ServiceSection[];
   settings: ServiceSettings;
   musicSlots: Map<string, MusicSlot>;
@@ -68,7 +68,7 @@ type ServiceEditorAction =
 
 const MAX_UNDO = 20;
 
-function takeSnapshot(state: ServiceEditorState): ServiceEditorSnapshot {
+export function takeSnapshot(state: ServiceEditorState): ServiceEditorSnapshot {
   return {
     sections: state.sections,
     settings: state.settings,
@@ -85,7 +85,7 @@ function pushUndo(
   return next;
 }
 
-function reducer(
+export function reducer(
   state: ServiceEditorState,
   action: ServiceEditorAction
 ): ServiceEditorState {
@@ -271,6 +271,13 @@ export function useServiceEditorReducer({
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; });
 
+  useEffect(() => {
+    return () => {
+      clearTimeout(debounceRef.current);
+      clearTimeout(savedTimerRef.current);
+    };
+  }, []);
+
   // ── Mutation functions ──────────────────────────────────────
 
   const updateSection = useCallback(
@@ -399,17 +406,24 @@ export function useServiceEditorReducer({
 
   const debouncedUpdateSettings = useCallback(
     (fields: Partial<ServiceSettings>) => {
-      // Optimistically update immediately for responsiveness
       const current = stateRef.current;
+      const snapshot = takeSnapshot(current);           // captured BEFORE dispatch
       const updated = { ...current.settings, ...fields };
-      dispatch({ type: "SET_SETTINGS", settings: updated });
+      dispatch({ type: "SNAPSHOT_AND_UPDATE_SETTINGS", settings: updated });
 
       clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        updateSettings(fields);
+        runMutation(
+          () =>
+            apiFetch(`${baseUrl}`, {
+              method: "PATCH",
+              body: JSON.stringify(fields),
+            }),
+          snapshot                                      // closed over, always correct
+        );
       }, 500);
     },
-    [updateSettings]
+    [baseUrl, runMutation]
   );
 
   const updateSlot = useCallback(
