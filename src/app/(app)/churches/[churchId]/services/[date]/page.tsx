@@ -142,8 +142,8 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
         }
       }
     }
-  } catch {
-    /* DB not available */
+  } catch (err) {
+    console.error("Failed to load service data:", err);
   }
 
   if (!day) {

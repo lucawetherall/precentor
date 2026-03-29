@@ -35,4 +35,22 @@ describe("resolveCollectText", () => {
       resolveCollectText(null, "Collect", "Liturgical day collect"),
     ).toBe("Collect");
   });
+
+  it("returns empty string override as truthy (empty string is a valid override)", () => {
+    // Empty string is falsy in JS, so it falls through to collectText
+    expect(resolveCollectText("", "Collect text", null)).toBe("Collect text");
+  });
+
+  it("returns whitespace-only override (truthy)", () => {
+    // Whitespace is truthy
+    expect(resolveCollectText("  ", "Collect text", null)).toBe("  ");
+  });
+
+  it("returns collectOverride even when other params are also set", () => {
+    expect(resolveCollectText("Override", "Collect", "Day")).toBe("Override");
+  });
+
+  it("returns liturgicalDayCollect when override is empty and collectText is null", () => {
+    expect(resolveCollectText("", null, "Day collect")).toBe("Day collect");
+  });
 });

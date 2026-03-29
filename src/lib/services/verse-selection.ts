@@ -12,11 +12,12 @@ export function selectVerses(
     return explicitSelection;
   }
 
+  if (totalVerses <= 0) return [];
+  if (requestedCount <= 0) return [];
   if (requestedCount >= totalVerses) {
     return Array.from({ length: totalVerses }, (_, i) => i + 1);
   }
 
-  if (requestedCount <= 0) return [];
   if (requestedCount === 1) return [1];
 
   const result: number[] = [1];
@@ -25,10 +26,14 @@ export function selectVerses(
   if (remaining > 0) {
     const step = (totalVerses - 1) / (requestedCount - 1);
     for (let i = 1; i <= remaining; i++) {
-      result.push(Math.floor(1 + i * step));
+      const verse = Math.floor(1 + i * step);
+      // Avoid duplicates with first verse
+      if (verse > 1 && verse < totalVerses) {
+        result.push(verse);
+      }
     }
   }
 
   result.push(totalVerses);
-  return result;
+  return [...new Set(result)];
 }

@@ -45,8 +45,10 @@ export async function PATCH(
     const updates: Record<string, unknown> = {};
 
     if ("verseCount" in body) {
-      if (body.verseCount !== null && typeof body.verseCount !== "number") {
-        return NextResponse.json({ error: "verseCount must be a number or null" }, { status: 400 });
+      if (body.verseCount !== null) {
+        if (typeof body.verseCount !== "number" || !Number.isInteger(body.verseCount) || body.verseCount < 1) {
+          return NextResponse.json({ error: "verseCount must be a positive integer or null" }, { status: 400 });
+        }
       }
       updates.verseCount = body.verseCount;
     }

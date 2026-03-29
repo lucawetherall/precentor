@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { churches, churchMemberships, users, liturgicalDays, services } from "@/lib/db/schema";
+import { churches, churchMemberships, users, liturgicalDays, services, serviceTypeEnum } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 function slugify(text: string): string {
@@ -19,11 +19,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const { name, diocese, address, ccliNumber, defaultServices } = body;
 
   if (!name || typeof name !== "string" || name.trim().length === 0) {
     return NextResponse.json({ error: "Church name is required" }, { status: 400 });
+  }
+
+  if (name.length > 200) {
+    return NextResponse.json({ error: "Church name must be 200 characters or less" }, { status: 400 });
   }
 
   try {
@@ -59,22 +68,25 @@ export async function POST(request: Request) {
         .select({ id: liturgicalDays.id })
         .from(liturgicalDays);
 
-      for (const day of allDays) {
-        for (const svc of defaultServices) {
-          try {
-            await db
-              .insert(services)
-              .values({
-                churchId: church.id,
-                liturgicalDayId: day.id,
-                serviceType: svc.type,
-                time: svc.time,
-                status: "DRAFT",
-              })
-              .onConflictDoNothing();
-          } catch {
-            // Skip constraint violations
-          }
+      // Batch insert all services instead of one-by-one
+      const serviceValues = allDays.flatMap((day) =>
+        defaultServices.map((svc: { type: string; time?: string }) => ({
+          churchId: church.id,
+          liturgicalDayId: day.id,
+          serviceType: svc.type as (typeof serviceTypeEnum.enumValues)[number],
+          time: svc.time || null,
+          status: "DRAFT" as const,
+        }))
+      );
+
+      // Insert in chunks to avoid query size limits
+      const CHUNK_SIZE = 500;
+      for (let i = 0; i < serviceValues.length; i += CHUNK_SIZE) {
+        const chunk = serviceValues.slice(i, i + CHUNK_SIZE);
+        try {
+          await db.insert(services).values(chunk).onConflictDoNothing();
+        } catch {
+          // Skip constraint violations
         }
       }
     }

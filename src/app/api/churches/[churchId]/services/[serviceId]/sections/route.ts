@@ -14,6 +14,16 @@ export async function GET(
   if (error) return error;
 
   try {
+    // Verify the service belongs to this church
+    const [service] = await db
+      .select({ id: services.id })
+      .from(services)
+      .where(and(eq(services.id, serviceId), eq(services.churchId, churchId)))
+      .limit(1);
+    if (!service) {
+      return NextResponse.json({ error: "Service not found" }, { status: 404 });
+    }
+
     const sections = await db
       .select()
       .from(serviceSections)

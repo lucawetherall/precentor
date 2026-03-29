@@ -76,4 +76,35 @@ describe("calculateCompleteness", () => {
     ];
     expect(calculateCompleteness(sections)).toBe("partial");
   });
+
+  it("returns 'empty' when all sections are hidden", () => {
+    const sections = [
+      { musicSlotType: "processional", musicSlotId: "hymn-1", placeholderType: null, placeholderValue: null, visible: false },
+      { musicSlotType: "offertory", musicSlotId: "hymn-2", placeholderType: null, placeholderValue: null, visible: false },
+    ];
+    expect(calculateCompleteness(sections)).toBe("empty");
+  });
+
+  it("handles mix of visible/hidden with only non-slot sections visible", () => {
+    const sections = [
+      { musicSlotType: "processional", musicSlotId: "hymn-1", placeholderType: null, placeholderValue: null, visible: false },
+      { musicSlotType: null, musicSlotId: null, placeholderType: null, placeholderValue: null, visible: true },
+    ];
+    // No visible music or placeholder sections
+    expect(calculateCompleteness(sections)).toBe("empty");
+  });
+
+  it("returns 'complete' with single visible filled placeholder and no music slots", () => {
+    const sections = [
+      { musicSlotType: null, musicSlotId: null, placeholderType: "collect", placeholderValue: "Collect text", visible: true },
+    ];
+    expect(calculateCompleteness(sections)).toBe("complete");
+  });
+
+  it("returns 'empty' with single visible unfilled placeholder and no music slots", () => {
+    const sections = [
+      { musicSlotType: null, musicSlotId: null, placeholderType: "collect", placeholderValue: null, visible: true },
+    ];
+    expect(calculateCompleteness(sections)).toBe("empty");
+  });
 });
