@@ -127,12 +127,14 @@ export function reducer(
     }
 
     case "SNAPSHOT_AND_UPDATE_SLOT": {
-      const snapshot = takeSnapshot(state);
       const newSlots = new Map(state.musicSlots);
       const existing = newSlots.get(action.slotId);
-      if (existing) {
-        newSlots.set(action.slotId, { ...existing, ...action.fields });
+      if (!existing) {
+        // Slot doesn't exist — no-op to avoid misleading undo entries
+        return state;
       }
+      const snapshot = takeSnapshot(state);
+      newSlots.set(action.slotId, { ...existing, ...action.fields });
       return {
         ...state,
         musicSlots: newSlots,
