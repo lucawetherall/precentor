@@ -30,8 +30,14 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "MEMBER");
   if (error) return error;
 
+  let body;
   try {
-    const body = await request.json();
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  try {
     const serviceIds: string[] = body.serviceIds;
     const format: string = body.format || "pdf";
     const pageSize: "A4" | "A5" = body.size === "A5" ? "A5" : "A4";
