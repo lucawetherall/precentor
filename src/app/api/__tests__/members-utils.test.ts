@@ -1,14 +1,5 @@
 import { describe, it, expect } from "vitest";
-
-// Extract and test the escapeHtml utility used in the members route.
-// The function is not exported, so we duplicate the logic here to test it.
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+import { escapeHtml } from "@/lib/utils/escape-html";
 
 describe("escapeHtml", () => {
   it("escapes ampersands", () => {
@@ -17,7 +8,7 @@ describe("escapeHtml", () => {
 
   it("escapes angle brackets", () => {
     expect(escapeHtml("<script>alert('xss')</script>")).toBe(
-      "&lt;script&gt;alert('xss')&lt;/script&gt;",
+      "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;",
     );
   });
 
@@ -31,6 +22,10 @@ describe("escapeHtml", () => {
 
   it("handles empty string", () => {
     expect(escapeHtml("")).toBe("");
+  });
+
+  it("escapes single quotes", () => {
+    expect(escapeHtml("it's")).toBe("it&#39;s");
   });
 
   it("escapes multiple special characters together", () => {

@@ -6,14 +6,8 @@ import { invites } from "@/lib/db/schema";
 import { randomBytes } from "crypto";
 import { memberInviteSchema } from "@/lib/validation/schemas";
 import { apiError } from "@/lib/api-helpers";
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+import { escapeHtml } from "@/lib/utils/escape-html";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(
   request: Request,
@@ -22,6 +16,9 @@ export async function POST(
   const { churchId } = await params;
   const { user, error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
+
+  const rateLimited = rateLimit(`invite:${user!.id}`, { maxRequests: 10, windowMs: 60_000 });
+  if (rateLimited) return rateLimited;
 
   let body;
   try {

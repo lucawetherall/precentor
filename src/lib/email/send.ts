@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { escapeHtml } from "@/lib/utils/escape-html";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -13,9 +14,9 @@ export async function sendRotaNotification(
     from: FROM_EMAIL,
     to,
     subject: "Your rota has been published",
-    html: `<p>Dear ${name},</p>
+    html: `<p>Dear ${escapeHtml(name)},</p>
 <p>The rota for the coming weeks has been published:</p>
-<div>${schedule}</div>
+<div>${escapeHtml(schedule)}</div>
 <p>Please check your availability and confirm your attendance.</p>
 <p>— Church Music Planner</p>`,
   });
@@ -27,13 +28,13 @@ export async function sendAvailabilityReminder(
   churchName: string,
   dates: string[]
 ) {
-  const dateList = dates.map((d) => `<li>${d}</li>`).join("");
+  const dateList = dates.map((d) => `<li>${escapeHtml(d)}</li>`).join("");
   await resend.emails.send({
     from: FROM_EMAIL,
     to,
     subject: `Availability reminder — ${churchName}`,
-    html: `<p>Dear ${name},</p>
-<p>Please submit your availability for the following upcoming services at ${churchName}:</p>
+    html: `<p>Dear ${escapeHtml(name)},</p>
+<p>Please submit your availability for the following upcoming services at ${escapeHtml(churchName)}:</p>
 <ul>${dateList}</ul>
 <p>— Church Music Planner</p>`,
   });
@@ -49,7 +50,7 @@ export async function sendInvitation(
     to,
     subject: `You've been invited to ${churchName}`,
     html: `<p>Hello,</p>
-<p>${inviterName} has invited you to join ${churchName} on Church Music Planner.</p>
+<p>${escapeHtml(inviterName)} has invited you to join ${escapeHtml(churchName)} on Church Music Planner.</p>
 <p>Sign in to accept:</p>
 <p><a href="${process.env.NEXT_PUBLIC_SUPABASE_URL ? "https://precentor.app/login" : "http://localhost:3000/login"}">Sign In</a></p>
 <p>— Church Music Planner</p>`,
