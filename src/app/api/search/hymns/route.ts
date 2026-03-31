@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { searchHymns } from "@/lib/search/hymns";
 import { logger } from "@/lib/logger";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -9,6 +10,9 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const rateLimited = rateLimit(`hymn-search:${user.id}`, { maxRequests: 30, windowMs: 60_000 });
+  if (rateLimited) return rateLimited;
 
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q") || "";

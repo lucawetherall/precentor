@@ -85,12 +85,18 @@ export async function PATCH(
       if (body.freeText !== null && typeof body.freeText !== "string") {
         return NextResponse.json({ error: "freeText must be a string or null" }, { status: 400 });
       }
+      if (typeof body.freeText === "string" && body.freeText.length > 1000) {
+        return NextResponse.json({ error: "freeText must be at most 1000 characters" }, { status: 400 });
+      }
       updates.freeText = body.freeText;
     }
 
     if ("notes" in body) {
       if (body.notes !== null && typeof body.notes !== "string") {
         return NextResponse.json({ error: "notes must be a string or null" }, { status: 400 });
+      }
+      if (typeof body.notes === "string" && body.notes.length > 5000) {
+        return NextResponse.json({ error: "notes must be at most 5000 characters" }, { status: 400 });
       }
       updates.notes = body.notes;
     }

@@ -4,13 +4,20 @@ import { logger } from "@/lib/logger";
 import { services, musicSlots, performanceLogs, liturgicalDays } from "@/lib/db/schema";
 import { eq, and, lt, or, isNotNull, sql } from "drizzle-orm";
 import { format } from "date-fns";
+import { timingSafeEqual } from "crypto";
+
+function verifyBearerToken(authHeader: string | null, secret: string): boolean {
+  const expected = `Bearer ${secret}`;
+  if (!authHeader || authHeader.length !== expected.length) return false;
+  return timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
+}
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (!process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
   }
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyBearerToken(authHeader, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

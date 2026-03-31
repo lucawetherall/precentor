@@ -1,14 +1,22 @@
 import { NextResponse } from "next/server";
 import { createLLMProvider } from "@/lib/ai/provider";
-import { requireChurchRole } from "@/lib/auth/permissions";
+import { requireChurchRole, requireAuth } from "@/lib/auth/permissions";
 import { logger } from "@/lib/logger";
 import { db } from "@/lib/db";
 import { services, liturgicalDays, readings, performanceLogs } from "@/lib/db/schema";
 import { eq, and, gte, desc } from "drizzle-orm";
 import { format, subWeeks } from "date-fns";
 import type { SuggestionContext } from "@/lib/ai/types";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  // Auth check and rate limit before expensive operations
+  const { user: authUser, error: authErr } = await requireAuth();
+  if (authErr) return authErr;
+
+  const rateLimited = rateLimit(`ai-suggest:${authUser!.id}`, { maxRequests: 10, windowMs: 60_000 });
+  if (rateLimited) return rateLimited;
+
   let body;
   try {
     body = await request.json();
