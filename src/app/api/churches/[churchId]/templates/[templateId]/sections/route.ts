@@ -14,6 +14,16 @@ export async function GET(
   if (error) return error;
 
   try {
+    // Verify the template belongs to this church
+    const [template] = await db
+      .select({ id: churchTemplates.id })
+      .from(churchTemplates)
+      .where(and(eq(churchTemplates.id, templateId), eq(churchTemplates.churchId, churchId)))
+      .limit(1);
+    if (!template) {
+      return NextResponse.json({ error: "Template not found" }, { status: 404 });
+    }
+
     const sections = await db
       .select()
       .from(churchTemplateSections)
@@ -44,6 +54,16 @@ export async function PUT(
   const { sections } = body;
 
   try {
+    // Verify the template belongs to this church
+    const [template] = await db
+      .select({ id: churchTemplates.id })
+      .from(churchTemplates)
+      .where(and(eq(churchTemplates.id, templateId), eq(churchTemplates.churchId, churchId)))
+      .limit(1);
+    if (!template) {
+      return NextResponse.json({ error: "Template not found" }, { status: 404 });
+    }
+
     await db
       .delete(churchTemplateSections)
       .where(eq(churchTemplateSections.churchTemplateId, templateId));
