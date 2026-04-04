@@ -27,7 +27,7 @@ export async function GET(
   const sizeParam = request.nextUrl.searchParams.get("size");
   const modeParam = request.nextUrl.searchParams.get("mode");
 
-  const { error } = await requireChurchRole(churchId, "MEMBER");
+  const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
   try {
