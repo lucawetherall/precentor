@@ -27,7 +27,7 @@ export async function POST(
 ) {
   const { churchId } = await params;
 
-  const { error } = await requireChurchRole(churchId, "MEMBER");
+  const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
   let body;

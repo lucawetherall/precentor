@@ -248,7 +248,7 @@ export const responsesSettings = pgTable("responses_settings", {
 export const invites = pgTable("invites", {
   id: uuid("id").primaryKey().defaultRandom(),
   churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
-  email: text("email").notNull(),
+  email: text("email"),
   role: memberRoleEnum("role").default("MEMBER").notNull(),
   token: text("token").notNull().unique(),
   invitedBy: uuid("invited_by").notNull().references(() => users.id, { onDelete: "cascade" }),

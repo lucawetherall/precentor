@@ -44,6 +44,10 @@ export const memberInviteSchema = z.object({
   sendEmail: z.boolean().default(true),
 });
 
+export const quickInviteSchema = z.object({
+  role: z.enum(["ADMIN", "EDITOR", "MEMBER"]).default("MEMBER"),
+});
+
 export const churchUpdateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   address: z.string().max(500).nullable().optional(),
