@@ -21,6 +21,7 @@ export default function InviteAcceptPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pageError, setPageError] = useState("");
+  const [confirmationPending, setConfirmationPending] = useState(false);
 
   useEffect(() => {
     async function loadInvite() {
@@ -65,11 +66,14 @@ export default function InviteAcceptPage() {
     setLoading(true);
     const supabase = createClient();
 
-    // Create account
-    const { error: signUpError } = await supabase.auth.signUp({
+    // Create account with redirect back to this invite page after confirmation
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: invite!.email,
       password,
-      options: { data: { name } },
+      options: {
+        data: { name },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/invite/${token}`,
+      },
     });
 
     if (signUpError) {
@@ -84,6 +88,9 @@ export default function InviteAcceptPage() {
           setLoading(false);
           return;
         }
+        // Sign-in succeeded — session exists, accept invite directly
+        await acceptInvite();
+        return;
       } else {
         setError(signUpError.message);
         setLoading(false);
@@ -91,7 +98,14 @@ export default function InviteAcceptPage() {
       }
     }
 
-    // Accept the invite
+    // If email confirmation is required, signUp succeeds but returns no session
+    if (signUpData?.user && !signUpData.session) {
+      setConfirmationPending(true);
+      setLoading(false);
+      return;
+    }
+
+    // Session exists (email confirmation disabled, or sign-in fallback) — accept now
     await acceptInvite();
   };
 
@@ -120,6 +134,22 @@ export default function InviteAcceptPage() {
           <h1 className="text-3xl font-heading font-semibold">Invalid Invite</h1>
           <p role="alert" className="text-sm text-muted-foreground">{pageError}</p>
           <a href="/login" className="text-sm text-primary underline hover:no-underline">Go to sign in</a>
+        </div>
+      </main>
+    );
+  }
+
+  if (confirmationPending) {
+    return (
+      <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-8">
+        <div className="w-full max-w-sm text-center space-y-4">
+          <h1 className="text-3xl font-heading font-semibold">Check Your Email</h1>
+          <p className="text-sm text-muted-foreground">
+            We&apos;ve sent a confirmation link to <strong>{invite?.email}</strong>.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Click the link in your email to confirm your account. You&apos;ll be redirected back here to join <strong>{invite?.churchName}</strong>.
+          </p>
         </div>
       </main>
     );
