@@ -1,7 +1,14 @@
 import { Resend } from "resend";
 import { escapeHtml } from "@/lib/utils/escape-html";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-initialise so the module can be imported at build time without an API key
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return _resend;
+}
 
 const FROM_EMAIL = "Precentor <onboarding@resend.dev>";
 
@@ -10,7 +17,7 @@ export async function sendRotaNotification(
   name: string,
   schedule: string
 ) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: "Your rota has been published",
@@ -29,7 +36,7 @@ export async function sendAvailabilityReminder(
   dates: string[]
 ) {
   const dateList = dates.map((d) => `<li>${escapeHtml(d)}</li>`).join("");
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: `Availability reminder — ${churchName}`,
@@ -49,7 +56,7 @@ export async function sendInvitation(
   if (!inviteUrl.startsWith("https://") && !inviteUrl.startsWith("http://")) {
     throw new Error("inviteUrl must use http:// or https:// scheme");
   }
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: `You've been invited to ${churchName}`,
