@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { invites } from "@/lib/db/schema";
+import { invites, churches } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { memberInviteSchema } from "@/lib/validation/schemas";
 import { apiError } from "@/lib/api-helpers";
-import { escapeHtml } from "@/lib/utils/escape-html";
 import { rateLimit } from "@/lib/rate-limit";
+import { sendInvitation } from "@/lib/email/send";
 
 export async function POST(
   request: Request,
@@ -31,6 +32,12 @@ export async function POST(
   const { email, role: validatedRole, sendEmail } = parsed.data;
 
   try {
+    const [church] = await db
+      .select({ name: churches.name })
+      .from(churches)
+      .where(eq(churches.id, churchId))
+      .limit(1);
+
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
@@ -43,25 +50,11 @@ export async function POST(
       expiresAt,
     }).returning();
 
-    // Send invite email if requested
     if (sendEmail !== false) {
       try {
-        const { Resend } = await import("resend");
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        // Use server-side configured origin to prevent spoofing
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\.supabase\.co.*/, "") || "";
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         const inviteUrl = `${appUrl}/invite/${token}`;
-
-        await resend.emails.send({
-          from: "Precentor <onboarding@resend.dev>",
-          to: email,
-          subject: "You've been invited to join a church on Precentor",
-          html: `
-            <p>You've been invited to join a church on Precentor as a <strong>${escapeHtml(validatedRole)}</strong>.</p>
-            <p><a href="${escapeHtml(inviteUrl)}">Click here to accept the invite</a></p>
-            <p>This link expires in 7 days.</p>
-          `,
-        });
+        await sendInvitation(email, church?.name ?? "a church", user!.name ?? "An administrator", inviteUrl);
       } catch (emailError) {
         logger.error("Failed to send invite email", emailError);
         // Don't fail the request if email fails — the link still works
