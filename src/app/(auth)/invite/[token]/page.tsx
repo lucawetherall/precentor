@@ -7,7 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 interface InviteData {
   churchName: string;
   role: string;
-  email: string;
+  email: string | null;
 }
 
 export default function InviteAcceptPage() {
@@ -16,6 +16,7 @@ export default function InviteAcceptPage() {
   const [invite, setInvite] = useState<InviteData | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [name, setName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,10 +51,16 @@ export default function InviteAcceptPage() {
     loadInvite();
   }, [token]);
 
+  const effectiveEmail = invite?.email || signupEmail;
+
   const handleSignupAndAccept = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    if (!effectiveEmail) {
+      setError("Please enter your email address.");
+      return;
+    }
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -68,7 +75,7 @@ export default function InviteAcceptPage() {
 
     // Create account with redirect back to this invite page after confirmation
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: invite!.email,
+      email: effectiveEmail,
       password,
       options: {
         data: { name },
@@ -80,7 +87,7 @@ export default function InviteAcceptPage() {
       // If user already exists, try signing in instead
       if (signUpError.message.includes("already registered")) {
         const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: invite!.email,
+          email: effectiveEmail,
           password,
         });
         if (signInError) {
@@ -203,14 +210,27 @@ export default function InviteAcceptPage() {
 
             <div className="space-y-2">
               <label htmlFor="invite-email" className="text-sm font-body">Email</label>
-              <input
-                id="invite-email"
-                type="email"
-                value={invite.email}
-                disabled
-                autoComplete="email"
-                className="w-full px-3 py-2 text-sm border border-border bg-muted text-muted-foreground"
-              />
+              {invite.email ? (
+                <input
+                  id="invite-email"
+                  type="email"
+                  value={invite.email}
+                  disabled
+                  autoComplete="email"
+                  className="w-full px-3 py-2 text-sm border border-border bg-muted text-muted-foreground"
+                />
+              ) : (
+                <input
+                  id="invite-email"
+                  type="email"
+                  value={signupEmail}
+                  onChange={(e) => setSignupEmail(e.target.value)}
+                  placeholder="your.email@example.com"
+                  required
+                  autoComplete="email"
+                  className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -252,6 +272,18 @@ export default function InviteAcceptPage() {
             >
               {loading ? "Creating account..." : "Create Account & Join"}
             </button>
+
+            {!invite.email && (
+              <p className="text-center text-xs text-muted-foreground">
+                Already have an account?{" "}
+                <a
+                  href={`/login?redirect=/invite/${token}`}
+                  className="text-primary underline hover:no-underline"
+                >
+                  Sign in
+                </a>
+              </p>
+            )}
           </form>
         )}
       </div>

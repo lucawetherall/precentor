@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 import { invites, churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
-import { memberInviteSchema } from "@/lib/validation/schemas";
+import { memberInviteSchema, quickInviteSchema } from "@/lib/validation/schemas";
 import { apiError } from "@/lib/api-helpers";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendInvitation } from "@/lib/email/send";
@@ -27,9 +27,22 @@ export async function POST(
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const parsed = memberInviteSchema.safeParse(body);
-  if (!parsed.success) return apiError(parsed.error.issues[0].message, 400);
-  const { email, role: validatedRole, sendEmail } = parsed.data;
+  const hasEmail = body.email && typeof body.email === "string" && body.email.trim() !== "";
+  let email: string | null = null;
+  let validatedRole: "ADMIN" | "EDITOR" | "MEMBER";
+  let sendEmail = false;
+
+  if (hasEmail) {
+    const parsed = memberInviteSchema.safeParse(body);
+    if (!parsed.success) return apiError(parsed.error.issues[0].message, 400);
+    email = parsed.data.email;
+    validatedRole = parsed.data.role;
+    sendEmail = parsed.data.sendEmail;
+  } else {
+    const parsed = quickInviteSchema.safeParse(body);
+    if (!parsed.success) return apiError(parsed.error.issues[0].message, 400);
+    validatedRole = parsed.data.role;
+  }
 
   try {
     const [church] = await db
@@ -50,14 +63,14 @@ export async function POST(
       expiresAt,
     }).returning();
 
-    if (sendEmail !== false) {
+    // Send invite email if requested and email is provided
+    if (email && sendEmail) {
       try {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         const inviteUrl = `${appUrl}/invite/${token}`;
         await sendInvitation(email, church?.name ?? "a church", user!.name ?? "An administrator", inviteUrl);
       } catch (emailError) {
         logger.error("Failed to send invite email", emailError);
-        // Don't fail the request if email fails — the link still works
       }
     }
 
