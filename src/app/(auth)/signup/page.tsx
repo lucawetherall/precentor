@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -91,7 +92,7 @@ export default function SignupPage() {
                 onBlur={() => setFieldErrors((prev) => ({ ...prev, name: validateName(name) }))}
                 placeholder="John Smith"
                 required
-                className="bg-white rounded-none"
+                className="bg-white"
               />
               {fieldErrors.name && (
                 <p className="text-xs text-destructive mt-1">{fieldErrors.name}</p>
@@ -108,7 +109,7 @@ export default function SignupPage() {
                 onBlur={() => setFieldErrors((prev) => ({ ...prev, email: validateEmail(email) }))}
                 placeholder="director@parish.org.uk"
                 required
-                className="bg-white rounded-none"
+                className="bg-white"
               />
               {fieldErrors.email && (
                 <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
@@ -126,7 +127,7 @@ export default function SignupPage() {
                 placeholder="Min. 8 characters"
                 required
                 minLength={8}
-                className="bg-white rounded-none"
+                className="bg-white"
               />
               {fieldErrors.password && (
                 <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
@@ -143,19 +144,15 @@ export default function SignupPage() {
                 placeholder="Confirm your password"
                 required
                 minLength={8}
-                className="bg-white rounded-none"
+                className="bg-white"
               />
             </div>
 
             {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <Button type="submit" disabled={loading} className="w-full">
               {loading ? "Creating account..." : "Create Account"}
-            </button>
+            </Button>
           </form>
         )}
 

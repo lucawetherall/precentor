@@ -45,7 +45,7 @@ export default async function ChurchLayout({ children, params }: Props) {
         membership = result[0].membership;
       }
     }
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   if (!church || !membership) {
     redirect("/churches");

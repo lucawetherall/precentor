@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 function LoginForm() {
   const router = useRouter();
@@ -64,7 +65,7 @@ function LoginForm() {
           onBlur={() => setFieldErrors((prev) => ({ ...prev, email: validateEmail(email) }))}
           placeholder="director@parish.org.uk"
           required
-          className="bg-white rounded-none"
+          className="bg-white"
         />
         {fieldErrors.email && (
           <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
@@ -86,7 +87,7 @@ function LoginForm() {
           onBlur={() => setFieldErrors((prev) => ({ ...prev, password: validatePassword(password) }))}
           placeholder="Enter your password"
           required
-          className="bg-white rounded-none"
+          className="bg-white"
         />
         {fieldErrors.password && (
           <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
@@ -95,13 +96,9 @@ function LoginForm() {
 
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
+      <Button type="submit" disabled={loading} className="w-full">
         {loading ? "Signing in..." : "Sign In"}
-      </button>
+      </Button>
     </form>
   );
 }

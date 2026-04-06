@@ -28,7 +28,7 @@ export default async function ChurchesPage() {
         .innerJoin(churches, eq(churchMemberships.churchId, churches.id))
         .where(eq(churchMemberships.userId, dbUser[0].id));
     }
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   return (
     <main id="main-content" className="p-4 sm:p-6 lg:p-8 max-w-4xl">
@@ -36,7 +36,7 @@ export default async function ChurchesPage() {
         <h1 className="text-3xl font-heading font-semibold">Your Churches</h1>
         <Link
           href="/churches/new"
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors"
+          className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm bg-primary text-primary-foreground shadow hover:bg-primary/90 transition-colors"
         >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
           Add Church
@@ -49,7 +49,7 @@ export default async function ChurchesPage() {
           <p className="text-muted-foreground mb-4">You haven&apos;t joined any churches yet.</p>
           <Link
             href="/churches/new"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors"
+            className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm bg-primary text-primary-foreground shadow hover:bg-primary/90 transition-colors"
           >
             Create Your First Church
           </Link>

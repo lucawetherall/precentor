@@ -91,7 +91,7 @@ export function MembersTable({
     <div className="mt-8 border border-border overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-foreground text-background">
+          <tr className="bg-muted text-foreground">
             <th className="px-3 py-2 text-left font-body font-normal">Name</th>
             <th className="px-3 py-2 text-left font-body font-normal hidden sm:table-cell">Email</th>
             <th className="px-3 py-2 text-left font-body font-normal">Role</th>
@@ -113,7 +113,7 @@ export function MembersTable({
                     value={m.role}
                     onChange={(e) => updateMember(m.id, "role", e.target.value)}
                     aria-label={`Role for ${m.userName || m.userEmail}`}
-                    className="text-xs border border-border px-1.5 py-1 bg-white focus:border-primary focus:ring-1 focus:ring-ring"
+                    className="text-xs rounded-md border border-input px-1.5 py-1 bg-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {ROLES.map((r) => (
                       <option key={r} value={r}>{r}</option>
@@ -129,7 +129,7 @@ export function MembersTable({
                     value={m.voicePart || ""}
                     onChange={(e) => updateMember(m.id, "voicePart", e.target.value || null)}
                     aria-label={`Voice part for ${m.userName || m.userEmail}`}
-                    className="text-xs border border-border px-1.5 py-1 bg-white focus:border-primary focus:ring-1 focus:ring-ring"
+                    className="text-xs rounded-md border border-input px-1.5 py-1 bg-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <option value="">—</option>
                     {VOICE_PARTS.map((vp) => (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 const SERVICE_LABELS: Record<string, string> = {
   SUNG_EUCHARIST: "Sung Eucharist",
@@ -84,7 +85,7 @@ export default function NewChurchPage() {
             required
             autoComplete="organization"
             placeholder="St Mary's, Anytown"
-            className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+            className="w-full h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </div>
         <div className="space-y-1">
@@ -94,7 +95,7 @@ export default function NewChurchPage() {
             name="diocese"
             autoComplete="off"
             placeholder="Diocese of Oxford"
-            className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+            className="w-full h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </div>
         <div className="space-y-1">
@@ -104,7 +105,7 @@ export default function NewChurchPage() {
             name="address"
             rows={2}
             autoComplete="street-address"
-            className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none resize-y"
+            className="w-full rounded-md px-3 py-2 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
           />
         </div>
         <div className="space-y-1">
@@ -115,7 +116,7 @@ export default function NewChurchPage() {
             autoComplete="off"
             inputMode="numeric"
             placeholder="123456"
-            className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+            className="w-full h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </div>
 
@@ -165,13 +166,9 @@ export default function NewChurchPage() {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Creating..." : "Create Church"}
-        </button>
+        </Button>
       </form>
     </main>
   );

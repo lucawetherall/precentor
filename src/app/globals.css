@@ -182,3 +182,19 @@
     box-shadow: 0 0 0 1px var(--primary);
   }
 }
+
+/* Toast slide-in animation */
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-in.slide-in-from-right {
+  animation: slide-in-from-right 0.2s ease-out;
+}

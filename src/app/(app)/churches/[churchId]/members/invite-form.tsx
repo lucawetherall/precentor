@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Copy, Link2, Loader2, Mail } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function InviteMemberForm({ churchId }: { churchId: string }) {
   // Quick invite state
@@ -99,7 +100,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
               id="quick-role"
               value={quickRole}
               onChange={(e) => setQuickRole(e.target.value)}
-              className="w-full sm:w-auto px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:ring-1 focus:ring-ring"
+              className="w-full sm:w-auto h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="MEMBER">Member</option>
               <option value="EDITOR">Editor</option>
@@ -156,7 +157,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
               <label htmlFor="invite-email" className="block text-sm font-body mb-1">
                 Email address
               </label>
-              <input
+              <Input
                 id="invite-email"
                 type="email"
                 value={email}
@@ -164,7 +165,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
                 placeholder="singer@parish.org.uk"
                 autoComplete="email"
                 required
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:ring-1 focus:ring-ring"
+                className="bg-white"
               />
             </div>
             <div>
@@ -173,7 +174,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
                 id="invite-role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full sm:w-auto px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:ring-1 focus:ring-ring"
+                className="w-full sm:w-auto h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="MEMBER">Member</option>
                 <option value="EDITOR">Editor</option>

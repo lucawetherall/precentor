@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
+import { Button } from "@/components/ui/button";
 
 const DAY_NAMES = [
   "Sunday",
@@ -222,7 +223,7 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
                     dayOfWeek: Number(e.target.value),
                   }))
                 }
-                className="px-2 py-1.5 text-sm border border-border bg-background focus:outline-none focus:border-primary"
+                className="px-2 py-1.5 text-sm rounded-md border border-input bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {DAY_NAMES.map((day, i) => (
                   <option key={day} value={i}>
@@ -245,7 +246,7 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
                     serviceType: e.target.value as ServiceType,
                   }))
                 }
-                className="px-2 py-1.5 text-sm border border-border bg-background focus:outline-none focus:border-primary"
+                className="px-2 py-1.5 text-sm rounded-md border border-input bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {SERVICE_TYPES.map((st) => (
                   <option key={st} value={st}>
@@ -266,7 +267,7 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
                 onChange={(e) =>
                   setAddForm((f) => ({ ...f, time: e.target.value }))
                 }
-                className="px-2 py-1.5 text-sm border border-border bg-background focus:outline-none focus:border-primary"
+                className="px-2 py-1.5 text-sm rounded-md border border-input bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
             </div>
 
@@ -282,21 +283,18 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
               Enabled
             </label>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-1.5 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-            >
+            <Button type="submit" disabled={saving} size="sm">
               {saving ? "Saving..." : "Save"}
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setShowAddForm(false)}
-              className="px-4 py-1.5 text-sm border border-border hover:bg-muted transition-colors"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -304,21 +302,14 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
       {/* Action buttons */}
       <div className="flex gap-3">
         {!showAddForm && (
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="px-4 py-2 text-sm border border-border hover:bg-muted transition-colors"
-          >
+          <Button variant="outline" onClick={() => setShowAddForm(true)}>
             Add pattern
-          </button>
+          </Button>
         )}
 
-        <button
-          onClick={handleGenerate}
-          disabled={generating}
-          className="px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-        >
+        <Button onClick={handleGenerate} disabled={generating}>
           {generating ? "Generating..." : "Generate upcoming services"}
-        </button>
+        </Button>
       </div>
     </div>
   );
