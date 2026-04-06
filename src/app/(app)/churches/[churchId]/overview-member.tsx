@@ -23,12 +23,10 @@ interface UpcomingDay {
 
 export function MemberThisSunday({
   churchId,
-  day: _day,
   services,
   userAvailability,
 }: {
   churchId: string;
-  day: { date: string; cwName: string };
   services: ServiceWithMusic[];
   userAvailability: Record<string, "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE" | null>;
 }) {

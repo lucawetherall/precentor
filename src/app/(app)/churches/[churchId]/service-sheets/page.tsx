@@ -32,7 +32,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
         .limit(1);
       if (membership.length > 0) userRole = membership[0].role as MemberRole;
     }
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   if (!hasMinRole(userRole, "ADMIN")) {
     redirect(`/churches/${churchId}`);

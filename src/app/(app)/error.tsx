@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function AppError({
   error,
@@ -20,15 +21,12 @@ export default function AppError({
         {error.message || "An unexpected error occurred."}
       </p>
       <div className="flex flex-wrap gap-2">
-        <button
-          onClick={reset}
-          className="px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors"
-        >
+        <Button onClick={reset}>
           Try again
-        </button>
+        </Button>
         <Link
           href="/dashboard"
-          className="px-4 py-2 text-sm border border-border hover:bg-muted transition-colors"
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-9 px-4 py-2 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
         >
           Go to dashboard
         </Link>

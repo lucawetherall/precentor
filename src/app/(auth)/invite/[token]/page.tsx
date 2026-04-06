@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface InviteData {
   churchName: string;
@@ -184,19 +186,15 @@ export default function InviteAcceptPage() {
         {isAuthenticated ? (
           <div className="space-y-4">
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-            <button
-              onClick={handleAcceptOnly}
-              disabled={loading}
-              className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-            >
+            <Button onClick={handleAcceptOnly} disabled={loading} className="w-full">
               {loading ? "Accepting..." : "Accept Invite"}
-            </button>
+            </Button>
           </div>
         ) : (
           <form onSubmit={handleSignupAndAccept} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="name" className="text-sm font-body">Full name</label>
-              <input
+              <Input
                 id="name"
                 type="text"
                 value={name}
@@ -204,23 +202,23 @@ export default function InviteAcceptPage() {
                 placeholder="John Smith"
                 required
                 autoComplete="name"
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                className="bg-white"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="invite-email" className="text-sm font-body">Email</label>
               {invite.email ? (
-                <input
+                <Input
                   id="invite-email"
                   type="email"
                   value={invite.email}
                   disabled
                   autoComplete="email"
-                  className="w-full px-3 py-2 text-sm border border-border bg-muted text-muted-foreground"
+                  className="bg-muted text-muted-foreground"
                 />
               ) : (
-                <input
+                <Input
                   id="invite-email"
                   type="email"
                   value={signupEmail}
@@ -228,14 +226,14 @@ export default function InviteAcceptPage() {
                   placeholder="your.email@example.com"
                   required
                   autoComplete="email"
-                  className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                  className="bg-white"
                 />
               )}
             </div>
 
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-body">Password</label>
-              <input
+              <Input
                 id="password"
                 type="password"
                 value={password}
@@ -244,13 +242,13 @@ export default function InviteAcceptPage() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                className="bg-white"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="confirm-password" className="text-sm font-body">Confirm password</label>
-              <input
+              <Input
                 id="confirm-password"
                 type="password"
                 value={confirmPassword}
@@ -259,19 +257,15 @@ export default function InviteAcceptPage() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                className="bg-white"
               />
             </div>
 
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-            >
+            <Button type="submit" disabled={loading} className="w-full">
               {loading ? "Creating account..." : "Create Account & Join"}
-            </button>
+            </Button>
 
             {!invite.email && (
               <p className="text-center text-xs text-muted-foreground">

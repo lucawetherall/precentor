@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Church {
   id: string;
@@ -47,23 +48,21 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1">
         <label htmlFor="name" className="text-sm font-body">Church Name</label>
-        <input
+        <Input
           id="name"
           name="name"
           defaultValue={church.name}
           required
           autoComplete="organization"
-          className="w-full px-3 py-2 text-sm border border-border bg-background focus:border-primary focus:outline-none"
         />
       </div>
       <div className="space-y-1">
         <label htmlFor="diocese" className="text-sm font-body">Diocese</label>
-        <input
+        <Input
           id="diocese"
           name="diocese"
           defaultValue={church.diocese || ""}
           autoComplete="off"
-          className="w-full px-3 py-2 text-sm border border-border bg-background focus:border-primary focus:outline-none"
         />
       </div>
       <div className="space-y-1">
@@ -74,21 +73,24 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
           defaultValue={church.address || ""}
           rows={2}
           autoComplete="street-address"
-          className="w-full px-3 py-2 text-sm border border-border bg-background focus:border-primary focus:outline-none resize-y"
+          className="w-full rounded-md px-3 py-2 text-sm border border-input bg-transparent shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
         />
       </div>
       <div className="space-y-1">
         <label htmlFor="ccliNumber" className="text-sm font-body">CCLI Number</label>
-        <input
+        <Input
           id="ccliNumber"
           name="ccliNumber"
           defaultValue={church.ccliNumber || ""}
           autoComplete="off"
-          className="w-full px-3 py-2 text-sm border border-border bg-background focus:border-primary focus:outline-none"
         />
       </div>
 
-      {message && <p role="alert" className="text-sm text-muted-foreground">{message}</p>}
+      {message && (
+        <p role="alert" className={`text-sm ${message === "Settings saved." ? "text-success" : "text-destructive"}`}>
+          {message}
+        </p>
+      )}
 
       <Button type="submit" disabled={loading}>
         {loading ? "Saving..." : "Save Settings"}

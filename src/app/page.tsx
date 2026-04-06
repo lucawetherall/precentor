@@ -8,7 +8,7 @@ export default function Home() {
       <section className="flex flex-col items-center justify-center px-4 sm:px-8 py-20 sm:py-28 lg:py-36 text-center relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/30" />
         <div className="max-w-2xl space-y-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 text-xs font-body text-primary border border-primary/30 bg-primary/5 mb-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 text-xs font-body text-primary border border-primary/30 bg-primary/5 mb-2 rounded-full">
             <Sparkles className="h-3 w-3" strokeWidth={1.5} aria-hidden="true" />
             AI-powered church music planning
           </div>
@@ -22,14 +22,14 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center px-8 py-3 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors shadow-md"
+              className="inline-flex items-center justify-center px-8 py-3 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors shadow-md rounded-md"
             >
               Get Started Free
               <ArrowRight className="ml-2 h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center justify-center px-8 py-3 text-sm font-body border border-border hover:bg-muted transition-colors"
+              className="inline-flex items-center justify-center px-8 py-3 text-sm font-body border border-border hover:bg-muted transition-colors rounded-md"
             >
               Sign In
             </Link>
@@ -44,42 +44,42 @@ export default function Home() {
             Everything you need for church music planning
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="border border-border bg-card p-6 shadow-sm">
+            <div className="border border-border bg-card p-6 shadow-sm rounded-md">
               <Calendar className="h-7 w-7 text-primary mb-3" strokeWidth={1.5} aria-hidden="true" />
               <h3 className="font-heading font-semibold mb-2">Lectionary Calendar</h3>
               <p className="text-sm text-muted-foreground">
                 Common Worship lectionary built in. See readings, collects, liturgical colours, and seasons for every Sunday.
               </p>
             </div>
-            <div className="border border-border bg-card p-6 shadow-sm">
+            <div className="border border-border bg-card p-6 shadow-sm rounded-md">
               <Music className="h-7 w-7 text-primary mb-3" strokeWidth={1.5} aria-hidden="true" />
               <h3 className="font-heading font-semibold mb-2">Music Planning</h3>
               <p className="text-sm text-muted-foreground">
                 Plan hymns, anthems, mass settings, and organ voluntaries for every service. Search NEH and A&M hymnals.
               </p>
             </div>
-            <div className="border border-border bg-card p-6 shadow-sm">
+            <div className="border border-border bg-card p-6 shadow-sm rounded-md">
               <Sparkles className="h-7 w-7 text-primary mb-3" strokeWidth={1.5} aria-hidden="true" />
               <h3 className="font-heading font-semibold mb-2">AI Suggestions</h3>
               <p className="text-sm text-muted-foreground">
                 Get intelligent music suggestions based on the readings, season, and your church&apos;s repertoire history.
               </p>
             </div>
-            <div className="border border-border bg-card p-6 shadow-sm">
+            <div className="border border-border bg-card p-6 shadow-sm rounded-md">
               <Users className="h-7 w-7 text-primary mb-3" strokeWidth={1.5} aria-hidden="true" />
               <h3 className="font-heading font-semibold mb-2">Choir Rota</h3>
               <p className="text-sm text-muted-foreground">
                 Track availability, assign singers to services, and manage your choir with voice part grouping.
               </p>
             </div>
-            <div className="border border-border bg-card p-6 shadow-sm">
+            <div className="border border-border bg-card p-6 shadow-sm rounded-md">
               <FileText className="h-7 w-7 text-primary mb-3" strokeWidth={1.5} aria-hidden="true" />
               <h3 className="font-heading font-semibold mb-2">Service Sheets</h3>
               <p className="text-sm text-muted-foreground">
                 Generate print-ready PDF and Word service sheets from your planned music, automatically formatted.
               </p>
             </div>
-            <div className="border border-border bg-card p-6 shadow-sm">
+            <div className="border border-border bg-card p-6 shadow-sm rounded-md">
               <BookOpen className="h-7 w-7 text-primary mb-3" strokeWidth={1.5} aria-hidden="true" />
               <h3 className="font-heading font-semibold mb-2">Repertoire Tracking</h3>
               <p className="text-sm text-muted-foreground">
@@ -98,7 +98,7 @@ export default function Home() {
           </h2>
           <div className="space-y-8">
             <div className="flex items-start gap-4">
-              <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-primary text-primary-foreground font-heading font-semibold text-sm">
+              <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-primary text-primary-foreground font-heading font-semibold text-sm rounded-full">
                 1
               </span>
               <div>
@@ -109,7 +109,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-primary text-primary-foreground font-heading font-semibold text-sm">
+              <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-primary text-primary-foreground font-heading font-semibold text-sm rounded-full">
                 2
               </span>
               <div>
@@ -120,7 +120,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-primary text-primary-foreground font-heading font-semibold text-sm">
+              <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-primary text-primary-foreground font-heading font-semibold text-sm rounded-full">
                 3
               </span>
               <div>
@@ -146,7 +146,7 @@ export default function Home() {
           </p>
           <Link
             href="/signup"
-            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors"
+            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors rounded-md"
           >
             Create Your Church
             <ArrowRight className="ml-2 h-4 w-4" strokeWidth={1.5} aria-hidden="true" />

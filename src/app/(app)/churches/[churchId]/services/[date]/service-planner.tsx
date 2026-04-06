@@ -11,9 +11,10 @@ import { SaveStatusIndicator } from "./save-status-indicator";
 import { SectionCountBadge } from "./section-count-badge";
 import type { ServiceSection } from "./section-row";
 import type { MusicSlot } from "./use-service-editor";
-import { Plus, Loader2, Trash2, BookOpen, FileDown, FileText, Eye, BookMarked } from "lucide-react";
+import { Plus, Loader2, Trash2, FileDown, FileText, Eye, BookMarked } from "lucide-react";
 import { POSITION_LABELS } from "@/types";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -240,7 +241,7 @@ export function ServicePlanner({
             id="new-service-type"
             value={newType}
             onChange={(e) => setNewType(e.target.value as ServiceType)}
-            className="text-xs border border-border px-2 py-1 bg-background"
+            className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             {Object.entries(SERVICE_TYPE_LABELS).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
@@ -252,16 +253,12 @@ export function ServicePlanner({
             type="time"
             value={newTime}
             onChange={(e) => setNewTime(e.target.value)}
-            className="text-xs border border-border px-2 py-1 bg-background"
+            className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
-          <button
-            onClick={handleCreateService}
-            disabled={creating}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-primary text-primary-foreground border border-primary hover:bg-primary-hover disabled:opacity-50"
-          >
+          <Button onClick={handleCreateService} disabled={creating} size="sm">
             {creating ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <Plus className="h-3 w-3" strokeWidth={1.5} />}
             Add
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -370,10 +367,11 @@ export function ServicePlanner({
           {editorTab === "preview" && (
             <div>
               <div className="flex items-center gap-2 mb-4 flex-wrap">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handlePreviewPdf}
                   disabled={pdfLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border hover:border-primary hover:text-primary transition-colors rounded-sm disabled:opacity-50"
                 >
                   {pdfLoading ? (
                     <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
@@ -381,7 +379,7 @@ export function ServicePlanner({
                     <Eye className="h-3 w-3" strokeWidth={1.5} />
                   )}
                   Preview PDF
-                </button>
+                </Button>
               </div>
               <BookletPreview
                 churchId={churchId}
@@ -394,10 +392,11 @@ export function ServicePlanner({
 
           {/* Service-level actions */}
           <div className="mt-4 flex items-center justify-end">
-            <button
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleDeleteService}
               disabled={deleting}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-destructive border border-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors disabled:opacity-50 rounded-sm"
               aria-label="Delete service"
             >
               {deleting ? (
@@ -406,7 +405,7 @@ export function ServicePlanner({
                 <Trash2 className="h-3 w-3" strokeWidth={1.5} />
               )}
               Delete service
-            </button>
+            </Button>
           </div>
         </ServiceEditorProvider>
       )}
@@ -424,30 +423,14 @@ export function ServicePlanner({
             <div className="flex items-center justify-between">
               <DialogTitle className="font-heading text-sm">PDF Preview</DialogTitle>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleDownload("pdf")}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border hover:border-primary hover:text-primary transition-colors rounded-sm"
-                >
+                <Button variant="outline" size="sm" onClick={() => handleDownload("pdf")}>
                   <FileDown className="h-3 w-3" strokeWidth={1.5} />
                   Download PDF
-                </button>
-                <button
-                  onClick={() => handleDownload("docx")}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border hover:border-primary hover:text-primary transition-colors rounded-sm"
-                >
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleDownload("docx")}>
                   <FileText className="h-3 w-3" strokeWidth={1.5} />
                   Download DOCX
-                </button>
-                <button
-                  onClick={() => {
-                    handlePdfDialogClose();
-                    setEditorTab("preview");
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border hover:border-primary hover:text-primary transition-colors rounded-sm"
-                >
-                  <BookOpen className="h-3 w-3" strokeWidth={1.5} />
-                  Edit
-                </button>
+                </Button>
               </div>
             </div>
           </DialogHeader>

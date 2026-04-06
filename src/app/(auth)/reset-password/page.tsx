@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -49,7 +51,7 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="password" className="text-sm font-body">New password</label>
-            <input
+            <Input
               id="password"
               name="password"
               type="password"
@@ -59,13 +61,13 @@ export default function ResetPasswordPage() {
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+              className="bg-white"
             />
           </div>
 
           <div className="space-y-2">
             <label htmlFor="confirm-password" className="text-sm font-body">Confirm new password</label>
-            <input
+            <Input
               id="confirm-password"
               name="confirm-password"
               type="password"
@@ -75,7 +77,7 @@ export default function ResetPasswordPage() {
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+              className="bg-white"
             />
           </div>
 
@@ -83,13 +85,9 @@ export default function ResetPasswordPage() {
             <p role="alert" className="text-sm text-destructive">{error}</p>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-          >
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Updating..." : "Update Password"}
-          </button>
+          </Button>
         </form>
       </div>
     </main>

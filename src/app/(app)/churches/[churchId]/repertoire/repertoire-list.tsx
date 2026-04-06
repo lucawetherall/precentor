@@ -72,7 +72,7 @@ export function RepertoireList({
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search pieces..."
             aria-label="Search pieces"
-            className="w-full pl-9 pr-3 py-2 text-sm border border-border bg-background focus:border-primary focus:outline-none"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-input bg-transparent shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -81,7 +81,7 @@ export function RepertoireList({
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortField)}
             aria-label="Sort by"
-            className="text-sm border border-border px-2 py-2 bg-background focus:border-primary focus:outline-none"
+            className="text-sm rounded-md border border-input px-2 py-2 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="count">Most performed</option>
             <option value="lastDate">Most recent</option>
@@ -99,7 +99,7 @@ export function RepertoireList({
           <div className="border border-border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-foreground text-background">
+                <tr className="bg-muted text-foreground">
                   <th className="px-3 py-2 text-left font-body font-normal">Piece</th>
                   <th className="px-3 py-2 text-right font-body font-normal">Times</th>
                   <th className="px-3 py-2 text-right font-body font-normal hidden sm:table-cell">Last Performed</th>
