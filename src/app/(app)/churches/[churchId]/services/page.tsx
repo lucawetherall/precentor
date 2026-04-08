@@ -6,6 +6,8 @@ import {
   musicSlots,
   hymns,
   anthems,
+  rotaEntries,
+  churchMemberships,
 } from '@/lib/db/schema'
 import { gte, asc, eq, and, inArray } from 'drizzle-orm'
 import { format } from 'date-fns'
@@ -13,7 +15,9 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { requireChurchRole } from '@/lib/auth/permissions'
 import type { LiturgicalDayWithService, MusicSlotPreview } from '@/types/service-views'
+import type { VoicePart } from '@/types'
 import { ServicesViewWrapper } from './services-view-wrapper'
+import { computeMusicStatus, computeRotaStatus } from './lib/service-status'
 
 interface Props {
   params: Promise<{ churchId: string }>
@@ -76,6 +80,8 @@ export default async function ServicesPage({ params }: Props) {
               slotType: musicSlots.slotType,
               positionOrder: musicSlots.positionOrder,
               freeText: musicSlots.freeText,
+              hymnId: musicSlots.hymnId,
+              anthemId: musicSlots.anthemId,
               hymnFirstLine: hymns.firstLine,
               anthemTitle: anthems.title,
             })
@@ -84,6 +90,25 @@ export default async function ServicesPage({ params }: Props) {
             .leftJoin(anthems, eq(musicSlots.anthemId, anthems.id))
             .where(inArray(musicSlots.serviceId, serviceIds))
             .orderBy(asc(musicSlots.positionOrder))
+        : []
+
+    const rotas =
+      serviceIds.length > 0
+        ? await db
+            .select({
+              serviceId: rotaEntries.serviceId,
+              confirmed: rotaEntries.confirmed,
+              voicePart: churchMemberships.voicePart,
+            })
+            .from(rotaEntries)
+            .innerJoin(
+              churchMemberships,
+              and(
+                eq(rotaEntries.userId, churchMemberships.userId),
+                eq(churchMemberships.churchId, churchId)
+              )
+            )
+            .where(inArray(rotaEntries.serviceId, serviceIds))
         : []
 
     // Build lookup maps for O(1) access
@@ -100,12 +125,20 @@ export default async function ServicesPage({ params }: Props) {
       slotsByServiceId.set(slot.serviceId, existing);
     }
 
+    const rotasByServiceId = new Map<string, typeof rotas>();
+    for (const entry of rotas) {
+      const existing = rotasByServiceId.get(entry.serviceId) ?? [];
+      existing.push(entry);
+      rotasByServiceId.set(entry.serviceId, existing);
+    }
+
     days = upcomingDays.map((day) => {
       const service = serviceByDayId.get(day.id) ?? null
       if (!service) return { ...day, services: [] }
 
       const avail = availByServiceId.get(service.id)
       const serviceSlots = slotsByServiceId.get(service.id) ?? []
+      const serviceRotas = rotasByServiceId.get(service.id) ?? []
 
       const musicPreview: MusicSlotPreview[] = serviceSlots.slice(0, 4).map((slot) => ({
         id: slot.id,
@@ -114,6 +147,21 @@ export default async function ServicesPage({ params }: Props) {
         title:
           slot.hymnFirstLine ?? slot.anthemTitle ?? slot.freeText ?? slot.slotType,
       }))
+
+      const musicStatus = computeMusicStatus(
+        serviceSlots.map((s) => ({
+          hymnId: s.hymnId,
+          anthemId: s.anthemId,
+          freeText: s.freeText,
+        }))
+      )
+
+      const rotaStatus = computeRotaStatus(
+        serviceRotas.map((r) => ({
+          confirmed: r.confirmed,
+          voicePart: r.voicePart as VoicePart | null,
+        }))
+      )
 
       return {
         ...day,
@@ -128,8 +176,8 @@ export default async function ServicesPage({ params }: Props) {
               (avail?.status as 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null) ??
               null,
             musicPreview,
-            musicStatus: 'empty' as const,
-            rotaStatus: 'empty' as const,
+            musicStatus,
+            rotaStatus,
           },
         ],
       }
