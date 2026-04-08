@@ -76,7 +76,7 @@ export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
           <div
             key={h}
             className={cn(
-              'border-r border-b border-border px-2 py-1.5 text-center font-mono text-[9px] uppercase tracking-wider bg-muted/30',
+              'border-r border-b border-border px-2 py-1.5 text-center small-caps text-xs bg-muted/30',
               i === 6 && 'text-primary font-medium'
             )}
           >
@@ -123,7 +123,7 @@ export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
                   </span>
 
                   {liturgicalDay && !hasService && (
-                    <div className="text-[9px] font-mono text-muted-foreground/60 px-1 py-0.5 mb-1 leading-tight">
+                    <div className="text-[10px] text-muted-foreground/70 px-1 py-0.5 mb-1 leading-tight">
                       {liturgicalDay.cwName}
                     </div>
                   )}

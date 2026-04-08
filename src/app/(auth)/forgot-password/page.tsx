@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         {sent ? (
-          <div className="p-4 border border-border bg-white text-center">
+          <div className="p-4 border border-border bg-card text-center">
             <p className="text-sm">Check your email for the password reset link.</p>
           </div>
         ) : (
@@ -56,7 +56,6 @@ export default function ForgotPasswordPage() {
                 placeholder="director@parish.org.uk"
                 required
                 autoComplete="email"
-                className="bg-white"
               />
             </div>
 
@@ -69,7 +68,7 @@ export default function ForgotPasswordPage() {
         )}
 
         <p className="text-sm text-center text-muted-foreground">
-          <Link href="/login" className="text-primary underline hover:no-underline">Back to sign in</Link>
+          <Link href="/login" className="text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary">Back to sign in</Link>
         </p>
       </div>
     </main>

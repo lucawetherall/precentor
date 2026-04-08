@@ -40,7 +40,7 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
     <div className="space-y-8">
       {groups.map(([month, monthDays]) => (
         <div key={month}>
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground pb-2 mb-3 border-b border-border">
+          <p className="small-caps text-xs text-muted-foreground pb-2 mb-3 border-b border-border">
             {month}
           </p>
           <div className="space-y-2">
@@ -56,7 +56,7 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                     <span className="font-heading text-3xl leading-none">
                       {format(parseISO(day.date), 'd')}
                     </span>
-                    <span className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground mt-1">
+                    <span className="small-caps text-xs text-muted-foreground mt-1">
                       {format(parseISO(day.date), 'EEE')}
                     </span>
                   </div>
@@ -76,7 +76,7 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                     </p>
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <span
-                        className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 border"
+                        className="small-caps text-xs px-2 py-0.5 border rounded-sm"
                         style={{ borderColor: colour, color: colour }}
                       >
                         {day.season.replace(/_/g, ' ')}
@@ -88,7 +88,7 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                         </span>
                       )}
                       {day.service && day.service.musicPreview.length > 0 && (
-                        <span className="text-[10px] font-mono text-muted-foreground/70">
+                        <span className="small-caps text-xs text-muted-foreground/70">
                           {day.service.musicPreview.length} music
                         </span>
                       )}
@@ -118,7 +118,7 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+                        <span className="small-caps text-xs text-muted-foreground">
                           Availability
                         </span>
                         <AvailabilityWidget

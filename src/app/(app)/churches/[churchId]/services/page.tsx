@@ -135,7 +135,7 @@ export default async function ServicesPage({ params }: Props) {
   }
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <Suspense>
         <ServicesViewWrapper
           churchId={churchId}

@@ -148,7 +148,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
 
   if (!day) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <p className="text-muted-foreground">No liturgical data for {date}.</p>
         <Link
           href={`/churches/${churchId}/services`}
@@ -168,7 +168,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   // Edit mode: existing planner (editors/admins only)
   if (isEditMode) {
     return (
-      <div className="p-8 max-w-5xl">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
         <Link
           href={`/churches/${churchId}/services/${date}`}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
