@@ -46,6 +46,7 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
           <div className="space-y-2">
             {monthDays.map((day) => {
               const colour = LITURGICAL_COLOURS[day.colour as LiturgicalColour] ?? '#4A6741'
+              const service = day.services[0] ?? null
               return (
                 <div
                   key={day.id}
@@ -68,9 +69,9 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                   >
                     <p className="font-heading text-lg mb-1">
                       {day.cwName}
-                      {day.service && day.service.choirStatus !== 'CHOIR_REQUIRED' && CHOIR_STATUS_NOTES[day.service.choirStatus] && (
+                      {service && service.choirStatus !== 'CHOIR_REQUIRED' && CHOIR_STATUS_NOTES[service.choirStatus] && (
                         <span className="text-sm italic text-muted-foreground/60 font-normal ml-2">
-                          {CHOIR_STATUS_NOTES[day.service.choirStatus]}
+                          {CHOIR_STATUS_NOTES[service.choirStatus]}
                         </span>
                       )}
                     </p>
@@ -81,22 +82,22 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                       >
                         {day.season.replace(/_/g, ' ')}
                       </span>
-                      {day.service && (
+                      {service && (
                         <span className="text-xs text-muted-foreground">
-                          {SERVICE_TYPE_LABELS[day.service.serviceType as keyof typeof SERVICE_TYPE_LABELS] ?? day.service.serviceType}
-                          {day.service.time ? ` · ${day.service.time}` : ''}
+                          {SERVICE_TYPE_LABELS[service.serviceType as keyof typeof SERVICE_TYPE_LABELS] ?? service.serviceType}
+                          {service.time ? ` · ${service.time}` : ''}
                         </span>
                       )}
-                      {day.service && day.service.musicPreview.length > 0 && (
+                      {service && service.musicPreview.length > 0 && (
                         <span className="small-caps text-xs text-muted-foreground/70">
-                          {day.service.musicPreview.length} music
+                          {service.musicPreview.length} music
                         </span>
                       )}
                     </div>
-                    {day.service ? (
-                      day.service.musicPreview.length > 0 ? (
+                    {service ? (
+                      service.musicPreview.length > 0 ? (
                         <div className="space-y-0.5">
-                          {day.service.musicPreview.map((slot) => (
+                          {service.musicPreview.map((slot) => (
                             <p key={slot.id} className="text-xs text-muted-foreground flex items-center gap-1.5">
                               <span className="opacity-40">♩</span>
                               {slot.title}
@@ -112,7 +113,7 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                   </Link>
 
                   {/* Availability */}
-                  {day.service && (
+                  {service && (
                     <div
                       className="flex flex-col items-center justify-center gap-1 px-4 border-l border-border flex-shrink-0"
                       onClick={(e) => e.stopPropagation()}
@@ -122,9 +123,9 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                           Availability
                         </span>
                         <AvailabilityWidget
-                          serviceId={day.service.id}
+                          serviceId={service.id}
                           churchId={churchId}
-                          currentStatus={day.service.userAvailability}
+                          currentStatus={service.userAvailability}
                           size="md"
                         />
                       </div>

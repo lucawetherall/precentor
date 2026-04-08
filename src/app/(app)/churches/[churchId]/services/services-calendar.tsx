@@ -88,13 +88,14 @@ export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
           const colIndex = idx % 7
           const isSundayCol = colIndex === 6
           const liturgicalDay = dateStr ? (dayMap.get(dateStr) ?? null) : null
-          const hasService = Boolean(liturgicalDay?.service)
+          const service = liturgicalDay?.services[0] ?? null
+          const hasService = Boolean(service)
           const colour = liturgicalDay
             ? (LITURGICAL_COLOURS[liturgicalDay.colour as LiturgicalColour] ?? '#4A6741')
             : null
 
           // Choir status colour coding for service cells
-          const choirStatus = liturgicalDay?.service?.choirStatus
+          const choirStatus = service?.choirStatus
           const choirBorderColour =
             choirStatus === 'NO_CHOIR_NEEDED' ? 'var(--warning)'
             : choirStatus === 'SAID_SERVICE_ONLY' ? 'var(--muted-foreground)'
@@ -142,9 +143,9 @@ export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
                       </Link>
                       <div onClick={(e) => e.stopPropagation()}>
                         <AvailabilityWidget
-                          serviceId={liturgicalDay.service!.id}
+                          serviceId={service!.id}
                           churchId={churchId}
-                          currentStatus={liturgicalDay.service!.userAvailability}
+                          currentStatus={service!.userAvailability}
                           size="sm"
                         />
                       </div>

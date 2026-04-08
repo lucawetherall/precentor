@@ -102,7 +102,7 @@ export default async function ServicesPage({ params }: Props) {
 
     days = upcomingDays.map((day) => {
       const service = serviceByDayId.get(day.id) ?? null
-      if (!service) return { ...day, service: null }
+      if (!service) return { ...day, services: [] }
 
       const avail = availByServiceId.get(service.id)
       const serviceSlots = slotsByServiceId.get(service.id) ?? []
@@ -117,17 +117,21 @@ export default async function ServicesPage({ params }: Props) {
 
       return {
         ...day,
-        service: {
-          id: service.id,
-          serviceType: service.serviceType,
-          time: service.time,
-          status: service.status,
-          choirStatus: service.choirStatus,
-          userAvailability:
-            (avail?.status as 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null) ??
-            null,
-          musicPreview,
-        },
+        services: [
+          {
+            id: service.id,
+            serviceType: service.serviceType,
+            time: service.time,
+            status: service.status,
+            choirStatus: service.choirStatus,
+            userAvailability:
+              (avail?.status as 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null) ??
+              null,
+            musicPreview,
+            musicStatus: 'empty' as const,
+            rotaStatus: 'empty' as const,
+          },
+        ],
       }
     })
   } catch (err) {
