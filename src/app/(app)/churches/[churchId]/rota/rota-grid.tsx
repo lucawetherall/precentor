@@ -159,8 +159,8 @@ export function RotaGrid({
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm border border-border">
           <thead>
-            <tr className="bg-foreground text-background">
-              <th className="px-3 py-2 text-left font-body font-normal sticky left-0 bg-foreground z-10 min-w-[160px]">Member</th>
+            <tr className="bg-muted text-foreground">
+              <th className="px-3 py-2 text-left font-body font-normal sticky left-0 bg-muted z-10 min-w-[160px]">Member</th>
               {services.map((s) => (
                 <th key={s.serviceId} className="px-2 py-2 text-center font-body font-normal min-w-[80px]">
                   <div className="text-xs">{format(parseISO(s.date), "d MMM")}</div>
@@ -238,7 +238,7 @@ export function RotaGrid({
       <div className="md:hidden space-y-4">
         {services.map((s) => (
           <div key={s.serviceId} className="border border-border bg-card shadow-sm">
-            <div className="px-4 py-3 bg-foreground text-background">
+            <div className="px-4 py-3 bg-muted text-foreground">
               <p className="font-heading font-semibold">{format(parseISO(s.date), "EEE d MMM")}</p>
               <p className="text-xs opacity-80">{s.cwName} — {s.serviceType.replace(/_/g, " ")}</p>
             </div>

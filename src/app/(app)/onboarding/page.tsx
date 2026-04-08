@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function OnboardingPage() {
               placeholder="St Mary's Parish Church"
               autoComplete="organization"
               required
-              className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+              className="w-full h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
 
@@ -74,7 +75,7 @@ export default function OnboardingPage() {
               onChange={(e) => setDiocese(e.target.value)}
               placeholder="e.g. Diocese of London"
               autoComplete="off"
-              className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+              className="w-full h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
 
@@ -87,7 +88,7 @@ export default function OnboardingPage() {
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Church Lane, Town, County"
               autoComplete="street-address"
-              className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+              className="w-full h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
 
@@ -100,19 +101,15 @@ export default function OnboardingPage() {
               onChange={(e) => setCcliNumber(e.target.value)}
               placeholder="Optional"
               autoComplete="off"
-              className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+              className="w-full h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
 
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-          >
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Creating..." : "Create Church"}
-          </button>
+          </Button>
         </form>
       </div>
     </main>

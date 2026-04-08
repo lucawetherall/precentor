@@ -24,7 +24,7 @@ export default async function RepertoirePage({ params }: Props) {
       .where(eq(performanceLogs.churchId, churchId))
       .orderBy(desc(performanceLogs.date))
       .limit(200);
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   // Group by piece for repeat detection
   const pieceCounts: Record<string, { count: number; lastDate: string }> = {};

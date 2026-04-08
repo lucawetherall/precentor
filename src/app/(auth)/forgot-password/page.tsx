@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -46,26 +48,23 @@ export default function ForgotPasswordPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-body">Email address</label>
-              <input
+              <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="director@parish.org.uk"
                 required
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                autoComplete="email"
+                className="bg-white"
               />
             </div>
 
             {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <Button type="submit" disabled={loading} className="w-full">
               {loading ? "Sending..." : "Send Reset Link"}
-            </button>
+            </Button>
           </form>
         )}
 

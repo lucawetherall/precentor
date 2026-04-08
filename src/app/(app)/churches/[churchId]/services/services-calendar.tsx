@@ -96,9 +96,9 @@ export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
           // Choir status colour coding for service cells
           const choirStatus = liturgicalDay?.service?.choirStatus
           const choirBorderColour =
-            choirStatus === 'NO_CHOIR_NEEDED' ? '#B45309'
-            : choirStatus === 'SAID_SERVICE_ONLY' ? '#6B7280'
-            : choirStatus === 'NO_SERVICE' ? '#DC2626'
+            choirStatus === 'NO_CHOIR_NEEDED' ? 'var(--warning)'
+            : choirStatus === 'SAID_SERVICE_ONLY' ? 'var(--muted-foreground)'
+            : choirStatus === 'NO_SERVICE' ? 'var(--destructive)'
             : colour
 
           return (

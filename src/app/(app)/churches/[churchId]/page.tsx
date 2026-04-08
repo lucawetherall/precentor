@@ -28,7 +28,7 @@ export default async function ChurchOverviewPage({ params }: Props) {
   let thisSunday: Awaited<ReturnType<typeof getThisSunday>> = null;
   try {
     thisSunday = await getThisSunday(churchId);
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   // Empty state — no liturgical data at all
   if (!thisSunday) {
@@ -63,7 +63,7 @@ export default async function ChurchOverviewPage({ params }: Props) {
       ];
       const uniqueServiceIds = [...new Set(allServiceIds)];
       userAvail = await getUserAvailability(userId, uniqueServiceIds);
-    } catch { /* DB not available */ }
+    } catch (err) { console.error("Failed to load data:", err); }
 
     const initialAvail: Record<string, "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE" | null> = {};
     for (const [sid, status] of userAvail) {
@@ -78,7 +78,6 @@ export default async function ChurchOverviewPage({ params }: Props) {
         </p>
         <MemberThisSunday
           churchId={churchId}
-          day={thisSunday}
           services={thisSunday.services.map((s) => ({
             ...s,
             musicSlots: musicByService.get(s.serviceId) || [],
@@ -103,7 +102,7 @@ export default async function ChurchOverviewPage({ params }: Props) {
       getRotaSummary(serviceIds, churchId),
       getNeedsAttention(churchId),
     ]);
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   // Exclude "this Sunday" from the attention list (already shown as hero)
   const filteredAttention = attentionItems.filter(

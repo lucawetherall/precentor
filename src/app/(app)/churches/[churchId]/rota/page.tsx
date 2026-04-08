@@ -66,7 +66,7 @@ export default async function RotaPage({ params }: Props) {
         .from(rotaEntries)
         .where(inArray(rotaEntries.serviceId, serviceIds));
     }
-  } catch { /* DB not available */ }
+  } catch (err) { console.error("Failed to load data:", err); }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">

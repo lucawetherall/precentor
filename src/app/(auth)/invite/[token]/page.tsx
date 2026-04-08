@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface InviteData {
   churchName: string;
   role: string;
-  email: string;
+  email: string | null;
 }
 
 export default function InviteAcceptPage() {
@@ -16,11 +18,13 @@ export default function InviteAcceptPage() {
   const [invite, setInvite] = useState<InviteData | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [name, setName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pageError, setPageError] = useState("");
+  const [confirmationPending, setConfirmationPending] = useState(false);
 
   useEffect(() => {
     async function loadInvite() {
@@ -49,10 +53,16 @@ export default function InviteAcceptPage() {
     loadInvite();
   }, [token]);
 
+  const effectiveEmail = invite?.email || signupEmail;
+
   const handleSignupAndAccept = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    if (!effectiveEmail) {
+      setError("Please enter your email address.");
+      return;
+    }
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -65,18 +75,21 @@ export default function InviteAcceptPage() {
     setLoading(true);
     const supabase = createClient();
 
-    // Create account
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: invite!.email,
+    // Create account with redirect back to this invite page after confirmation
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: effectiveEmail,
       password,
-      options: { data: { name } },
+      options: {
+        data: { name },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/invite/${token}`,
+      },
     });
 
     if (signUpError) {
       // If user already exists, try signing in instead
       if (signUpError.message.includes("already registered")) {
         const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: invite!.email,
+          email: effectiveEmail,
           password,
         });
         if (signInError) {
@@ -84,6 +97,9 @@ export default function InviteAcceptPage() {
           setLoading(false);
           return;
         }
+        // Sign-in succeeded — session exists, accept invite directly
+        await acceptInvite();
+        return;
       } else {
         setError(signUpError.message);
         setLoading(false);
@@ -91,7 +107,14 @@ export default function InviteAcceptPage() {
       }
     }
 
-    // Accept the invite
+    // If email confirmation is required, signUp succeeds but returns no session
+    if (signUpData?.user && !signUpData.session) {
+      setConfirmationPending(true);
+      setLoading(false);
+      return;
+    }
+
+    // Session exists (email confirmation disabled, or sign-in fallback) — accept now
     await acceptInvite();
   };
 
@@ -125,6 +148,22 @@ export default function InviteAcceptPage() {
     );
   }
 
+  if (confirmationPending) {
+    return (
+      <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-8">
+        <div className="w-full max-w-sm text-center space-y-4">
+          <h1 className="text-3xl font-heading font-semibold">Check Your Email</h1>
+          <p className="text-sm text-muted-foreground">
+            We&apos;ve sent a confirmation link to <strong>{invite?.email}</strong>.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Click the link in your email to confirm your account. You&apos;ll be redirected back here to join <strong>{invite?.churchName}</strong>.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   if (!invite || isAuthenticated === null) {
     return (
       <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-8">
@@ -147,19 +186,15 @@ export default function InviteAcceptPage() {
         {isAuthenticated ? (
           <div className="space-y-4">
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-            <button
-              onClick={handleAcceptOnly}
-              disabled={loading}
-              className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-            >
+            <Button onClick={handleAcceptOnly} disabled={loading} className="w-full">
               {loading ? "Accepting..." : "Accept Invite"}
-            </button>
+            </Button>
           </div>
         ) : (
           <form onSubmit={handleSignupAndAccept} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="name" className="text-sm font-body">Full name</label>
-              <input
+              <Input
                 id="name"
                 type="text"
                 value={name}
@@ -167,25 +202,38 @@ export default function InviteAcceptPage() {
                 placeholder="John Smith"
                 required
                 autoComplete="name"
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                className="bg-white"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="invite-email" className="text-sm font-body">Email</label>
-              <input
-                id="invite-email"
-                type="email"
-                value={invite.email}
-                disabled
-                autoComplete="email"
-                className="w-full px-3 py-2 text-sm border border-border bg-muted text-muted-foreground"
-              />
+              {invite.email ? (
+                <Input
+                  id="invite-email"
+                  type="email"
+                  value={invite.email}
+                  disabled
+                  autoComplete="email"
+                  className="bg-muted text-muted-foreground"
+                />
+              ) : (
+                <Input
+                  id="invite-email"
+                  type="email"
+                  value={signupEmail}
+                  onChange={(e) => setSignupEmail(e.target.value)}
+                  placeholder="your.email@example.com"
+                  required
+                  autoComplete="email"
+                  className="bg-white"
+                />
+              )}
             </div>
 
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-body">Password</label>
-              <input
+              <Input
                 id="password"
                 type="password"
                 value={password}
@@ -194,13 +242,13 @@ export default function InviteAcceptPage() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                className="bg-white"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="confirm-password" className="text-sm font-body">Confirm password</label>
-              <input
+              <Input
                 id="confirm-password"
                 type="password"
                 value={confirmPassword}
@@ -209,19 +257,27 @@ export default function InviteAcceptPage() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="w-full px-3 py-2 text-sm border border-border bg-white focus:border-primary focus:outline-none"
+                className="bg-white"
               />
             </div>
 
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-4 py-2 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors disabled:opacity-50"
-            >
+            <Button type="submit" disabled={loading} className="w-full">
               {loading ? "Creating account..." : "Create Account & Join"}
-            </button>
+            </Button>
+
+            {!invite.email && (
+              <p className="text-center text-xs text-muted-foreground">
+                Already have an account?{" "}
+                <a
+                  href={`/login?redirect=/invite/${token}`}
+                  className="text-primary underline hover:no-underline"
+                >
+                  Sign in
+                </a>
+              </p>
+            )}
           </form>
         )}
       </div>
