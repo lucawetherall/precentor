@@ -85,6 +85,8 @@ export function ServicePlanner({
   const [activeTab, setActiveTab] = useState<string>(services[0]?.id || "");
   const [editorTab, setEditorTab] = useState<"order" | "settings" | "preview">("order");
   const [creating, setCreating] = useState(false);
+  const [fetchedSectionsMap, setFetchedSectionsMap] = useState<Record<string, ServiceSection[]>>({});
+  const [fetchedSlotsMap, setFetchedSlotsMap] = useState<Record<string, MusicSlot[]>>({});
   const [deleting, setDeleting] = useState(false);
   const [newType, setNewType] = useState<ServiceType>("SUNG_EUCHARIST");
   const [newTime, setNewTime] = useState("10:00");
@@ -121,6 +123,16 @@ export function ServicePlanner({
           collectId: service.collectId ?? null,
           collectOverride: service.collectOverride ?? null,
         };
+        // Fetch the template sections and slots that were auto-created on the server
+        const [sectionsRes, slotsRes] = await Promise.all([
+          fetch(`/api/churches/${churchId}/services/${service.id}/sections`),
+          fetch(`/api/churches/${churchId}/services/${service.id}/slots`),
+        ]);
+        if (sectionsRes.ok && slotsRes.ok) {
+          const [sections, slots] = await Promise.all([sectionsRes.json(), slotsRes.json()]);
+          setFetchedSectionsMap((prev) => ({ ...prev, [service.id]: sections }));
+          setFetchedSlotsMap((prev) => ({ ...prev, [service.id]: slots }));
+        }
         setServices((prev) => [...prev, newService]);
         setActiveTab(newService.id);
         addToast("Service created", "success");
@@ -295,7 +307,7 @@ export function ServicePlanner({
           key={activeService.id}
           serviceId={activeService.id}
           churchId={churchId}
-          initialSections={(editorSectionsMap[activeService.id] ?? []) as ServiceSection[]}
+          initialSections={(fetchedSectionsMap[activeService.id] ?? editorSectionsMap[activeService.id] ?? []) as ServiceSection[]}
           initialSettings={{
             sheetMode: activeService.sheetMode,
             eucharisticPrayer: activeService.eucharisticPrayer,
@@ -306,7 +318,7 @@ export function ServicePlanner({
             collectId: activeService.collectId,
             collectOverride: activeService.collectOverride,
           }}
-          initialSlots={(editorSlotsMap[activeService.id] ?? []) as MusicSlot[]}
+          initialSlots={(fetchedSlotsMap[activeService.id] ?? editorSlotsMap[activeService.id] ?? []) as MusicSlot[]}
         >
           {/* Editor sub-tabs with save status */}
           <div className="flex items-center border-b border-border mb-4">

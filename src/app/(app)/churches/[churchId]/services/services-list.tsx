@@ -3,6 +3,7 @@ import { format, parseISO } from 'date-fns'
 import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from '@/types'
 import type { LiturgicalColour } from '@/types'
 import type { LiturgicalDayWithService } from '@/types/service-views'
+import { formatLiturgicalDayName } from '@/lib/liturgical-display'
 import { AvailabilityWidget } from '@/components/availability-widget'
 import { CHOIR_STATUS_NOTES } from './choir-status-constants'
 
@@ -68,7 +69,7 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                     className="flex-1 p-4 min-w-0"
                   >
                     <p className="font-heading text-lg mb-1">
-                      {day.cwName}
+                      {formatLiturgicalDayName(day.cwName, day.date)}
                     </p>
                     <div className="flex items-center gap-3 mb-3 flex-wrap">
                       <span

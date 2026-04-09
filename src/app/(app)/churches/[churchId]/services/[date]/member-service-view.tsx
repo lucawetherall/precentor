@@ -8,6 +8,7 @@ import type { PopulatedMusicSlot } from '@/types/service-views'
 import { AvailabilityWidget } from '@/components/availability-widget'
 import { ServiceMusicList } from './service-music-list'
 import { ReadingsByLectionary } from './readings-by-lectionary'
+import { formatLiturgicalDayName } from '@/lib/liturgical-display'
 import { CHOIR_STATUS_LABELS, CHOIR_STATUS_PILL_CLASSES } from '../choir-status-constants'
 
 interface Reading {
@@ -108,7 +109,7 @@ export function MemberServiceView({
           <p className="small-caps text-xs text-muted-foreground mb-1">
             {day.season.replace(/_/g, ' ')}
           </p>
-          <h1 className="text-3xl font-heading font-semibold leading-tight text-balance">{day.cwName}</h1>
+          <h1 className="text-3xl font-heading font-semibold leading-tight text-balance">{formatLiturgicalDayName(day.cwName, day.date)}</h1>
           <p className="small-caps text-xs text-muted-foreground mt-1">
             {format(parseISO(day.date), 'EEEE d MMMM yyyy')}
             {service &&

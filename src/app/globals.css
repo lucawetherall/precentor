@@ -153,7 +153,8 @@
     @apply bg-background text-foreground font-body antialiased;
     overflow-x: hidden;
     line-height: 1.65;
-    font-feature-settings: "liga", "dlig", "kern";
+    font-feature-settings: "liga", "kern";
+    font-variant-ligatures: no-discretionary-ligatures no-historical-ligatures;
     font-variant-numeric: oldstyle-nums proportional-nums;
   }
 

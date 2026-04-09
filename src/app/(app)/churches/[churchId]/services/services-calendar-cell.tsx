@@ -8,6 +8,7 @@ import type {
   ServiceReadinessStatus,
 } from '@/types/service-views'
 import { cn } from '@/lib/utils'
+import { formatLiturgicalDayName } from '@/lib/liturgical-display'
 
 interface Props {
   churchId: string
@@ -82,7 +83,7 @@ export function ServicesCalendarCell({
 
       {day && showFeastName && (
         <p className="text-[10px] italic text-muted-foreground leading-tight">
-          {day.cwName}
+          {formatLiturgicalDayName(day.cwName, day.date)}
         </p>
       )}
 
