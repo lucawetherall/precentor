@@ -12,19 +12,56 @@ import { cn } from '@/lib/utils'
 
 const DAY_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-/** Builds an array of date strings ("YYYY-MM-DD") or nulls for a Mon–Sun month grid. */
-export function buildMonthGrid(year: number, month: number): Array<string | null> {
+/** Builds an array of date strings ("YYYY-MM-DD") for a Mon–Sun month grid.
+ *  Always returns exactly 42 cells (6 rows × 7 columns). Outside-month days
+ *  from the previous and next month are filled in rather than padded with nulls. */
+export function buildMonthGrid(year: number, month: number): string[] {
   const firstDay = new Date(year, month, 1)
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const isoFirst = (firstDay.getDay() + 6) % 7 // Mon=0 … Sun=6
 
-  const cells: Array<string | null> = []
-  for (let i = 0; i < isoFirst; i++) cells.push(null)
+  const cells: string[] = []
+
+  // Outside-month days from the previous month, in date order
+  if (isoFirst > 0) {
+    const prevMonthDays = new Date(year, month, 0).getDate()
+    const prevMonth = month === 0 ? 11 : month - 1
+    const prevYear = month === 0 ? year - 1 : year
+    for (let i = isoFirst - 1; i >= 0; i--) {
+      const d = prevMonthDays - i
+      cells.push(format(new Date(prevYear, prevMonth, d), 'yyyy-MM-dd'))
+    }
+  }
+
+  // Current month days
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push(format(new Date(year, month, d), 'yyyy-MM-dd'))
   }
-  while (cells.length % 7 !== 0) cells.push(null)
+
+  // Outside-month days from the next month, to fill exactly 6 rows (42 cells)
+  let dayOfNext = 1
+  const nextMonth = month === 11 ? 0 : month + 1
+  const nextYear = month === 11 ? year + 1 : year
+  while (cells.length < 42) {
+    cells.push(format(new Date(nextYear, nextMonth, dayOfNext), 'yyyy-MM-dd'))
+    dayOfNext++
+  }
+
   return cells
+}
+
+/**
+ * Filters a list of liturgical days to only those that appear in the visible
+ * month's 6-row Mon–Sun grid, including outside-month days from adjacent months.
+ */
+export function pickDaysForGrid(
+  days: LiturgicalDayWithService[],
+  year: number,
+  month: number,
+): LiturgicalDayWithService[] {
+  const grid = buildMonthGrid(year, month)
+  const visible = new Set(grid)
+  return days.filter((d) => visible.has(d.date))
 }
 
 interface ServicesCalendarProps {
