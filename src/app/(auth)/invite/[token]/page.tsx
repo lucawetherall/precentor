@@ -202,7 +202,6 @@ export default function InviteAcceptPage() {
                 placeholder="John Smith"
                 required
                 autoComplete="name"
-                className="bg-white"
               />
             </div>
 
@@ -215,7 +214,6 @@ export default function InviteAcceptPage() {
                   value={invite.email}
                   disabled
                   autoComplete="email"
-                  className="bg-muted text-muted-foreground"
                 />
               ) : (
                 <Input
@@ -226,7 +224,6 @@ export default function InviteAcceptPage() {
                   placeholder="your.email@example.com"
                   required
                   autoComplete="email"
-                  className="bg-white"
                 />
               )}
             </div>
@@ -242,7 +239,6 @@ export default function InviteAcceptPage() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="bg-white"
               />
             </div>
 
@@ -257,7 +253,6 @@ export default function InviteAcceptPage() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="bg-white"
               />
             </div>
 
@@ -272,7 +267,7 @@ export default function InviteAcceptPage() {
                 Already have an account?{" "}
                 <a
                   href={`/login?redirect=/invite/${token}`}
-                  className="text-primary underline hover:no-underline"
+                  className="text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary"
                 >
                   Sign in
                 </a>

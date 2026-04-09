@@ -1,158 +1,173 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { format } from 'date-fns'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import Link from 'next/link'
-import { LITURGICAL_COLOURS } from '@/types'
-import type { LiturgicalColour } from '@/types'
+import type { MemberRole } from '@/types'
 import type { LiturgicalDayWithService } from '@/types/service-views'
-import { AvailabilityWidget } from '@/components/availability-widget'
-import { cn } from '@/lib/utils'
+import { ServicesCalendarHeader } from './services-calendar-header'
+import { ServicesCalendarSeasonRibbon } from './services-calendar-season-ribbon'
+import { ServicesCalendarCell } from './services-calendar-cell'
 
 const DAY_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-/** Builds an array of date strings ("YYYY-MM-DD") or nulls for a Mon–Sun month grid. */
-export function buildMonthGrid(year: number, month: number): Array<string | null> {
+/** Builds an array of date strings ("YYYY-MM-DD") for a Mon–Sun month grid.
+ *  Always returns exactly 42 cells (6 rows × 7 columns). Outside-month days
+ *  from the previous and next month are filled in rather than padded with nulls. */
+export function buildMonthGrid(year: number, month: number): string[] {
   const firstDay = new Date(year, month, 1)
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const isoFirst = (firstDay.getDay() + 6) % 7 // Mon=0 … Sun=6
 
-  const cells: Array<string | null> = []
-  for (let i = 0; i < isoFirst; i++) cells.push(null)
+  const cells: string[] = []
+
+  // Outside-month days from the previous month, in date order
+  if (isoFirst > 0) {
+    const prevMonthDays = new Date(year, month, 0).getDate()
+    const prevMonth = month === 0 ? 11 : month - 1
+    const prevYear = month === 0 ? year - 1 : year
+    for (let i = isoFirst - 1; i >= 0; i--) {
+      const d = prevMonthDays - i
+      cells.push(format(new Date(prevYear, prevMonth, d), 'yyyy-MM-dd'))
+    }
+  }
+
+  // Current month days
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push(format(new Date(year, month, d), 'yyyy-MM-dd'))
   }
-  while (cells.length % 7 !== 0) cells.push(null)
+
+  // Outside-month days from the next month, to fill exactly 6 rows (42 cells)
+  let dayOfNext = 1
+  const nextMonth = month === 11 ? 0 : month + 1
+  const nextYear = month === 11 ? year + 1 : year
+  while (cells.length < 42) {
+    cells.push(format(new Date(nextYear, nextMonth, dayOfNext), 'yyyy-MM-dd'))
+    dayOfNext++
+  }
+
   return cells
 }
 
-interface ServicesCalendarProps {
-  churchId: string
-  days: LiturgicalDayWithService[]
+/**
+ * Filters a list of liturgical days to only those that appear in the visible
+ * month's 6-row Mon–Sun grid, including outside-month days from adjacent months.
+ */
+export function pickDaysForGrid(
+  days: LiturgicalDayWithService[],
+  year: number,
+  month: number,
+): LiturgicalDayWithService[] {
+  const grid = buildMonthGrid(year, month)
+  const visible = new Set(grid)
+  return days.filter((d) => visible.has(d.date))
 }
 
-export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
-  const today = new Date()
-  const [year, setYear] = useState(today.getFullYear())
-  const [month, setMonth] = useState(today.getMonth())
+interface Props {
+  churchId: string
+  days: LiturgicalDayWithService[]
+  role: MemberRole
+}
 
-  const grid = buildMonthGrid(year, month)
-  const dayMap = new Map(days.map((d) => [d.date, d]))
+export function ServicesCalendar({ churchId, days, role }: Props) {
+  const now = new Date()
+  const [year, setYear] = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth())
 
-  function prevMonth() {
-    if (month === 0) { setYear((y) => y - 1); setMonth(11) }
-    else setMonth((m) => m - 1)
+  const grid = useMemo(() => buildMonthGrid(year, month), [year, month])
+  const visibleDays = useMemo(() => pickDaysForGrid(days, year, month), [days, year, month])
+  const dayByDate = useMemo(() => {
+    const map = new Map<string, LiturgicalDayWithService>()
+    for (const d of visibleDays) map.set(d.date, d)
+    return map
+  }, [visibleDays])
+
+  const serviceCount = useMemo(() => {
+    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`
+    return visibleDays
+      .filter((d) => d.date.startsWith(monthPrefix))
+      .reduce((acc, d) => acc + d.services.length, 0)
+  }, [visibleDays, year, month])
+
+  const todayStr = format(now, 'yyyy-MM-dd')
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
+
+  function goPrev() {
+    if (month === 0) {
+      setYear((y) => y - 1)
+      setMonth(11)
+    } else {
+      setMonth((m) => m - 1)
+    }
   }
-  function nextMonth() {
-    if (month === 11) { setYear((y) => y + 1); setMonth(0) }
-    else setMonth((m) => m + 1)
+
+  function goNext() {
+    if (month === 11) {
+      setYear((y) => y + 1)
+      setMonth(0)
+    } else {
+      setMonth((m) => m + 1)
+    }
+  }
+
+  function goToday() {
+    setYear(now.getFullYear())
+    setMonth(now.getMonth())
+  }
+
+  function selectMonth(y: number, m: number) {
+    setYear(y)
+    setMonth(m)
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={prevMonth}
-          aria-label="Previous month"
-          className="p-1.5 border border-border hover:bg-muted transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <h2 className="font-heading text-xl">
-          {format(new Date(year, month, 1), 'MMMM yyyy')}
-        </h2>
-        <button
-          onClick={nextMonth}
-          aria-label="Next month"
-          className="p-1.5 border border-border hover:bg-muted transition-colors"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
+      <ServicesCalendarHeader
+        year={year}
+        month={month}
+        serviceCount={serviceCount}
+        isCurrentMonth={isCurrentMonth}
+        onPrev={goPrev}
+        onNext={goNext}
+        onToday={goToday}
+        onSelectMonth={selectMonth}
+      />
+
+      <ServicesCalendarSeasonRibbon days={visibleDays} />
 
       <div className="grid grid-cols-7 border-l border-t border-border">
-        {DAY_HEADERS.map((h, i) => (
+        {DAY_HEADERS.map((label, idx) => (
           <div
-            key={h}
-            className={cn(
-              'border-r border-b border-border px-2 py-1.5 text-center font-mono text-[9px] uppercase tracking-wider bg-muted/30',
-              i === 6 && 'text-primary font-medium'
-            )}
+            key={label}
+            className={
+              'border-r border-b border-border px-2 py-1.5 text-center small-caps text-xs bg-muted/30 ' +
+              (idx === 6 ? 'text-primary' : 'text-muted-foreground')
+            }
           >
-            {h}
+            {label}
           </div>
         ))}
 
-        {grid.map((dateStr, idx) => {
-          const colIndex = idx % 7
-          const isSundayCol = colIndex === 6
-          const liturgicalDay = dateStr ? (dayMap.get(dateStr) ?? null) : null
-          const hasService = Boolean(liturgicalDay?.service)
-          const colour = liturgicalDay
-            ? (LITURGICAL_COLOURS[liturgicalDay.colour as LiturgicalColour] ?? '#4A6741')
-            : null
-
-          // Choir status colour coding for service cells
-          const choirStatus = liturgicalDay?.service?.choirStatus
-          const choirBorderColour =
-            choirStatus === 'NO_CHOIR_NEEDED' ? 'var(--warning)'
-            : choirStatus === 'SAID_SERVICE_ONLY' ? 'var(--muted-foreground)'
-            : choirStatus === 'NO_SERVICE' ? 'var(--destructive)'
-            : colour
+        {grid.map((dateStr) => {
+          const cellYear = parseInt(dateStr.slice(0, 4), 10)
+          const cellMonth = parseInt(dateStr.slice(5, 7), 10) - 1  // 0-indexed
+          const cellDay = parseInt(dateStr.slice(8, 10), 10)
+          const jsDay = new Date(cellYear, cellMonth, cellDay).getDay()
+          const isOutsideMonth = cellMonth !== month || cellYear !== year
+          const isSunday = (jsDay + 6) % 7 === 6
+          const isToday = dateStr === todayStr
+          const day = dayByDate.get(dateStr) ?? null
 
           return (
-            <div
-              key={idx}
-              className={cn(
-                'border-r border-b border-border min-h-[100px] p-1.5',
-                !dateStr && 'bg-muted/20'
-              )}
-            >
-              {dateStr && (
-                <>
-                  <span
-                    className={cn(
-                      'block font-mono text-[11px] mb-1',
-                      isSundayCol
-                        ? 'text-primary font-medium'
-                        : 'text-muted-foreground'
-                    )}
-                  >
-                    {parseInt(dateStr.slice(8), 10)}
-                  </span>
-
-                  {liturgicalDay && !hasService && (
-                    <div className="text-[9px] font-mono text-muted-foreground/60 px-1 py-0.5 mb-1 leading-tight">
-                      {liturgicalDay.cwName}
-                    </div>
-                  )}
-
-                  {hasService && liturgicalDay && (
-                    <div>
-                      <Link href={`/churches/${churchId}/services/${dateStr}`}>
-                        <div
-                          className="border-l-[3px] pl-1.5 mb-1.5 hover:opacity-80"
-                          style={{ borderColor: choirBorderColour! }}
-                        >
-                          <p className="font-heading text-[11px] leading-snug">
-                            {liturgicalDay.cwName}
-                          </p>
-                        </div>
-                      </Link>
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <AvailabilityWidget
-                          serviceId={liturgicalDay.service!.id}
-                          churchId={churchId}
-                          currentStatus={liturgicalDay.service!.userAvailability}
-                          size="sm"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+            <ServicesCalendarCell
+              key={dateStr}
+              churchId={churchId}
+              day={day}
+              dateStr={dateStr}
+              isOutsideMonth={isOutsideMonth}
+              isSunday={isSunday}
+              isToday={isToday}
+              role={role}
+            />
           )
         })}
       </div>

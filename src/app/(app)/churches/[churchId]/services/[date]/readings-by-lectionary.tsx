@@ -66,7 +66,7 @@ export function ReadingsByLectionary({ readings }: ReadingsByLectionaryProps) {
             <TabsTrigger
               key={key}
               value={key}
-              className="font-mono text-[9px] uppercase tracking-wider px-2.5 py-1 data-[state=active]:bg-background data-[state=active]:text-foreground"
+              className="small-caps text-xs px-2.5 py-1 data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
               {LECTIONARY_LABELS[key] ?? key}
             </TabsTrigger>

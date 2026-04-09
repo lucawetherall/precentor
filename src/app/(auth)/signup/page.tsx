@@ -77,7 +77,7 @@ export default function SignupPage() {
         </div>
 
         {message ? (
-          <div className="p-4 border border-border bg-white text-center space-y-2">
+          <div className="p-4 border border-border bg-card text-center space-y-2">
             <p className="text-sm">{message}</p>
           </div>
         ) : (
@@ -92,7 +92,6 @@ export default function SignupPage() {
                 onBlur={() => setFieldErrors((prev) => ({ ...prev, name: validateName(name) }))}
                 placeholder="John Smith"
                 required
-                className="bg-white"
               />
               {fieldErrors.name && (
                 <p className="text-xs text-destructive mt-1">{fieldErrors.name}</p>
@@ -109,7 +108,6 @@ export default function SignupPage() {
                 onBlur={() => setFieldErrors((prev) => ({ ...prev, email: validateEmail(email) }))}
                 placeholder="director@parish.org.uk"
                 required
-                className="bg-white"
               />
               {fieldErrors.email && (
                 <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
@@ -127,7 +125,6 @@ export default function SignupPage() {
                 placeholder="Min. 8 characters"
                 required
                 minLength={8}
-                className="bg-white"
               />
               {fieldErrors.password && (
                 <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
@@ -144,7 +141,6 @@ export default function SignupPage() {
                 placeholder="Confirm your password"
                 required
                 minLength={8}
-                className="bg-white"
               />
             </div>
 
@@ -158,7 +154,7 @@ export default function SignupPage() {
 
         <p className="text-sm text-center text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="text-primary underline hover:no-underline">Sign in</Link>
+          <Link href="/login" className="text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary">Sign in</Link>
         </p>
       </div>
     </main>

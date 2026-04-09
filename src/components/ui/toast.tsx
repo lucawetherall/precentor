@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 interface Toast {
   id: string;
   message: string;
-  type: "success" | "error" | "info";
+  type: "success" | "error" | "info" | "warning";
 }
 
 interface ToastContextValue {
@@ -57,6 +57,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   const borderColor =
     toast.type === "success" ? "border-success" :
     toast.type === "error" ? "border-destructive" :
+    toast.type === "warning" ? "border-warning" :
     "border-primary";
 
   return (
