@@ -148,9 +148,12 @@ export function ServicesCalendar({ churchId, days, role }: Props) {
         ))}
 
         {grid.map((dateStr) => {
-          const cellDate = new Date(dateStr)
-          const isOutsideMonth = cellDate.getMonth() !== month || cellDate.getFullYear() !== year
-          const isSunday = (cellDate.getDay() + 6) % 7 === 6
+          const cellYear = parseInt(dateStr.slice(0, 4), 10)
+          const cellMonth = parseInt(dateStr.slice(5, 7), 10) - 1  // 0-indexed
+          const cellDay = parseInt(dateStr.slice(8, 10), 10)
+          const jsDay = new Date(cellYear, cellMonth, cellDay).getDay()
+          const isOutsideMonth = cellMonth !== month || cellYear !== year
+          const isSunday = (jsDay + 6) % 7 === 6
           const isToday = dateStr === todayStr
           const day = dayByDate.get(dateStr) ?? null
 

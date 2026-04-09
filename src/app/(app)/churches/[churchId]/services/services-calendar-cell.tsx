@@ -149,7 +149,16 @@ function ServiceCard({ churchId, dateStr, day, service, role }: ServiceCardProps
   return (
     <Link
       href={`/churches/${churchId}/services/${dateStr}`}
-      aria-label={`${title} on ${dateStr}`}
+      aria-label={[
+        title,
+        day?.cwName,
+        service.time ? `at ${service.time}` : null,
+        isEditor
+          ? service.musicPreview.length > 0
+            ? `${service.musicPreview.length} music items planned`
+            : 'no music planned'
+          : null,
+      ].filter(Boolean).join(', ')}
       className="block rounded-sm bg-card border border-border pl-2 pr-2 py-1 hover:border-primary transition-colors"
       style={{ borderLeftWidth: '3px', borderLeftColor: colour }}
     >

@@ -113,9 +113,12 @@ export default async function ServicesPage({ params }: Props) {
         : []
 
     // Build lookup maps for O(1) access
-    const serviceByDayId = new Map(
-      churchServices.map((s) => [s.liturgicalDayId, s])
-    );
+    const servicesByDayId = new Map<string, typeof churchServices>();
+    for (const s of churchServices) {
+      const existing = servicesByDayId.get(s.liturgicalDayId) ?? [];
+      existing.push(s);
+      servicesByDayId.set(s.liturgicalDayId, existing);
+    }
     const availByServiceId = new Map(
       userAvailability.map((a) => [a.serviceId, a])
     );
@@ -134,40 +137,40 @@ export default async function ServicesPage({ params }: Props) {
     }
 
     days = upcomingDays.map((day) => {
-      const service = serviceByDayId.get(day.id) ?? null
-      if (!service) return { ...day, services: [] }
-
-      const avail = availByServiceId.get(service.id)
-      const serviceSlots = slotsByServiceId.get(service.id) ?? []
-      const serviceRotas = rotasByServiceId.get(service.id) ?? []
-
-      const musicPreview: MusicSlotPreview[] = serviceSlots.slice(0, 4).map((slot) => ({
-        id: slot.id,
-        slotType: slot.slotType as MusicSlotPreview['slotType'],
-        positionOrder: slot.positionOrder,
-        title:
-          slot.hymnFirstLine ?? slot.anthemTitle ?? slot.freeText ?? slot.slotType,
-      }))
-
-      const musicStatus = computeMusicStatus(
-        serviceSlots.map((s) => ({
-          hymnId: s.hymnId,
-          anthemId: s.anthemId,
-          freeText: s.freeText,
-        }))
-      )
-
-      const rotaStatus = computeRotaStatus(
-        serviceRotas.map((r) => ({
-          confirmed: r.confirmed,
-          voicePart: r.voicePart as VoicePart | null,
-        }))
-      )
+      const dayServices = servicesByDayId.get(day.id) ?? []
+      if (dayServices.length === 0) return { ...day, services: [] }
 
       return {
         ...day,
-        services: [
-          {
+        services: dayServices.map((service) => {
+          const avail = availByServiceId.get(service.id)
+          const serviceSlots = slotsByServiceId.get(service.id) ?? []
+          const serviceRotas = rotasByServiceId.get(service.id) ?? []
+
+          const musicPreview: MusicSlotPreview[] = serviceSlots.slice(0, 4).map((slot) => ({
+            id: slot.id,
+            slotType: slot.slotType as MusicSlotPreview['slotType'],
+            positionOrder: slot.positionOrder,
+            title:
+              slot.hymnFirstLine ?? slot.anthemTitle ?? slot.freeText ?? slot.slotType,
+          }))
+
+          const musicStatus = computeMusicStatus(
+            serviceSlots.map((s) => ({
+              hymnId: s.hymnId,
+              anthemId: s.anthemId,
+              freeText: s.freeText,
+            }))
+          )
+
+          const rotaStatus = computeRotaStatus(
+            serviceRotas.map((r) => ({
+              confirmed: r.confirmed,
+              voicePart: r.voicePart as VoicePart | null,
+            }))
+          )
+
+          return {
             id: service.id,
             serviceType: service.serviceType,
             time: service.time,
@@ -179,8 +182,8 @@ export default async function ServicesPage({ params }: Props) {
             musicPreview,
             musicStatus,
             rotaStatus,
-          },
-        ],
+          }
+        }),
       }
     })
   } catch (err) {

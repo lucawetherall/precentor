@@ -1,6 +1,5 @@
 import type { VoicePart } from '@/types'
-
-export type ServiceReadinessStatus = 'empty' | 'partial' | 'ready'
+import type { ServiceReadinessStatus } from '@/types/service-views'
 
 interface MusicSlotRow {
   hymnId: string | null
