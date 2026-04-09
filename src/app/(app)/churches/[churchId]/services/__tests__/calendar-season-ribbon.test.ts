@@ -36,17 +36,18 @@ describe('computeSeasonSegments', () => {
     ])
   })
 
-  it('handles a feast-day interruption by splitting into three segments', () => {
-    // Ordinary Time → one-day feast (e.g. All Saints, coloured WHITE which we
-    // model here as a separate "season" value) → back to Ordinary Time.
+  it('produces three segments for A → B → A sequences', () => {
     const days = [
-      day('2026-10-31', 'ORDINARY'),
-      day('2026-11-01', 'ORDINARY'), // All Saints still counts as ORDINARY for the season field
-      day('2026-11-02', 'ORDINARY'),
+      day('2026-12-20', 'ADVENT'),
+      day('2026-12-21', 'ADVENT'),
+      day('2026-12-25', 'CHRISTMAS'),
+      day('2026-12-28', 'ORDINARY'),
+      day('2026-12-29', 'ORDINARY'),
     ]
-    // When the season field doesn't change, we expect a single segment.
     expect(computeSeasonSegments(days)).toEqual([
-      { season: 'ORDINARY', days: 3 },
+      { season: 'ADVENT', days: 2 },
+      { season: 'CHRISTMAS', days: 1 },
+      { season: 'ORDINARY', days: 2 },
     ])
   })
 
