@@ -65,10 +65,10 @@ export function pickDaysForGrid(
 interface Props {
   churchId: string
   days: LiturgicalDayWithService[]
-  role?: MemberRole
+  role: MemberRole
 }
 
-export function ServicesCalendar({ churchId, days, role = 'MEMBER' }: Props) {
+export function ServicesCalendar({ churchId, days, role }: Props) {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())

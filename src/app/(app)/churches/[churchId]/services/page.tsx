@@ -25,10 +25,11 @@ interface Props {
 
 export default async function ServicesPage({ params }: Props) {
   const { churchId } = await params
-  const { user, error } = await requireChurchRole(churchId, 'MEMBER')
+  const { user, membership, error } = await requireChurchRole(churchId, 'MEMBER')
   if (error) redirect('/login')
 
   const userId = user!.id
+  const role = (membership!.role as import('@/types').MemberRole)
   const today = format(new Date(), 'yyyy-MM-dd')
 
   let days: LiturgicalDayWithService[] = []
@@ -192,6 +193,7 @@ export default async function ServicesPage({ params }: Props) {
         <ServicesViewWrapper
           churchId={churchId}
           liturgicalDays={days}
+          role={role}
         />
       </Suspense>
     </div>
