@@ -65,7 +65,6 @@ function LoginForm() {
           onBlur={() => setFieldErrors((prev) => ({ ...prev, email: validateEmail(email) }))}
           placeholder="director@parish.org.uk"
           required
-          className="bg-white"
         />
         {fieldErrors.email && (
           <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
@@ -75,7 +74,7 @@ function LoginForm() {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label htmlFor="password" className="text-sm font-body">Password</label>
-          <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+          <Link href="/forgot-password" className="text-xs text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary">
             Forgot password?
           </Link>
         </div>
@@ -87,7 +86,6 @@ function LoginForm() {
           onBlur={() => setFieldErrors((prev) => ({ ...prev, password: validatePassword(password) }))}
           placeholder="Enter your password"
           required
-          className="bg-white"
         />
         {fieldErrors.password && (
           <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
@@ -120,7 +118,7 @@ export default function LoginPage() {
 
         <p className="text-sm text-center text-muted-foreground">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-primary hover:underline">Create one</Link>
+          <Link href="/signup" className="text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary">Create one</Link>
         </p>
       </div>
     </main>

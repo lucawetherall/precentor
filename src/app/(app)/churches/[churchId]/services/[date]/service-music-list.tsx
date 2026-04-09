@@ -40,8 +40,8 @@ export function ServiceMusicList({ slots }: ServiceMusicListProps) {
         const { title, detail } = resolveSlot(slot)
         const isEmpty = !slot.hymnFirstLine && !slot.anthemTitle && !slot.freeText
         return (
-          <div key={slot.id} className="flex gap-4 py-3 items-start">
-            <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground w-28 flex-shrink-0 pt-1">
+          <div key={slot.id} className="flex gap-4 py-4 items-start">
+            <span className="small-caps text-xs text-muted-foreground w-32 flex-shrink-0 pt-1">
               {MUSIC_SLOT_LABELS[slot.slotType as MusicSlotType] ?? slot.slotType}
             </span>
             <div className="flex-1 min-w-0">

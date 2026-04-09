@@ -61,7 +61,6 @@ export default function ResetPasswordPage() {
               required
               minLength={8}
               autoComplete="new-password"
-              className="bg-white"
             />
           </div>
 
@@ -77,7 +76,6 @@ export default function ResetPasswordPage() {
               required
               minLength={8}
               autoComplete="new-password"
-              className="bg-white"
             />
           </div>
 

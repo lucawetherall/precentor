@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Church, Calendar, Users, Music, ArrowRight } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { NavCard } from "@/components/nav-card";
+import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { users, churchMemberships, churches, services, liturgicalDays } from "@/lib/db/schema";
 import { eq, and, gte, asc, inArray } from "drizzle-orm";
@@ -117,43 +120,34 @@ export default async function DashboardPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
         {userChurches.slice(0, 1).map((uc) => (
-          <Link
+          <NavCard
             key={`sundays-${uc.churchId}`}
             href={`/churches/${uc.churchId}/services`}
-            className="flex items-center gap-3 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
-          >
-            <Calendar className="h-5 w-5 text-primary flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
-            <div className="min-w-0">
-              <p className="text-sm font-heading font-semibold">Plan Services</p>
-              <p className="text-xs text-muted-foreground truncate">{uc.churchName}</p>
-            </div>
-          </Link>
+            icon={Calendar}
+            title="Plan Services"
+            subtitle={uc.churchName}
+            showArrow={false}
+          />
         ))}
         {userChurches.slice(0, 1).map((uc) => (
-          <Link
+          <NavCard
             key={`rota-${uc.churchId}`}
             href={`/churches/${uc.churchId}/rota`}
-            className="flex items-center gap-3 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
-          >
-            <Users className="h-5 w-5 text-primary flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
-            <div className="min-w-0">
-              <p className="text-sm font-heading font-semibold">Choir Rota</p>
-              <p className="text-xs text-muted-foreground truncate">{uc.churchName}</p>
-            </div>
-          </Link>
+            icon={Users}
+            title="Choir Rota"
+            subtitle={uc.churchName}
+            showArrow={false}
+          />
         ))}
         {userChurches.slice(0, 1).map((uc) => (
-          <Link
+          <NavCard
             key={`repertoire-${uc.churchId}`}
             href={`/churches/${uc.churchId}/repertoire`}
-            className="flex items-center gap-3 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
-          >
-            <Music className="h-5 w-5 text-primary flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
-            <div className="min-w-0">
-              <p className="text-sm font-heading font-semibold">Repertoire</p>
-              <p className="text-xs text-muted-foreground truncate">{uc.churchName}</p>
-            </div>
-          </Link>
+            icon={Music}
+            title="Repertoire"
+            subtitle={uc.churchName}
+            showArrow={false}
+          />
         ))}
       </div>
 
@@ -161,17 +155,21 @@ export default async function DashboardPage() {
       <div className="mb-8">
         <h2 className="text-xl font-heading font-semibold mb-4">Upcoming Services</h2>
         {upcomingServices.length === 0 ? (
-          <div className="border border-border bg-card p-8 text-center">
-            <Calendar className="h-10 w-10 mx-auto text-muted-foreground mb-3" strokeWidth={1.5} aria-hidden="true" />
-            <p className="text-muted-foreground">
-              No upcoming services planned.{" "}
-              {userChurches.length > 0 && (
-                <Link href={`/churches/${userChurches[0].churchId}/services`} className="text-primary underline">
-                  Plan your first service
+          <EmptyState
+            icon={Calendar}
+            title="No upcoming services"
+            description="Once you plan a Sunday, it will appear here."
+            action={
+              userChurches.length > 0 ? (
+                <Link
+                  href={`/churches/${userChurches[0].churchId}/services`}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  Plan a service
                 </Link>
-              )}
-            </p>
-          </div>
+              ) : undefined
+            }
+          />
         ) : (
           <div className="space-y-2">
             {upcomingServices.map((s) => {
@@ -183,10 +181,10 @@ export default async function DashboardPage() {
                   className="flex items-center gap-4 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
                 >
                   <span
-                    className="w-2 h-10 flex-shrink-0"
+                    role="img"
+                    aria-label={`liturgical colour ${s.colour.toLowerCase()}`}
+                    className="w-2 h-10 flex-shrink-0 rounded-sm"
                     style={{ backgroundColor: colour }}
-                    aria-hidden="true"
-                    title={s.colour}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-heading text-base">{s.cwName}</p>
@@ -194,7 +192,7 @@ export default async function DashboardPage() {
                       {SERVICE_TYPE_LABELS[s.serviceType as ServiceType] || s.serviceType}
                       {s.time && ` at ${s.time}`}
                     </p>
-                    <p className="text-xs text-muted-foreground font-mono">
+                    <p className="small-caps text-xs text-muted-foreground">
                       {format(parseISO(s.date), "EEE d MMM yyyy")}
                       {userChurches.length > 1 && ` — ${s.churchName}`}
                     </p>
@@ -213,7 +211,7 @@ export default async function DashboardPage() {
           <h2 className="text-xl font-heading font-semibold">Your Churches</h2>
           <Link
             href="/churches"
-            className="text-sm text-primary hover:underline"
+            className="text-sm text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary"
           >
             Manage
           </Link>

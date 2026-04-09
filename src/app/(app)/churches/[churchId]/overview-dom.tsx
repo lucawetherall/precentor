@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
+import { AlertTriangle } from "lucide-react";
 import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from "@/types";
 import type { LiturgicalColour, ServiceType } from "@/types";
 import { formatLiturgicalDayName } from "@/lib/liturgical-display";
@@ -49,7 +50,7 @@ export function DomThisSunday({
             <Link
               key={s.serviceId}
               href={`/churches/${churchId}/services/${day.date}`}
-              className="flex-1 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
+              className="flex-1 h-full rounded-sm border border-l-4 border-l-primary border-border bg-card p-4 shadow-sm hover:border-primary hover:border-l-primary transition-colors"
             >
               <div className="flex justify-between items-center mb-2">
                 <span className="font-heading text-base font-semibold">
@@ -83,7 +84,7 @@ export function DomThisSunday({
             No services created for this Sunday.{" "}
             <Link
               href={`/churches/${churchId}/services/${day.date}`}
-              className="text-primary underline"
+              className="text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary"
             >
               Plan services
             </Link>
@@ -114,8 +115,9 @@ export function NeedsAttention({
             className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
           >
             <span
-              aria-hidden="true"
-              className="w-1 h-6 flex-shrink-0"
+              role="img"
+              aria-label={`liturgical colour ${item.colour.toLowerCase()}`}
+              className="w-1 h-6 flex-shrink-0 rounded-sm"
               style={{
                 backgroundColor:
                   LITURGICAL_COLOURS[item.colour as LiturgicalColour] ?? "#4A6741",
@@ -126,7 +128,8 @@ export function NeedsAttention({
                 {format(parseISO(item.date), "d MMM")} — {formatLiturgicalDayName(item.cwName, item.date)}
               </span>
             </div>
-            <span className="text-xs text-destructive flex-shrink-0">
+            <span className="flex items-center gap-1 text-xs text-destructive flex-shrink-0">
+              <AlertTriangle className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
               {item.reason}
             </span>
           </Link>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, Fragment } from "react";
-import { Check, X, Minus, UserCheck } from "lucide-react";
+import { Check, X, Minus, UserCheck, Users } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { format, parseISO } from "date-fns";
 import { formatLiturgicalDayName } from "@/lib/liturgical-display";
+import { EmptyState } from "@/components/empty-state";
 
 interface Service {
   serviceId: string;
@@ -119,9 +120,11 @@ export function RotaGrid({
 
   if (services.length === 0) {
     return (
-      <div className="border border-border bg-card p-8 text-center">
-        <p className="text-muted-foreground">No upcoming services. Create services from the Services page first.</p>
-      </div>
+      <EmptyState
+        icon={Users}
+        title="No upcoming services"
+        description="Create services from the Services page first to build a rota."
+      />
     );
   }
 
@@ -165,7 +168,7 @@ export function RotaGrid({
               {services.map((s) => (
                 <th key={s.serviceId} className="px-2 py-2 text-center font-body font-normal min-w-[80px]">
                   <div className="text-xs">{format(parseISO(s.date), "d MMM")}</div>
-                  <div className="text-[10px] opacity-80">{s.serviceType.replace(/_/g, " ")}</div>
+                  <div className="small-caps text-xs opacity-80">{s.serviceType.replace(/_/g, " ")}</div>
                 </th>
               ))}
             </tr>

@@ -41,12 +41,13 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
     <div className="space-y-8">
       {groups.map(([month, monthDays]) => (
         <div key={month}>
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground pb-2 mb-3 border-b border-border">
+          <p className="small-caps text-xs text-muted-foreground pb-2 mb-3 border-b border-border">
             {month}
           </p>
           <div className="space-y-2">
             {monthDays.map((day) => {
               const colour = LITURGICAL_COLOURS[day.colour as LiturgicalColour] ?? '#4A6741'
+              const hasServices = day.services.length > 0
               return (
                 <div
                   key={day.id}
@@ -57,7 +58,7 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                     <span className="font-heading text-3xl leading-none">
                       {format(parseISO(day.date), 'd')}
                     </span>
-                    <span className="font-mono text-[9px] uppercase tracking-wide text-muted-foreground mt-1">
+                    <span className="small-caps text-xs text-muted-foreground mt-1">
                       {format(parseISO(day.date), 'EEE')}
                     </span>
                   </div>
@@ -69,63 +70,72 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                   >
                     <p className="font-heading text-lg mb-1">
                       {formatLiturgicalDayName(day.cwName, day.date)}
-                      {day.service && day.service.choirStatus !== 'CHOIR_REQUIRED' && CHOIR_STATUS_NOTES[day.service.choirStatus] && (
-                        <span className="text-sm italic text-muted-foreground/60 font-normal ml-2">
-                          {CHOIR_STATUS_NOTES[day.service.choirStatus]}
-                        </span>
-                      )}
                     </p>
-                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <div className="flex items-center gap-3 mb-3 flex-wrap">
                       <span
-                        className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 border"
+                        className="small-caps text-xs px-2 py-0.5 border rounded-sm"
                         style={{ borderColor: colour, color: colour }}
                       >
                         {day.season.replace(/_/g, ' ')}
                       </span>
-                      {day.service && (
-                        <span className="text-xs text-muted-foreground">
-                          {SERVICE_TYPE_LABELS[day.service.serviceType as keyof typeof SERVICE_TYPE_LABELS] ?? day.service.serviceType}
-                          {day.service.time ? ` · ${day.service.time}` : ''}
-                        </span>
-                      )}
-                      {day.service && day.service.musicPreview.length > 0 && (
-                        <span className="text-[10px] font-mono text-muted-foreground/70">
-                          {day.service.musicPreview.length} music
-                        </span>
-                      )}
                     </div>
-                    {day.service ? (
-                      day.service.musicPreview.length > 0 ? (
-                        <div className="space-y-0.5">
-                          {day.service.musicPreview.map((slot) => (
-                            <p key={slot.id} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                              <span className="opacity-40">♩</span>
-                              {slot.title}
-                            </p>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic">Music not yet planned</p>
-                      )
-                    ) : (
+
+                    {!hasServices && (
                       <p className="text-xs text-muted-foreground italic">No service planned</p>
+                    )}
+
+                    {hasServices && (
+                      <div className="space-y-3">
+                        {day.services.map((service) => (
+                          <div key={service.id}>
+                            <div className="flex items-center gap-3 mb-1 flex-wrap">
+                              <span className="text-sm text-foreground">
+                                {SERVICE_TYPE_LABELS[service.serviceType as keyof typeof SERVICE_TYPE_LABELS] ?? service.serviceType}
+                                {service.time ? ` · ${service.time}` : ''}
+                              </span>
+                              {service.choirStatus !== 'CHOIR_REQUIRED' && CHOIR_STATUS_NOTES[service.choirStatus] && (
+                                <span className="text-xs italic text-muted-foreground/60">
+                                  {CHOIR_STATUS_NOTES[service.choirStatus]}
+                                </span>
+                              )}
+                              {service.musicPreview.length > 0 && (
+                                <span className="small-caps text-xs text-muted-foreground/70">
+                                  {service.musicPreview.length} music
+                                </span>
+                              )}
+                            </div>
+                            {service.musicPreview.length > 0 ? (
+                              <div className="space-y-0.5">
+                                {service.musicPreview.map((slot) => (
+                                  <p key={slot.id} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                    <span className="opacity-40">♩</span>
+                                    {slot.title}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic">Music not yet planned</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </Link>
 
-                  {/* Availability */}
-                  {day.service && (
+                  {/* Availability — only when exactly one service (multiple services go through the detail page) */}
+                  {day.services.length === 1 && (
                     <div
                       className="flex flex-col items-center justify-center gap-1 px-4 border-l border-border flex-shrink-0"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+                        <span className="small-caps text-xs text-muted-foreground">
                           Availability
                         </span>
                         <AvailabilityWidget
-                          serviceId={day.service.id}
+                          serviceId={day.services[0].id}
                           churchId={churchId}
-                          currentStatus={day.service.userAvailability}
+                          currentStatus={day.services[0].userAvailability}
                           size="md"
                         />
                       </div>
