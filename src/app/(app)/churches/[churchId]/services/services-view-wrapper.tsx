@@ -23,13 +23,12 @@ const DESKTOP_MIN_WIDTH = 768
 function useIsDesktop(): boolean {
   const [isDesktop, setIsDesktop] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true
-    return window.innerWidth >= DESKTOP_MIN_WIDTH
+    return window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`).matches
   })
   useEffect(() => {
     const mql = window.matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`)
     const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
     mql.addEventListener('change', handler)
-    setIsDesktop(mql.matches)
     return () => mql.removeEventListener('change', handler)
   }, [])
   return isDesktop
