@@ -4,13 +4,16 @@ import { useState } from "react";
 import { GripVertical, Eye, EyeOff, Trash2, Music, BookOpen, FileText, AlignLeft, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SectionInlineControl } from "./section-inline-control";
+import { MUSIC_SLOT_LABELS } from "@/types";
+import type { MusicSlotType } from "@/types";
 
 function formatSlotLabel(raw: string): string {
-  return raw
-    .replace(/_/g, " ")
-    .replace(/-/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return (MUSIC_SLOT_LABELS[raw as MusicSlotType] ??
+    raw
+      .replace(/_/g, " ")
+      .replace(/-/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase()));
 }
 
 export interface ServiceSection {

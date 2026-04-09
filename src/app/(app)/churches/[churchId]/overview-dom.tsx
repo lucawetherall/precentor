@@ -2,6 +2,7 @@ import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from "@/types";
 import type { LiturgicalColour, ServiceType } from "@/types";
+import { formatLiturgicalDayName } from "@/lib/liturgical-display";
 
 const VOICE_PARTS = ["SOPRANO", "ALTO", "TENOR", "BASS"] as const;
 
@@ -122,7 +123,7 @@ export function NeedsAttention({
             />
             <div className="flex-1 min-w-0">
               <span className="text-sm">
-                {format(parseISO(item.date), "d MMM")} — {item.cwName}
+                {format(parseISO(item.date), "d MMM")} — {formatLiturgicalDayName(item.cwName, item.date)}
               </span>
             </div>
             <span className="text-xs text-destructive flex-shrink-0">

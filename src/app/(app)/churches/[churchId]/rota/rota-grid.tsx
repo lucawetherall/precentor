@@ -4,6 +4,7 @@ import { useState, Fragment } from "react";
 import { Check, X, Minus, UserCheck } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { format, parseISO } from "date-fns";
+import { formatLiturgicalDayName } from "@/lib/liturgical-display";
 
 interface Service {
   serviceId: string;
@@ -240,7 +241,7 @@ export function RotaGrid({
           <div key={s.serviceId} className="border border-border bg-card shadow-sm">
             <div className="px-4 py-3 bg-muted text-foreground">
               <p className="font-heading font-semibold">{format(parseISO(s.date), "EEE d MMM")}</p>
-              <p className="text-xs opacity-80">{s.cwName} — {s.serviceType.replace(/_/g, " ")}</p>
+              <p className="text-xs opacity-80">{formatLiturgicalDayName(s.cwName, s.date)} — {s.serviceType.replace(/_/g, " ")}</p>
             </div>
             <div className="divide-y divide-border">
               {Object.entries(grouped).map(([part, partMembers]) => (

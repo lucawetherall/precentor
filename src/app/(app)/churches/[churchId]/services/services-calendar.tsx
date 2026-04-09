@@ -9,6 +9,7 @@ import type { LiturgicalColour } from '@/types'
 import type { LiturgicalDayWithService } from '@/types/service-views'
 import { AvailabilityWidget } from '@/components/availability-widget'
 import { cn } from '@/lib/utils'
+import { formatLiturgicalDayName } from '@/lib/liturgical-display'
 
 const DAY_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -124,7 +125,7 @@ export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
 
                   {liturgicalDay && !hasService && (
                     <div className="text-[9px] font-mono text-muted-foreground/60 px-1 py-0.5 mb-1 leading-tight">
-                      {liturgicalDay.cwName}
+                      {formatLiturgicalDayName(liturgicalDay.cwName, liturgicalDay.date)}
                     </div>
                   )}
 
@@ -136,7 +137,7 @@ export function ServicesCalendar({ churchId, days }: ServicesCalendarProps) {
                           style={{ borderColor: choirBorderColour! }}
                         >
                           <p className="font-heading text-[11px] leading-snug">
-                            {liturgicalDay.cwName}
+                            {formatLiturgicalDayName(liturgicalDay.cwName, liturgicalDay.date)}
                           </p>
                         </div>
                       </Link>

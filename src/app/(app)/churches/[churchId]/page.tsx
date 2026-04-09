@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { requireChurchRole } from "@/lib/auth/permissions";
+import { formatLiturgicalDayName } from "@/lib/liturgical-display";
 import {
   getThisSunday,
   getRotaSummary,
@@ -74,7 +75,7 @@ export default async function ChurchOverviewPage({ params }: Props) {
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
         <h1 className="font-heading text-2xl font-semibold mb-1">This Sunday</h1>
         <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider mb-6">
-          {format(parseISO(thisSunday.date), "d MMM yyyy")} · {thisSunday.cwName}
+          {format(parseISO(thisSunday.date), "d MMM yyyy")} · {formatLiturgicalDayName(thisSunday.cwName, thisSunday.date)}
         </p>
         <MemberThisSunday
           churchId={churchId}
@@ -113,7 +114,7 @@ export default async function ChurchOverviewPage({ params }: Props) {
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <h1 className="font-heading text-2xl font-semibold mb-1">This Sunday</h1>
       <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider mb-6">
-        {format(parseISO(thisSunday.date), "d MMM yyyy")} · {thisSunday.cwName}
+        {format(parseISO(thisSunday.date), "d MMM yyyy")} · {formatLiturgicalDayName(thisSunday.cwName, thisSunday.date)}
       </p>
       <DomThisSunday
         churchId={churchId}

@@ -152,6 +152,7 @@
   body {
     @apply bg-background text-foreground font-body antialiased;
     overflow-x: hidden;
+    font-variant-ligatures: no-discretionary-ligatures no-historical-ligatures;
   }
 
   ::selection {

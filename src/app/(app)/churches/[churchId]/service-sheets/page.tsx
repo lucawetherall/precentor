@@ -9,6 +9,7 @@ import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType, MemberRole } from "@/types";
 import { ServiceSheetActions, BatchDownloadActions } from "./actions-client";
 import { BookOpen } from "lucide-react";
+import { formatLiturgicalDayName } from "@/lib/liturgical-display";
 
 interface Props {
   params: Promise<{ churchId: string }>;
@@ -102,7 +103,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-heading text-lg">{s.cwName}</p>
+                    <p className="font-heading text-lg">{formatLiturgicalDayName(s.cwName, s.date)}</p>
                     {s.sheetMode === "booklet" && (
                       <span
                         className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded ${

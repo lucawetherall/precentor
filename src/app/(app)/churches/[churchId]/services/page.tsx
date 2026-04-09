@@ -13,6 +13,8 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { requireChurchRole } from '@/lib/auth/permissions'
 import type { LiturgicalDayWithService, MusicSlotPreview } from '@/types/service-views'
+import { MUSIC_SLOT_LABELS } from '@/types'
+import type { MusicSlotType } from '@/types'
 import { ServicesViewWrapper } from './services-view-wrapper'
 
 interface Props {
@@ -112,7 +114,8 @@ export default async function ServicesPage({ params }: Props) {
         slotType: slot.slotType as MusicSlotPreview['slotType'],
         positionOrder: slot.positionOrder,
         title:
-          slot.hymnFirstLine ?? slot.anthemTitle ?? slot.freeText ?? slot.slotType,
+          slot.hymnFirstLine ?? slot.anthemTitle ?? slot.freeText ??
+          (MUSIC_SLOT_LABELS[slot.slotType as MusicSlotType] ?? slot.slotType.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())),
       }))
 
       return {
