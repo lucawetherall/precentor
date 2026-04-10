@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { passwordSchema } from "@/lib/validation/schemas";
+import { validatePasswordAction } from "./actions";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -29,7 +31,8 @@ export default function SignupPage() {
   };
 
   const validatePassword = (value: string) => {
-    if (value.length < 8) return "Password must be at least 8 characters";
+    const result = passwordSchema.safeParse(value);
+    if (!result.success) return result.error.issues[0].message;
     return "";
   };
 
@@ -38,8 +41,9 @@ export default function SignupPage() {
     setError("");
     setMessage("");
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const serverError = await validatePasswordAction(password);
+    if (serverError) {
+      setError(serverError);
       return;
     }
     if (password !== confirmPassword) {
@@ -124,9 +128,9 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={() => setFieldErrors((prev) => ({ ...prev, password: validatePassword(password) }))}
-                placeholder="Min. 8 characters"
+                placeholder="Min. 10 characters"
                 required
-                minLength={8}
+                minLength={10}
                 className="bg-white"
               />
               {fieldErrors.password && (
@@ -143,7 +147,7 @@ export default function SignupPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your password"
                 required
-                minLength={8}
+                minLength={10}
                 className="bg-white"
               />
             </div>
@@ -159,6 +163,11 @@ export default function SignupPage() {
         <p className="text-sm text-center text-muted-foreground">
           Already have an account?{" "}
           <Link href="/login" className="text-primary underline hover:no-underline">Sign in</Link>
+        </p>
+
+        <p className="text-xs text-center text-muted-foreground">
+          By creating an account, you agree to our{" "}
+          <Link href="/privacy" className="underline hover:no-underline">Privacy Notice</Link>.
         </p>
       </div>
     </main>
