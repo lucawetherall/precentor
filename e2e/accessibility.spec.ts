@@ -55,8 +55,8 @@ test.describe("Accessibility", () => {
   test("buttons have proper disabled styling", async ({ page }) => {
     await page.goto("/login");
     const button = page.getByRole("button", { name: /sign in/i });
-    // Button should have cursor-not-allowed when disabled class is applied
+    // Button should have proper disabled styling (pointer-events-none + opacity)
     const classes = await button.getAttribute("class");
-    expect(classes).toContain("disabled:cursor-not-allowed");
+    expect(classes).toContain("disabled:opacity-50");
   });
 });

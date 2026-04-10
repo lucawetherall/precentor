@@ -1,5 +1,6 @@
 import { Music, BookOpen, Users, Calendar, Sparkles, FileText, ArrowRight, Church } from "lucide-react";
 import Link from "next/link";
+import { Ornament } from "@/components/ui/ornament";
 
 export default function Home() {
   return (
@@ -8,14 +9,14 @@ export default function Home() {
       <section className="flex flex-col items-center justify-center px-4 sm:px-8 py-20 sm:py-28 lg:py-36 text-center relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/30" />
         <div className="max-w-2xl space-y-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 text-xs font-body text-primary border border-primary/30 bg-primary/5 mb-2 rounded-full">
+          <div className="inline-flex items-center gap-2 px-3 py-1 small-caps text-xs text-primary border border-primary/30 bg-primary/5 mb-2 rounded-full">
             <Sparkles className="h-3 w-3" strokeWidth={1.5} aria-hidden="true" />
             AI-powered church music planning
           </div>
-          <h1 className="text-5xl sm:text-6xl font-heading font-semibold tracking-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-heading font-semibold tracking-tight text-balance">
             Precentor
           </h1>
-          <p className="text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-lg mx-auto text-balance">
             AI-powered music and liturgy planning for Church of England parishes.
             Plan services, manage your choir, and generate service sheets — all in one place.
           </p>
@@ -93,6 +94,7 @@ export default function Home() {
       {/* How it works */}
       <section className="px-4 sm:px-8 py-12 sm:py-16">
         <div className="max-w-3xl mx-auto">
+          <Ornament variant="fleuron" className="my-0 mb-8" />
           <h2 className="text-2xl sm:text-3xl font-heading font-semibold text-center mb-8 sm:mb-12">
             Get started in three steps
           </h2>
@@ -146,7 +148,7 @@ export default function Home() {
           </p>
           <Link
             href="/signup"
-            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors rounded-md"
+            className="inline-flex items-center justify-center px-8 py-3 text-sm font-body bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors rounded-md shadow-md"
           >
             Create Your Church
             <ArrowRight className="ml-2 h-4 w-4" strokeWidth={1.5} aria-hidden="true" />

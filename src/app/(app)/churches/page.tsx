@@ -5,6 +5,9 @@ import { churches, churchMemberships, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Plus, Church } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { buttonVariants } from "@/components/ui/button";
+import { StatusBadge, type StatusKind } from "@/components/status-badge";
 
 export default async function ChurchesPage() {
   const supabase = await createClient();
@@ -36,7 +39,7 @@ export default async function ChurchesPage() {
         <h1 className="text-3xl font-heading font-semibold">Your Churches</h1>
         <Link
           href="/churches/new"
-          className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm bg-primary text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+          className={buttonVariants({ variant: "default", size: "default" })}
         >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
           Add Church
@@ -44,34 +47,35 @@ export default async function ChurchesPage() {
       </div>
 
       {userChurches.length === 0 ? (
-        <div className="border border-border bg-card p-8 text-center">
-          <Church className="h-12 w-12 mx-auto text-muted-foreground mb-4" strokeWidth={1.5} />
-          <p className="text-muted-foreground mb-4">You haven&apos;t joined any churches yet.</p>
-          <Link
-            href="/churches/new"
-            className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm bg-primary text-primary-foreground shadow hover:bg-primary/90 transition-colors"
-          >
-            Create Your First Church
-          </Link>
-        </div>
+        <EmptyState
+          icon={Church}
+          title="No churches yet"
+          description="Create your first church to start planning services."
+          action={
+            <Link
+              href="/churches/new"
+              className={buttonVariants({ variant: "default", size: "default" })}
+            >
+              Create Your First Church
+            </Link>
+          }
+        />
       ) : (
         <div className="grid gap-4">
           {userChurches.map((church: UserChurch) => (
             <Link
               key={church.id}
               href={`/churches/${church.id}/services`}
-              className="block border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
+              className="block rounded-md border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-heading font-semibold">{church.name}</h2>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-heading font-semibold truncate">{church.name}</h2>
                   {church.diocese && (
-                    <p className="text-sm text-muted-foreground">{church.diocese}</p>
+                    <p className="text-sm text-muted-foreground truncate">{church.diocese}</p>
                   )}
                 </div>
-                <span className="text-xs px-2 py-1 border border-border bg-background">
-                  {church.role}
-                </span>
+                <StatusBadge status={church.role.toLowerCase() as StatusKind} />
               </div>
             </Link>
           ))}

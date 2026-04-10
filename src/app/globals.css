@@ -95,7 +95,7 @@
 
   /* Muted */
   --muted: #F5F0E8;
-  --muted-foreground: #5C4F3D;
+  --muted-foreground: #4F4332;
 
   /* Accent */
   --accent: #F5F0E8;
@@ -152,6 +152,10 @@
   body {
     @apply bg-background text-foreground font-body antialiased;
     overflow-x: hidden;
+    line-height: 1.65;
+    font-feature-settings: "liga", "kern";
+    font-variant-ligatures: no-discretionary-ligatures no-historical-ligatures;
+    font-variant-numeric: oldstyle-nums proportional-nums;
   }
 
   ::selection {
@@ -166,6 +170,8 @@
   h5,
   h6 {
     @apply font-heading;
+    line-height: 1.2;
+    text-wrap: balance;
   }
 
   /* Consistent focus ring for keyboard navigation */
@@ -173,17 +179,36 @@
     outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
+}
 
-  input:focus-visible,
-  select:focus-visible,
-  textarea:focus-visible {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 1px var(--primary);
+@layer utilities {
+  /* Small-caps label — replaces the `font-mono text-[10px] uppercase tracking-wider` pattern */
+  .small-caps {
+    font-variant: small-caps;
+    letter-spacing: 0.06em;
+    text-transform: lowercase;
+  }
+
+  /* Tabular numerals for data columns */
+  .font-tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Rubric — red italic small-caps for liturgical directions */
+  .rubric {
+    color: var(--color-liturgical-red);
+    font-style: italic;
+    font-variant: small-caps;
+    letter-spacing: 0.04em;
+  }
+
+  /* Reading measure — cap long-form prose at ~68ch for readability */
+  .prose-measure {
+    max-width: 68ch;
   }
 }
 
-/* Toast slide-in animation */
+/* Toast slide-in animation (respects reduced motion) */
 @keyframes slide-in-from-right {
   from {
     transform: translateX(100%);
@@ -195,6 +220,8 @@
   }
 }
 
-.animate-in.slide-in-from-right {
-  animation: slide-in-from-right 0.2s ease-out;
+@media (prefers-reduced-motion: no-preference) {
+  .animate-in.slide-in-from-right {
+    animation: slide-in-from-right 0.2s ease-out;
+  }
 }

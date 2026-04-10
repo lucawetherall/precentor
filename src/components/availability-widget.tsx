@@ -62,8 +62,8 @@ export function AvailabilityWidget({
   }
 
   const sizeClasses = {
-    sm: 'h-5 w-5 text-[9px] font-bold',
-    md: 'h-8 w-8 text-xs font-bold',
+    sm: 'h-6 w-6 text-[10px] font-bold',
+    md: 'h-9 w-9 text-xs font-bold',
     lg: 'h-12 w-24 flex-col gap-1 text-xs font-bold',
   }
 
@@ -87,7 +87,7 @@ export function AvailabilityWidget({
           >
             <span>{symbol}</span>
             {size === 'lg' && (
-              <span className="text-[10px] uppercase tracking-wider leading-none">{label}</span>
+              <span className="small-caps text-xs leading-none">{label}</span>
             )}
           </button>
         )
