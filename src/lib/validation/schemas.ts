@@ -54,3 +54,20 @@ export const churchUpdateSchema = z.object({
   diocese: z.string().max(200).nullable().optional(),
   ccliNumber: z.string().max(50).nullable().optional(),
 }).strict();
+
+/** Top-20 most commonly used passwords (NCSC/HIBP deny list guidance). Blocked per ICO guidance. */
+const COMMON_PASSWORDS = new Set([
+  "password1!", "password12", "password123", "Password1!", "Password12",
+  "iloveyou12", "sunshine12", "princess12", "qwerty12345", "welcome123",
+  "letmein123", "monkey1234", "dragon1234", "passw0rd12", "football12",
+  "1234567890", "0123456789", "9876543210", "1111111111", "1234512345",
+]);
+
+export const passwordSchema = z
+  .string()
+  .min(10, "Password must be at least 10 characters")
+  .max(128, "Password must be 128 characters or fewer")
+  .refine(
+    (val) => !COMMON_PASSWORDS.has(val),
+    "This password is too common. Please choose a more unique password."
+  );
