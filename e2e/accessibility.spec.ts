@@ -42,8 +42,8 @@ test.describe("Accessibility", () => {
     // Fill in mismatched passwords to trigger client-side error
     await page.locator("#name").fill("Test User");
     await page.locator("#email").fill("test@example.com");
-    await page.locator("#password").fill("password123");
-    await page.locator("#confirm-password").fill("different123");
+    await page.locator("#password").fill("CorrectHorseBattery1");
+    await page.locator("#confirm-password").fill("CorrectHorseBattery2");
     await page.getByRole("button", { name: /create account/i }).click();
 
     // Error message should appear with role="alert"
