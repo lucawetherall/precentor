@@ -124,6 +124,12 @@ export function ChurchSidebar({
 
       <div className="mt-auto pt-4 border-t border-border">
         <p className="text-xs text-muted-foreground mb-2 truncate">{userEmail}</p>
+        <Link
+          href="/account"
+          className="block text-xs text-muted-foreground hover:text-foreground mb-2 underline hover:no-underline"
+        >
+          Account settings
+        </Link>
         <SignOutButton />
       </div>
     </>

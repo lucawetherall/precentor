@@ -13,6 +13,7 @@ export const env = new Proxy(
     readonly DATABASE_URL: string;
     readonly NEXT_PUBLIC_SUPABASE_URL: string;
     readonly NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
+    readonly SUPABASE_SERVICE_ROLE_KEY: string;
     readonly GEMINI_API_KEY: string;
     readonly RESEND_API_KEY: string;
     readonly CRON_SECRET: string;
@@ -26,6 +27,8 @@ export const env = new Proxy(
         case "NEXT_PUBLIC_SUPABASE_URL":
         case "NEXT_PUBLIC_SUPABASE_ANON_KEY":
           return requireEnv(prop);
+        case "SUPABASE_SERVICE_ROLE_KEY":
+          return requireEnv("SUPABASE_SERVICE_ROLE_KEY");
         case "GEMINI_API_KEY":
           return process.env.GEMINI_API_KEY || "";
         case "RESEND_API_KEY":

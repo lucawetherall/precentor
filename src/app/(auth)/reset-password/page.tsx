@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { passwordSchema } from "@/lib/validation/schemas";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -17,8 +18,9 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError("");
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const result = passwordSchema.safeParse(password);
+    if (!result.success) {
+      setError(result.error.issues[0].message);
       return;
     }
     if (password !== confirmPassword) {
@@ -57,9 +59,9 @@ export default function ResetPasswordPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min. 8 characters"
+              placeholder="Min. 10 characters"
               required
-              minLength={8}
+              minLength={10}
               autoComplete="new-password"
             />
           </div>
@@ -74,7 +76,7 @@ export default function ResetPasswordPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm your password"
               required
-              minLength={8}
+              minLength={10}
               autoComplete="new-password"
             />
           </div>
