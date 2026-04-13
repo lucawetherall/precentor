@@ -62,7 +62,7 @@ export function ServicesCalendarCell({
   const showFeastName = Boolean(day?.cwName)
 
   return (
-    <div className="border-r border-b border-border min-h-[150px] p-[6px_7px] flex flex-col gap-1 bg-card">
+    <div className="border-r border-b border-border min-h-[150px] px-[7px] py-[6px] flex flex-col gap-1 bg-card">
       <div className="flex items-start justify-between">
         {isToday ? (
           <span className="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full bg-primary text-primary-foreground text-[11px] font-semibold font-tabular">
@@ -82,7 +82,7 @@ export function ServicesCalendarCell({
       </div>
 
       {day && showFeastName && (
-        <p className="text-[10px] italic text-muted-foreground leading-tight">
+        <p className="text-[10px] italic text-muted-foreground leading-tight overflow-hidden text-ellipsis" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
           {formatLiturgicalDayName(day.cwName, day.date)}
         </p>
       )}
@@ -197,8 +197,9 @@ function ServiceCard({ churchId, dateStr, day, service, role }: ServiceCardProps
 }
 
 function StatusDot({ status, label }: { status: ServiceReadinessStatus; label: string }) {
+  const statusText = status === 'ready' ? 'ready' : status === 'partial' ? 'partial' : 'empty'
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex items-center gap-1" aria-label={`${label}: ${statusText}`}>
       <span
         className={cn('inline-block w-[6px] h-[6px] rounded-full', STATUS_COLOUR[status])}
         aria-hidden="true"

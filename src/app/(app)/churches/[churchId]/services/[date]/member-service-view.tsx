@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
-import { ChevronLeft } from 'lucide-react'
 import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from '@/types'
+import { BackLink } from '@/components/back-link'
 import type { LiturgicalColour, MemberRole } from '@/types'
 import { hasMinRole } from '@/lib/auth/permissions'
 import type { PopulatedMusicSlot } from '@/types/service-views'
@@ -61,13 +61,9 @@ export function MemberServiceView({
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-2xl">
       {/* Back link */}
-      <Link
-        href={`/churches/${churchId}/services`}
-        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-      >
-        <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-        Back to Services
-      </Link>
+      <div className="mb-4">
+        <BackLink href={`/churches/${churchId}/services`}>Back to Services</BackLink>
+      </div>
 
       {/* Editor notice (EDITOR/ADMIN only) */}
       {isEditor && (

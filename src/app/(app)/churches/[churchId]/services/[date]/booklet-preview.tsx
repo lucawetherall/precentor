@@ -198,7 +198,7 @@ function SectionPreview({ section, rawSection, onTextOverrideChange, savingSecti
           </button>
         )}
         {isSaved && (
-          <span className="flex items-center gap-0.5 text-xs text-green-600">
+          <span className="flex items-center gap-0.5 text-xs text-success">
             <Check className="h-3 w-3" strokeWidth={2} />
             Saved
           </span>

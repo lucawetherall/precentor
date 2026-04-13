@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/form-field";
 import { passwordSchema } from "@/lib/validation/schemas";
 
 export default function ResetPasswordPage() {
@@ -51,10 +52,8 @@ export default function ResetPasswordPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-body">New password</label>
+          <FormField id="password" label="New password" required hint="Min. 10 characters">
             <Input
-              id="password"
               name="password"
               type="password"
               value={password}
@@ -64,12 +63,10 @@ export default function ResetPasswordPage() {
               minLength={10}
               autoComplete="new-password"
             />
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <label htmlFor="confirm-password" className="text-sm font-body">Confirm new password</label>
+          <FormField id="confirm-password" label="Confirm new password" required>
             <Input
-              id="confirm-password"
               name="confirm-password"
               type="password"
               value={confirmPassword}
@@ -79,7 +76,7 @@ export default function ResetPasswordPage() {
               minLength={10}
               autoComplete="new-password"
             />
-          </div>
+          </FormField>
 
           {error && (
             <p role="alert" className="text-sm text-destructive">{error}</p>

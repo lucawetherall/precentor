@@ -33,8 +33,8 @@ export function ServicesCalendarHeader({
   const countLabel = `${serviceCount} ${serviceCount === 1 ? 'service' : 'services'}`
 
   return (
-    <div className="flex items-center justify-between gap-4 mb-2">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mb-2">
+      <div className="flex items-center gap-1 sm:gap-2">
         <Button
           type="button"
           variant="outline"

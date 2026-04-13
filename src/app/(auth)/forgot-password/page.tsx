@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/form-field";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -46,10 +47,8 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-body">Email address</label>
+            <FormField id="email" label="Email address" required>
               <Input
-                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -57,7 +56,7 @@ export default function ForgotPasswordPage() {
                 required
                 autoComplete="email"
               />
-            </div>
+            </FormField>
 
             {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
