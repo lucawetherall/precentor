@@ -47,7 +47,7 @@ function NavGroups({
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="flex flex-col flex-1">
+    <nav aria-label="Church navigation" className="flex flex-col flex-1">
       {navGroups.map((group, gi) => (
         <div key={gi}>
           {gi > 0 && <div className="border-t border-border my-3" />}
@@ -70,7 +70,7 @@ function NavGroups({
                   onClick={onNavigate}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors",
+                    "flex items-center gap-2 rounded-sm px-2 py-2.5 md:py-1.5 text-sm transition-colors min-h-[44px] md:min-h-0",
                     isActive
                       ? "border-l-2 border-primary bg-primary/10 pl-[calc(0.5rem-2px)] text-primary font-medium"
                       : isMuted
@@ -141,7 +141,7 @@ export function ChurchSidebar({
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
             <button
-              className="p-1 hover:bg-sidebar-accent transition-colors"
+              className="p-2 hover:bg-sidebar-accent transition-colors"
               aria-label="Open navigation menu"
             >
               <Menu className="h-5 w-5" strokeWidth={ICON_STROKE} />

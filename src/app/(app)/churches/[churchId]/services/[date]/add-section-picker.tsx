@@ -52,7 +52,7 @@ const SECTION_TYPES: {
     label: "Reading",
     description: "A scripture reading",
     icon: <FileText className="h-5 w-5" strokeWidth={1.5} />,
-    colorClass: "text-amber-700",
+    colorClass: "text-warning-foreground",
   },
   {
     id: "custom-text",

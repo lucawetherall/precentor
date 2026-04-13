@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/form-field";
 import { passwordSchema } from "@/lib/validation/schemas";
 import { validatePasswordAction } from "./actions";
 
@@ -86,10 +87,8 @@ export default function SignupPage() {
           </div>
         ) : (
           <form onSubmit={handleSignup} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-body">Full name</label>
+            <FormField id="name" label="Full name" required error={fieldErrors.name || null}>
               <Input
-                id="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -97,15 +96,10 @@ export default function SignupPage() {
                 placeholder="John Smith"
                 required
               />
-              {fieldErrors.name && (
-                <p className="text-xs text-destructive mt-1">{fieldErrors.name}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-body">Email address</label>
+            <FormField id="email" label="Email address" required error={fieldErrors.email || null}>
               <Input
-                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -113,15 +107,10 @@ export default function SignupPage() {
                 placeholder="director@parish.org.uk"
                 required
               />
-              {fieldErrors.email && (
-                <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-body">Password</label>
+            <FormField id="password" label="Password" required error={fieldErrors.password || null} hint="Min. 10 characters">
               <Input
-                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -130,15 +119,10 @@ export default function SignupPage() {
                 required
                 minLength={10}
               />
-              {fieldErrors.password && (
-                <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <label htmlFor="confirm-password" className="text-sm font-body">Confirm password</label>
+            <FormField id="confirm-password" label="Confirm password" required>
               <Input
-                id="confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -146,7 +130,7 @@ export default function SignupPage() {
                 required
                 minLength={10}
               />
-            </div>
+            </FormField>
 
             {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
@@ -163,6 +147,8 @@ export default function SignupPage() {
 
         <p className="text-xs text-center text-muted-foreground">
           By creating an account, you agree to our{" "}
+          <Link href="/terms" className="underline hover:no-underline">Terms of Service</Link>{" "}
+          and{" "}
           <Link href="/privacy" className="underline hover:no-underline">Privacy Notice</Link>.
         </p>
       </div>

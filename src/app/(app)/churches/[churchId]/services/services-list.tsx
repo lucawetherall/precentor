@@ -51,10 +51,10 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
               return (
                 <div
                   key={day.id}
-                  className="flex border border-border bg-card overflow-hidden hover:border-primary transition-colors"
+                  className="flex flex-col sm:flex-row border border-border bg-card overflow-hidden hover:border-primary transition-colors"
                 >
                   {/* Date column */}
-                  <div className="w-20 flex-shrink-0 flex flex-col items-center justify-center py-4 bg-muted/30 border-r border-border">
+                  <div className="hidden sm:flex w-20 flex-shrink-0 flex-col items-center justify-center py-4 bg-muted/30 border-r border-border">
                     <span className="font-heading text-3xl leading-none">
                       {format(parseISO(day.date), 'd')}
                     </span>
@@ -68,7 +68,10 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                     href={`/churches/${churchId}/services/${day.date}`}
                     className="flex-1 p-4 min-w-0"
                   >
-                    <p className="font-heading text-lg mb-1">
+                    <p className="sm:hidden small-caps text-xs text-muted-foreground mb-1">
+                      {format(parseISO(day.date), 'EEE d MMM')}
+                    </p>
+                    <p className="font-heading text-lg mb-1 truncate">
                       {formatLiturgicalDayName(day.cwName, day.date)}
                     </p>
                     <div className="flex items-center gap-3 mb-3 flex-wrap">
@@ -107,9 +110,9 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                             {service.musicPreview.length > 0 ? (
                               <div className="space-y-0.5">
                                 {service.musicPreview.map((slot) => (
-                                  <p key={slot.id} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                    <span className="opacity-40">♩</span>
-                                    {slot.title}
+                                  <p key={slot.id} className="text-xs text-muted-foreground flex items-center gap-1.5 min-w-0">
+                                    <span className="opacity-40 flex-shrink-0">♩</span>
+                                    <span className="truncate">{slot.title}</span>
                                   </p>
                                 ))}
                               </div>
@@ -125,10 +128,10 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                   {/* Availability — only when exactly one service (multiple services go through the detail page) */}
                   {day.services.length === 1 && (
                     <div
-                      className="flex flex-col items-center justify-center gap-1 px-4 border-l border-border flex-shrink-0"
+                      className="flex sm:flex-col items-center justify-center gap-2 sm:gap-1 px-4 py-2 sm:py-0 border-t sm:border-t-0 sm:border-l border-border flex-shrink-0"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex flex-col items-center gap-1">
+                      <div className="flex sm:flex-col items-center gap-2 sm:gap-1">
                         <span className="small-caps text-xs text-muted-foreground">
                           Availability
                         </span>

@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Notice — Precentor",
+  description: "How Precentor handles your personal data, your rights, and our commitment to privacy.",
+};
+
 export default function PrivacyPage() {
   return (
     <main id="main-content" className="max-w-2xl mx-auto px-4 py-12 space-y-8">

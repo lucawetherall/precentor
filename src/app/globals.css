@@ -52,10 +52,10 @@
   --color-liturgical-white: #F5F0E8;
   --color-liturgical-rose: #C48A9F;
 
-  /* Fonts */
-  --font-heading: "Cormorant Garamond", Georgia, serif;
-  --font-body: "Libre Baskerville", Georgia, serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* Fonts — reference next/font CSS variables with fallbacks */
+  --font-heading: var(--font-cormorant), Georgia, serif;
+  --font-body: var(--font-baskerville), Georgia, serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
   /* Border radius */
   --radius-sm: 2px;
@@ -223,5 +223,12 @@
 @media (prefers-reduced-motion: no-preference) {
   .animate-in.slide-in-from-right {
     animation: slide-in-from-right 0.2s ease-out;
+  }
+}
+
+/* Respect reduced-motion for loading skeletons */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none;
   }
 }
