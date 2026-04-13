@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, useCallback, Fragment } from "react";
 import { Check, X, Minus, UserCheck, Users } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { format, parseISO } from "date-fns";
@@ -64,33 +64,37 @@ export function RotaGrid({
   const { addToast } = useToast();
   const getAvailKey = (userId: string, serviceId: string) => `${userId}-${serviceId}`;
 
-  const cycleAvailability = async (userId: string, serviceId: string) => {
-    const key = getAvailKey(userId, serviceId);
-    const current = avail[key] || "AVAILABLE";
-    const next: AvailabilityStatus =
-      current === "AVAILABLE" ? "UNAVAILABLE" :
-      current === "UNAVAILABLE" ? "TENTATIVE" : "AVAILABLE";
-
-    setAvail((prev) => ({ ...prev, [key]: next }));
+  const cycleAvailability = useCallback(async (userId: string, serviceId: string) => {
+    const key = `${userId}-${serviceId}`;
+    setAvail((prev) => {
+      const current = prev[key] || "AVAILABLE";
+      const next: AvailabilityStatus =
+        current === "AVAILABLE" ? "UNAVAILABLE" :
+        current === "UNAVAILABLE" ? "TENTATIVE" : "AVAILABLE";
+      return { ...prev, [key]: next };
+    });
 
     try {
+      const current = avail[`${userId}-${serviceId}`] || "AVAILABLE";
+      const next: AvailabilityStatus =
+        current === "AVAILABLE" ? "UNAVAILABLE" :
+        current === "UNAVAILABLE" ? "TENTATIVE" : "AVAILABLE";
       const res = await fetch(`/api/churches/${churchId}/availability`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, serviceId, status: next }),
       });
       if (!res.ok) {
-        setAvail((prev) => ({ ...prev, [key]: current }));
+        setAvail((prev) => ({ ...prev, [`${userId}-${serviceId}`]: current }));
         addToast("Failed to update availability", "error");
       }
     } catch {
-      setAvail((prev) => ({ ...prev, [key]: current }));
       addToast("Network error — could not update availability", "error");
     }
-  };
+  }, [avail, churchId, addToast]);
 
-  const toggleRota = async (userId: string, serviceId: string) => {
-    const key = getAvailKey(userId, serviceId);
+  const toggleRota = useCallback(async (userId: string, serviceId: string) => {
+    const key = `${userId}-${serviceId}`;
     const current = rota[key] || false;
     setRota((prev) => ({ ...prev, [key]: !current }));
 
@@ -108,7 +112,7 @@ export function RotaGrid({
       setRota((prev) => ({ ...prev, [key]: current }));
       addToast("Network error — could not update rota", "error");
     }
-  };
+  }, [rota, churchId, addToast]);
 
   // Group members by voice part
   const grouped: Record<string, Member[]> = {};

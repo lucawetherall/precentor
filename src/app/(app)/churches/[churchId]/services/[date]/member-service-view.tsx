@@ -59,7 +59,7 @@ export function MemberServiceView({
   const isEditor = hasMinRole(role, 'EDITOR')
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       {/* Back link */}
       <div className="mb-4">
         <BackLink href={`/churches/${churchId}/services`}>Back to Services</BackLink>
@@ -136,7 +136,7 @@ export function MemberServiceView({
       {/* Readings + Collect */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {readings.length > 0 && (
-          <div className="border border-border bg-card">
+          <div className="border border-border bg-card min-w-0 overflow-hidden">
             <div className="px-4 py-2.5 border-b border-border bg-muted/30">
               <h2 className="small-caps text-xs text-muted-foreground">
                 Readings
