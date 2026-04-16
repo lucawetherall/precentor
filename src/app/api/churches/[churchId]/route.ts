@@ -5,7 +5,6 @@ import { logger } from "@/lib/logger";
 import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { churchUpdateSchema } from "@/lib/validation/schemas";
-import { apiError } from "@/lib/api-helpers";
 
 export async function PATCH(
   request: Request,
@@ -23,7 +22,18 @@ export async function PATCH(
   }
 
   const parsed = churchUpdateSchema.safeParse(body);
-  if (!parsed.success) return apiError(parsed.error.issues[0].message, 400);
+  if (!parsed.success) {
+    // Return per-field errors so clients can highlight individual inputs.
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const field = issue.path.join(".") || "_root";
+      if (!fieldErrors[field]) fieldErrors[field] = issue.message;
+    }
+    return NextResponse.json(
+      { error: parsed.error.issues[0].message, fieldErrors },
+      { status: 400 }
+    );
+  }
   const fields = parsed.data;
 
   try {

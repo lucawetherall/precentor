@@ -13,15 +13,19 @@ interface Church {
   ccliNumber: string | null;
 }
 
+type FieldErrors = Partial<Record<"name" | "diocese" | "address" | "ccliNumber", string>>;
+
 export function ChurchSettingsForm({ church }: { church: Church }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
+    setMessage(null);
+    setFieldErrors({});
 
     const formData = new FormData(e.currentTarget);
     const res = await fetch(`/api/churches/${church.id}`, {
@@ -36,16 +40,27 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
     });
 
     if (res.ok) {
-      setMessage("Settings saved.");
+      setMessage({ kind: "success", text: "Settings saved." });
       router.refresh();
     } else {
-      setMessage("Failed to save.");
+      let body: { error?: string; fieldErrors?: FieldErrors } = {};
+      try {
+        body = await res.json();
+      } catch {
+        // ignore; keep body empty so we fall through to the generic message
+      }
+      if (body.fieldErrors && Object.keys(body.fieldErrors).length > 0) {
+        setFieldErrors(body.fieldErrors);
+        setMessage({ kind: "error", text: "Please fix the errors below." });
+      } else {
+        setMessage({ kind: "error", text: body.error || "Failed to save. Please try again." });
+      }
     }
     setLoading(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <div className="space-y-1">
         <label htmlFor="name" className="text-sm font-body">Church Name</label>
         <Input
@@ -54,7 +69,12 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
           defaultValue={church.name}
           required
           autoComplete="organization"
+          aria-invalid={fieldErrors.name ? true : undefined}
+          aria-describedby={fieldErrors.name ? "name-error" : undefined}
         />
+        {fieldErrors.name && (
+          <p id="name-error" className="text-xs text-destructive">{fieldErrors.name}</p>
+        )}
       </div>
       <div className="space-y-1">
         <label htmlFor="diocese" className="text-sm font-body">Diocese</label>
@@ -63,7 +83,12 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
           name="diocese"
           defaultValue={church.diocese || ""}
           autoComplete="off"
+          aria-invalid={fieldErrors.diocese ? true : undefined}
+          aria-describedby={fieldErrors.diocese ? "diocese-error" : undefined}
         />
+        {fieldErrors.diocese && (
+          <p id="diocese-error" className="text-xs text-destructive">{fieldErrors.diocese}</p>
+        )}
       </div>
       <div className="space-y-1">
         <label htmlFor="address" className="text-sm font-body">Address</label>
@@ -73,8 +98,13 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
           defaultValue={church.address || ""}
           rows={2}
           autoComplete="street-address"
+          aria-invalid={fieldErrors.address ? true : undefined}
+          aria-describedby={fieldErrors.address ? "address-error" : undefined}
           className="w-full rounded-md px-3 py-2 text-sm border border-input bg-transparent shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
         />
+        {fieldErrors.address && (
+          <p id="address-error" className="text-xs text-destructive">{fieldErrors.address}</p>
+        )}
       </div>
       <div className="space-y-1">
         <label htmlFor="ccliNumber" className="text-sm font-body">CCLI Number</label>
@@ -83,12 +113,17 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
           name="ccliNumber"
           defaultValue={church.ccliNumber || ""}
           autoComplete="off"
+          aria-invalid={fieldErrors.ccliNumber ? true : undefined}
+          aria-describedby={fieldErrors.ccliNumber ? "ccliNumber-error" : undefined}
         />
+        {fieldErrors.ccliNumber && (
+          <p id="ccliNumber-error" className="text-xs text-destructive">{fieldErrors.ccliNumber}</p>
+        )}
       </div>
 
       {message && (
-        <p role="alert" className={`text-sm ${message === "Settings saved." ? "text-success" : "text-destructive"}`}>
-          {message}
+        <p role="alert" aria-live="polite" className={`text-sm ${message.kind === "success" ? "text-success" : "text-destructive"}`}>
+          {message.text}
         </p>
       )}
 

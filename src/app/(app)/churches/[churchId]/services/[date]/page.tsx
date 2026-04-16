@@ -15,8 +15,7 @@ import type { InferSelectModel } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
-import { requireChurchRole, hasMinRole } from '@/lib/auth/permissions'
-import type { MemberRole } from '@/types'
+import { requireChurchRole, hasMinRole, coerceMemberRole } from '@/lib/auth/permissions'
 import type { PopulatedMusicSlot } from '@/types/service-views'
 import { MemberServiceView } from './member-service-view'
 import { ServicePlanner } from './service-planner'
@@ -34,7 +33,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   if (error) redirect('/login')
 
   const userId = user!.id
-  const role = membership!.role as MemberRole
+  const role = coerceMemberRole(membership!.role)
   const isEditor = hasMinRole(role, 'EDITOR')
   const isEditMode = isEditor && mode === 'edit'
 

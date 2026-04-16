@@ -55,8 +55,19 @@ export async function POST(
       .limit(1);
 
     if (dbUser.length === 0) {
+      const newUserEmail = authUser.email || invite.email;
+      if (!newUserEmail) {
+        logger.error("Cannot create user from invite: no email available", {
+          authUserId: authUser.id,
+          inviteId: invite.id,
+        });
+        return NextResponse.json(
+          { error: "Cannot accept invite: your account has no email address. Please sign out and sign back in." },
+          { status: 400 }
+        );
+      }
       const [newUser] = await db.insert(users).values({
-        email: authUser.email || invite.email || "",
+        email: newUserEmail,
         supabaseId: authUser.id,
         name: authUser.user_metadata?.name || null,
       }).returning();

@@ -54,37 +54,39 @@ export default async function ServicesPage({ params }: Props) {
 
     const serviceIds = churchServices.map((s) => s.id)
 
-    const userAvailability =
-      serviceIds.length > 0
-        ? await db
-            .select()
-            .from(availability)
-            .where(
-              and(
-                eq(availability.userId, userId),
-                inArray(availability.serviceId, serviceIds)
-              )
-            )
-        : []
+    // Availability and music slots both depend on serviceIds but not on each other.
+    const availabilityQuery = db
+      .select()
+      .from(availability)
+      .where(
+        and(
+          eq(availability.userId, userId),
+          inArray(availability.serviceId, serviceIds)
+        )
+      );
+    const slotsQuery = db
+      .select({
+        id: musicSlots.id,
+        serviceId: musicSlots.serviceId,
+        slotType: musicSlots.slotType,
+        positionOrder: musicSlots.positionOrder,
+        freeText: musicSlots.freeText,
+        hymnFirstLine: hymns.firstLine,
+        anthemTitle: anthems.title,
+      })
+      .from(musicSlots)
+      .leftJoin(hymns, eq(musicSlots.hymnId, hymns.id))
+      .leftJoin(anthems, eq(musicSlots.anthemId, anthems.id))
+      .where(inArray(musicSlots.serviceId, serviceIds))
+      .orderBy(asc(musicSlots.positionOrder));
 
-    const slots =
+    type AvailabilityRows = Awaited<typeof availabilityQuery>;
+    type SlotRows = Awaited<typeof slotsQuery>;
+
+    const [userAvailability, slots]: [AvailabilityRows, SlotRows] =
       serviceIds.length > 0
-        ? await db
-            .select({
-              id: musicSlots.id,
-              serviceId: musicSlots.serviceId,
-              slotType: musicSlots.slotType,
-              positionOrder: musicSlots.positionOrder,
-              freeText: musicSlots.freeText,
-              hymnFirstLine: hymns.firstLine,
-              anthemTitle: anthems.title,
-            })
-            .from(musicSlots)
-            .leftJoin(hymns, eq(musicSlots.hymnId, hymns.id))
-            .leftJoin(anthems, eq(musicSlots.anthemId, anthems.id))
-            .where(inArray(musicSlots.serviceId, serviceIds))
-            .orderBy(asc(musicSlots.positionOrder))
-        : []
+        ? await Promise.all([availabilityQuery, slotsQuery])
+        : [[], []];
 
     // Build lookup maps for O(1) access
     const serviceByDayId = new Map(

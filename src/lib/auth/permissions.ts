@@ -11,6 +11,23 @@ const ROLE_HIERARCHY: Record<MemberRole, number> = {
   ADMIN: 2,
 };
 
+export const VALID_MEMBER_ROLES = Object.keys(ROLE_HIERARCHY) as MemberRole[];
+
+export function isMemberRole(value: unknown): value is MemberRole {
+  return typeof value === "string" && value in ROLE_HIERARCHY;
+}
+
+/**
+ * Coerce a DB-returned string to a MemberRole, defaulting to the least
+ * privileged role if the value is unexpected. We log so corrupted rows
+ * surface in monitoring rather than silently failing open.
+ */
+export function coerceMemberRole(value: unknown): MemberRole {
+  if (isMemberRole(value)) return value;
+  console.warn("[permissions] Unexpected role value — defaulting to MEMBER", { value });
+  return "MEMBER";
+}
+
 export function hasMinRole(userRole: MemberRole, minRole: MemberRole): boolean {
   return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[minRole];
 }
@@ -61,7 +78,7 @@ export async function requireChurchRole(churchId: string, minRole: MemberRole) {
     };
   }
 
-  if (!hasMinRole(membership[0].role as MemberRole, minRole)) {
+  if (!hasMinRole(coerceMemberRole(membership[0].role), minRole)) {
     return {
       user: null,
       membership: null,

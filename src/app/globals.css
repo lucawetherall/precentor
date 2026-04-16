@@ -52,10 +52,10 @@
   --color-liturgical-white: #F5F0E8;
   --color-liturgical-rose: #C48A9F;
 
-  /* Fonts */
-  --font-heading: "Cormorant Garamond", Georgia, serif;
-  --font-body: "Libre Baskerville", Georgia, serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* Fonts — family variables are populated by next/font in src/app/layout.tsx */
+  --font-heading: var(--font-cormorant-garamond), Georgia, serif;
+  --font-body: var(--font-libre-baskerville), Georgia, serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 
   /* Border radius */
   --radius-sm: 2px;

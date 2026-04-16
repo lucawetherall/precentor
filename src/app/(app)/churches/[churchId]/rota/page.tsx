@@ -28,43 +28,41 @@ export default async function RotaPage({ params }: Props) {
   let rotaData: RotaRow[] = [];
 
   try {
-    upcomingServices = await db
-      .select({
-        serviceId: services.id,
-        serviceType: services.serviceType,
-        time: services.time,
-        date: liturgicalDays.date,
-        cwName: liturgicalDays.cwName,
-      })
-      .from(services)
-      .innerJoin(liturgicalDays, eq(services.liturgicalDayId, liturgicalDays.id))
-      .where(and(eq(services.churchId, churchId), gte(liturgicalDays.date, today)))
-      .orderBy(asc(liturgicalDays.date))
-      .limit(12);
-
-    members = await db
-      .select({
-        userId: users.id,
-        name: users.name,
-        email: users.email,
-        voicePart: churchMemberships.voicePart,
-        role: churchMemberships.role,
-      })
-      .from(churchMemberships)
-      .innerJoin(users, eq(churchMemberships.userId, users.id))
-      .where(eq(churchMemberships.churchId, churchId));
+    // Fetch the service list and member list in parallel — neither depends on the other.
+    [upcomingServices, members] = await Promise.all([
+      db
+        .select({
+          serviceId: services.id,
+          serviceType: services.serviceType,
+          time: services.time,
+          date: liturgicalDays.date,
+          cwName: liturgicalDays.cwName,
+        })
+        .from(services)
+        .innerJoin(liturgicalDays, eq(services.liturgicalDayId, liturgicalDays.id))
+        .where(and(eq(services.churchId, churchId), gte(liturgicalDays.date, today)))
+        .orderBy(asc(liturgicalDays.date))
+        .limit(12),
+      db
+        .select({
+          userId: users.id,
+          name: users.name,
+          email: users.email,
+          voicePart: churchMemberships.voicePart,
+          role: churchMemberships.role,
+        })
+        .from(churchMemberships)
+        .innerJoin(users, eq(churchMemberships.userId, users.id))
+        .where(eq(churchMemberships.churchId, churchId)),
+    ]);
 
     if (upcomingServices.length > 0) {
       const serviceIds = upcomingServices.map((s) => s.serviceId);
-      availabilityData = await db
-        .select()
-        .from(availability)
-        .where(inArray(availability.serviceId, serviceIds));
-
-      rotaData = await db
-        .select()
-        .from(rotaEntries)
-        .where(inArray(rotaEntries.serviceId, serviceIds));
+      // Availability + rota both depend on serviceIds but not on each other.
+      [availabilityData, rotaData] = await Promise.all([
+        db.select().from(availability).where(inArray(availability.serviceId, serviceIds)),
+        db.select().from(rotaEntries).where(inArray(rotaEntries.serviceId, serviceIds)),
+      ]);
     }
   } catch (err) { console.error("Failed to load data:", err); }
 

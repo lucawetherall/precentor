@@ -257,7 +257,7 @@ export function RotaGrid({
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             onClick={() => cycleAvailability(member.userId, s.serviceId)}
-                            className={`px-2 py-1 text-xs border flex items-center gap-1 ${
+                            className={`px-3 py-2 min-h-10 text-xs border flex items-center gap-1 ${
                               status === "AVAILABLE"
                                 ? "border-success text-success"
                                 : status === "UNAVAILABLE"
@@ -277,14 +277,14 @@ export function RotaGrid({
                           </button>
                           <button
                             onClick={() => toggleRota(member.userId, s.serviceId)}
-                            className={`w-7 h-7 flex items-center justify-center border ${
+                            className={`w-10 h-10 flex items-center justify-center border ${
                               onRota
                                 ? "bg-primary text-primary-foreground border-primary"
                                 : "border-border text-muted-foreground"
                             }`}
                             aria-label={`${onRota ? "Remove" : "Add"} ${member.name || member.email} ${onRota ? "from" : "to"} rota for ${s.cwName}`}
                           >
-                            <UserCheck className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                            <UserCheck className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
                           </button>
                         </div>
                       </div>

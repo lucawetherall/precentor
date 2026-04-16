@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { services, liturgicalDays, users, churchMemberships } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { format, parseISO } from "date-fns";
-import { hasMinRole } from "@/lib/auth/permissions";
+import { hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType, MemberRole } from "@/types";
 import { ServiceSheetActions, BatchDownloadActions } from "./actions-client";
@@ -30,7 +30,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
         .from(churchMemberships)
         .where(and(eq(churchMemberships.userId, dbUser[0].id), eq(churchMemberships.churchId, churchId)))
         .limit(1);
-      if (membership.length > 0) userRole = membership[0].role as MemberRole;
+      if (membership.length > 0) userRole = coerceMemberRole(membership[0].role);
     }
   } catch (err) { console.error("Failed to load data:", err); }
 
