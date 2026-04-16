@@ -7,6 +7,8 @@ export interface MusicSlotPreview {
   title: string  // resolved from hymn.firstLine, anthem.title, or freeText
 }
 
+export type ServiceReadinessStatus = 'empty' | 'partial' | 'ready'
+
 export interface ServiceSummary {
   id: string
   serviceType: string
@@ -15,6 +17,8 @@ export interface ServiceSummary {
   choirStatus: string
   userAvailability: 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null
   musicPreview: MusicSlotPreview[]
+  musicStatus: ServiceReadinessStatus
+  rotaStatus: ServiceReadinessStatus
 }
 
 export interface LiturgicalDayWithService {
@@ -24,7 +28,7 @@ export interface LiturgicalDayWithService {
   season: LiturgicalSeason
   colour: LiturgicalColour
   collect: string | null
-  service: ServiceSummary | null
+  services: ServiceSummary[]
 }
 
 export interface PopulatedMusicSlot {

@@ -10,7 +10,7 @@ export function SaveStatusIndicator() {
 
   if (saveStatus === "saving") {
     return (
-      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+      <span className="flex items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
         <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
         Saving…
       </span>
@@ -19,7 +19,7 @@ export function SaveStatusIndicator() {
 
   if (saveStatus === "saved") {
     return (
-      <span className="flex items-center gap-1 text-xs text-green-600">
+      <span className="flex items-center gap-1 text-xs text-success" aria-live="polite">
         <Check className="h-3 w-3" strokeWidth={2} />
         Saved
       </span>
@@ -28,7 +28,7 @@ export function SaveStatusIndicator() {
 
   if (saveStatus === "error") {
     return (
-      <span className="flex items-center gap-1 text-xs text-destructive">
+      <span className="flex items-center gap-1 text-xs text-destructive" aria-live="assertive">
         <AlertCircle className="h-3 w-3" strokeWidth={1.5} />
         Error saving
       </span>

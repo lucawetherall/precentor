@@ -3,25 +3,27 @@ import { Cormorant_Garamond, Libre_Baskerville, JetBrains_Mono } from "next/font
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/toast";
 
-const cormorantGaramond = Cormorant_Garamond({
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
   display: "swap",
-  variable: "--font-cormorant-garamond",
 });
 
-const libreBaskerville = Libre_Baskerville({
+const baskerville = Libre_Baskerville({
   subsets: ["latin"],
   weight: ["400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-baskerville",
   display: "swap",
-  variable: "--font-libre-baskerville",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
+  variable: "--font-jetbrains",
   display: "swap",
-  variable: "--font-jetbrains-mono",
 });
 
 export const metadata: Metadata = {
@@ -41,10 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`h-full ${cormorantGaramond.variable} ${libreBaskerville.variable} ${jetbrainsMono.variable}`}
-    >
+    <html lang="en" className={`h-full ${cormorant.variable} ${baskerville.variable} ${jetbrains.variable}`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col overflow-x-hidden">
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground">
           Skip to content

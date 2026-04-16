@@ -40,7 +40,7 @@ export function ChoirStatusBadge({
       <select
         value={currentStatus}
         onChange={(e) => handleChange(e.target.value)}
-        className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 border border-border bg-background hover:border-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+        className="small-caps text-xs px-2 py-0.5 rounded-sm border border-border bg-card hover:border-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Choir status"
       >
         {Object.entries(CHOIR_STATUS_LABELS).map(([value, label]) => (
@@ -60,8 +60,8 @@ export function ChoirStatusBadge({
   return (
     <span
       className={cn(
-        'text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5',
-        CHOIR_STATUS_PILL_CLASSES[currentStatus] ?? 'bg-gray-100 text-gray-600 border border-gray-300'
+        'small-caps text-xs px-2 py-0.5 rounded-sm',
+        CHOIR_STATUS_PILL_CLASSES[currentStatus] ?? 'bg-muted text-muted-foreground border border-border'
       )}
     >
       {CHOIR_STATUS_LABELS[currentStatus] ?? currentStatus}

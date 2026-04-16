@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Users, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { cn } from "@/lib/utils";
 
 interface MemberRow {
   id: string;
@@ -101,7 +102,7 @@ export function MembersTable({
         </thead>
         <tbody>
           {members.map((m, i) => (
-            <tr key={m.id} className={i % 2 === 0 ? "bg-white" : "bg-background"}>
+            <tr key={m.id} className={cn("transition-colors hover:bg-muted/50", i % 2 === 0 ? "bg-card" : "bg-background")}>
               <td className="px-3 py-2">
                 <div>{m.userName || "—"}</div>
                 <div className="font-mono text-sm text-muted-foreground sm:hidden">{m.userEmail}</div>
@@ -113,7 +114,7 @@ export function MembersTable({
                     value={m.role}
                     onChange={(e) => updateMember(m.id, "role", e.target.value)}
                     aria-label={`Role for ${m.userName || m.userEmail}`}
-                    className="text-xs rounded-md border border-input px-1.5 py-1 bg-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="text-xs rounded-md border border-input px-1.5 py-1 bg-card shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {ROLES.map((r) => (
                       <option key={r} value={r}>{r}</option>
@@ -129,7 +130,7 @@ export function MembersTable({
                     value={m.voicePart || ""}
                     onChange={(e) => updateMember(m.id, "voicePart", e.target.value || null)}
                     aria-label={`Voice part for ${m.userName || m.userEmail}`}
-                    className="text-xs rounded-md border border-input px-1.5 py-1 bg-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="text-xs rounded-md border border-input px-1.5 py-1 bg-card shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <option value="">—</option>
                     {VOICE_PARTS.map((vp) => (

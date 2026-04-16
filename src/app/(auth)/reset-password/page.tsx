@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/form-field";
+import { passwordSchema } from "@/lib/validation/schemas";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -17,8 +19,9 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError("");
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const result = passwordSchema.safeParse(password);
+    if (!result.success) {
+      setError(result.error.issues[0].message);
       return;
     }
     if (password !== confirmPassword) {
@@ -49,37 +52,31 @@ export default function ResetPasswordPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-body">New password</label>
+          <FormField id="password" label="New password" required hint="Min. 10 characters">
             <Input
-              id="password"
               name="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min. 8 characters"
+              placeholder="Min. 10 characters"
               required
-              minLength={8}
+              minLength={10}
               autoComplete="new-password"
-              className="bg-white"
             />
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <label htmlFor="confirm-password" className="text-sm font-body">Confirm new password</label>
+          <FormField id="confirm-password" label="Confirm new password" required>
             <Input
-              id="confirm-password"
               name="confirm-password"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm your password"
               required
-              minLength={8}
+              minLength={10}
               autoComplete="new-password"
-              className="bg-white"
             />
-          </div>
+          </FormField>
 
           {error && (
             <p role="alert" className="text-sm text-destructive">{error}</p>

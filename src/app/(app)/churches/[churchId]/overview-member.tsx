@@ -5,6 +5,7 @@ import { FileText } from "lucide-react";
 import { LITURGICAL_COLOURS, MUSIC_SLOT_LABELS, SERVICE_TYPE_LABELS } from "@/types";
 import type { LiturgicalColour, MusicSlotType, ServiceType } from "@/types";
 import { AvailabilityWidget } from "@/components/availability-widget";
+import { formatLiturgicalDayName } from "@/lib/liturgical-display";
 
 interface ServiceWithMusic {
   serviceId: string;
@@ -117,7 +118,7 @@ export function MyAvailabilityList({
             />
             <div className="flex-1 min-w-0">
               <span className="text-sm">
-                {format(parseISO(day.date), "d MMM")} — {day.cwName}
+                {format(parseISO(day.date), "d MMM")} — {formatLiturgicalDayName(day.cwName, day.date)}
               </span>
             </div>
             {day.serviceIds.length > 0 ? (

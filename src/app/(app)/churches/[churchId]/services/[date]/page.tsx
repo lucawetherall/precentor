@@ -13,9 +13,8 @@ import {
 import { eq, and, asc, inArray } from 'drizzle-orm'
 import type { InferSelectModel } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
 import { requireChurchRole, hasMinRole, coerceMemberRole } from '@/lib/auth/permissions'
+import { BackLink } from '@/components/back-link'
 import type { PopulatedMusicSlot } from '@/types/service-views'
 import { MemberServiceView } from './member-service-view'
 import { ServicePlanner } from './service-planner'
@@ -147,15 +146,11 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
 
   if (!day) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
         <p className="text-muted-foreground">No liturgical data for {date}.</p>
-        <Link
-          href={`/churches/${churchId}/services`}
-          className="flex items-center gap-1 text-sm text-primary underline mt-2"
-        >
-          <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-          Back to Services
-        </Link>
+        <div className="mt-2">
+          <BackLink href={`/churches/${churchId}/services`}>Back to Services</BackLink>
+        </div>
       </div>
     )
   }
@@ -167,14 +162,10 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   // Edit mode: existing planner (editors/admins only)
   if (isEditMode) {
     return (
-      <div className="p-8 max-w-5xl">
-        <Link
-          href={`/churches/${churchId}/services/${date}`}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-        >
-          <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-          Back to service view
-        </Link>
+      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
+        <div className="mb-4">
+          <BackLink href={`/churches/${churchId}/services/${date}`}>Back to service view</BackLink>
+        </div>
         <ServicePlanner
           churchId={churchId}
           liturgicalDayId={day.id}

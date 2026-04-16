@@ -189,7 +189,7 @@ export default async function TemplatesAdminPage({ params }: Props) {
   });
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <h1 className="text-3xl font-heading font-semibold mb-2">
         Service Templates
       </h1>

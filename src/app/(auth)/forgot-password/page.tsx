@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/form-field";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -41,24 +42,21 @@ export default function ForgotPasswordPage() {
         </div>
 
         {sent ? (
-          <div className="p-4 border border-border bg-white text-center">
+          <div className="p-4 border border-border bg-card text-center">
             <p className="text-sm">Check your email for the password reset link.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-body">Email address</label>
+            <FormField id="email" label="Email address" required>
               <Input
-                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="director@parish.org.uk"
                 required
                 autoComplete="email"
-                className="bg-white"
               />
-            </div>
+            </FormField>
 
             {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
@@ -69,7 +67,7 @@ export default function ForgotPasswordPage() {
         )}
 
         <p className="text-sm text-center text-muted-foreground">
-          <Link href="/login" className="text-primary underline hover:no-underline">Back to sign in</Link>
+          <Link href="/login" className="text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary">Back to sign in</Link>
         </p>
       </div>
     </main>
