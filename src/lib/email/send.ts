@@ -1,3 +1,4 @@
+import "server-only";
 import { Resend } from "resend";
 import { escapeHtml } from "@/lib/utils/escape-html";
 
@@ -10,15 +11,49 @@ function getResend(): Resend {
   return _resend;
 }
 
-const FROM_EMAIL = "Precentor <onboarding@resend.dev>";
+// Sender identity must be a verified domain in production; the resend.dev
+// sandbox address only delivers to the account owner. EMAIL_FROM is resolved
+// lazily so test/dev environments continue to work without configuration.
+function getFromEmail(): string {
+  const configured = process.env.EMAIL_FROM?.trim();
+  if (configured) return configured;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "EMAIL_FROM is not configured. Set it to a verified sender (e.g. 'Precentor <noreply@precentor.app>').",
+    );
+  }
+  return "Precentor <onboarding@resend.dev>";
+}
+
+// Cap email send latency so Resend hanging can't hang the API request that
+// triggered the send. The SDK doesn't expose an AbortSignal, so race against
+// a timer; on timeout we reject and move on, and the real request is leaked
+// into the background rather than blocking the handler.
+const SEND_TIMEOUT_MS = 8_000;
+
+async function sendWithTimeout(payload: Parameters<Resend["emails"]["send"]>[0]) {
+  const send = getResend().emails.send(payload);
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`Email send timed out after ${SEND_TIMEOUT_MS}ms`)),
+      SEND_TIMEOUT_MS,
+    );
+  });
+  try {
+    return await Promise.race([send, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 export async function sendRotaNotification(
   to: string,
   name: string,
   schedule: string
 ) {
-  await getResend().emails.send({
-    from: FROM_EMAIL,
+  await sendWithTimeout({
+    from: getFromEmail(),
     to,
     subject: "Your rota has been published",
     html: `<p>Dear ${escapeHtml(name)},</p>
@@ -36,8 +71,8 @@ export async function sendAvailabilityReminder(
   dates: string[]
 ) {
   const dateList = dates.map((d) => `<li>${escapeHtml(d)}</li>`).join("");
-  await getResend().emails.send({
-    from: FROM_EMAIL,
+  await sendWithTimeout({
+    from: getFromEmail(),
     to,
     subject: `Availability reminder — ${churchName}`,
     html: `<p>Dear ${escapeHtml(name)},</p>
@@ -56,8 +91,8 @@ export async function sendInvitation(
   if (!inviteUrl.startsWith("https://") && !inviteUrl.startsWith("http://")) {
     throw new Error("inviteUrl must use http:// or https:// scheme");
   }
-  await getResend().emails.send({
-    from: FROM_EMAIL,
+  await sendWithTimeout({
+    from: getFromEmail(),
     to,
     subject: `You've been invited to ${churchName}`,
     html: `<p>Hello,</p>
