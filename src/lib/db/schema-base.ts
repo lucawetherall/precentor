@@ -1,4 +1,5 @@
 import { pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, json, jsonb, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // ─── Enums ───────────────────────────────────────────────────
 export const memberRoleEnum = pgEnum("member_role", ["ADMIN", "EDITOR", "MEMBER"]);
@@ -402,4 +403,67 @@ export const roleCatalog = pgTable("role_catalog", {
 }, (t) => [
   index("role_catalog_category_idx").on(t.category),
   index("role_catalog_display_idx").on(t.displayOrder),
+]);
+
+// ─── Church member roles (replaces voicePart column) ─────────
+export const churchMemberRoles = pgTable("church_member_roles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  catalogRoleId: uuid("catalog_role_id").notNull().references(() => roleCatalog.id, { onDelete: "restrict" }),
+  isPrimary: boolean("is_primary").default(false).notNull(),
+  displayOrder: integer("display_order").default(0).notNull(),
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("cmr_unique").on(t.userId, t.churchId, t.catalogRoleId),
+  index("cmr_church_role_idx").on(t.churchId, t.catalogRoleId),
+  index("cmr_user_church_idx").on(t.userId, t.churchId),
+]);
+
+// ─── Church service presets ──────────────────────────────────
+export const churchServicePresets = pgTable("church_service_presets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  serviceType: serviceTypeEnum("service_type").notNull(),
+  defaultTime: text("default_time"),
+  choirRequirement: choirRequirementEnum("choir_requirement").notNull(),
+  liturgicalTemplateId: uuid("liturgical_template_id"),
+  musicListFieldSet: musicListFieldSetEnum("music_list_field_set").notNull(),
+  liturgicalSeasonTags: text("liturgical_season_tags").array().default([]).notNull(),
+  archivedAt: timestamp("archived_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("preset_name_unique").on(t.churchId, t.name).where(sql`archived_at IS NULL`),
+  index("preset_church_idx").on(t.churchId),
+  index("preset_church_archived_idx").on(t.churchId, t.archivedAt),
+]);
+
+// ─── Preset role slots ───────────────────────────────────────
+export const presetRoleSlots = pgTable("preset_role_slots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  presetId: uuid("preset_id").notNull().references(() => churchServicePresets.id, { onDelete: "cascade" }),
+  catalogRoleId: uuid("catalog_role_id").notNull().references(() => roleCatalog.id, { onDelete: "restrict" }),
+  minCount: integer("min_count").default(0).notNull(),
+  maxCount: integer("max_count"),
+  exclusive: boolean("exclusive").notNull(),
+  displayOrder: integer("display_order").notNull(),
+}, (t) => [
+  uniqueIndex("preset_slot_unique").on(t.presetId, t.catalogRoleId),
+  index("preset_slot_preset_idx").on(t.presetId),
+]);
+
+// ─── Service role slots (per-service snapshot) ────────────────
+export const serviceRoleSlots = pgTable("service_role_slots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  serviceId: uuid("service_id").notNull().references(() => services.id, { onDelete: "cascade" }),
+  catalogRoleId: uuid("catalog_role_id").notNull().references(() => roleCatalog.id, { onDelete: "restrict" }),
+  minCount: integer("min_count").default(0).notNull(),
+  maxCount: integer("max_count"),
+  exclusive: boolean("exclusive").notNull(),
+  displayOrder: integer("display_order").notNull(),
+}, (t) => [
+  uniqueIndex("service_slot_unique").on(t.serviceId, t.catalogRoleId),
+  index("service_slot_service_idx").on(t.serviceId),
 ]);
