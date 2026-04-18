@@ -472,3 +472,39 @@ export const serviceRoleSlots = pgTable("service_role_slots", {
   uniqueIndex("service_slot_unique").on(t.serviceId, t.catalogRoleId),
   index("service_slot_service_idx").on(t.serviceId),
 ]);
+
+// ─── Migration operational tables ────────────────────────────
+export const migrationPhaseState = pgTable("migration_phase_state", {
+  phase: text("phase").primaryKey(),  // "A" | "B" | "D"
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+});
+
+export const migrationSeverityEnum = pgEnum("migration_severity", ["INFO", "WARN", "ERROR"]);
+
+export const migrationAuditLog = pgTable("migration_audit_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  phase: text("phase").notNull(),
+  churchId: uuid("church_id").references(() => churches.id, { onDelete: "cascade" }),
+  severity: migrationSeverityEnum("severity").notNull(),
+  code: text("code").notNull(),
+  details: jsonb("details").default({}).notNull(),
+  dismissedAt: timestamp("dismissed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("mal_church_idx").on(t.churchId),
+  index("mal_code_idx").on(t.code),
+  index("mal_dismissed_idx").on(t.dismissedAt),
+]);
+
+export const quarantinedRotaEntries = pgTable("quarantined_rota_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  originalEntryId: uuid("original_entry_id").notNull(),
+  serviceId: uuid("service_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  confirmed: boolean("confirmed").notNull(),
+  quarantineReason: text("quarantine_reason").notNull(),
+  quarantinedAt: timestamp("quarantined_at").defaultNow().notNull(),
+}, (t) => [
+  index("qre_service_idx").on(t.serviceId),
+  index("qre_user_idx").on(t.userId),
+]);
