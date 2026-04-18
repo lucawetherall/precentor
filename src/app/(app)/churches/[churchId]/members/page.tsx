@@ -5,7 +5,7 @@ import { churchMemberships, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { InviteMemberForm } from "./invite-form";
 import { MembersTable } from "./members-table";
-import { hasMinRole } from "@/lib/auth/permissions";
+import { hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 import type { MemberRole } from "@/types";
 
 interface Props {
@@ -42,7 +42,7 @@ export default async function MembersPage({ params }: Props) {
         .limit(1);
 
       if (membership.length > 0) {
-        userRole = membership[0].role as MemberRole;
+        userRole = coerceMemberRole(membership[0].role);
       }
     }
 

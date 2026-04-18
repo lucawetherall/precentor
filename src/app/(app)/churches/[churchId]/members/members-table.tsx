@@ -162,11 +162,11 @@ export function MembersTable({
                   ) : (
                     <button
                       onClick={() => setConfirmRemoveId(m.id)}
-                      className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                      className="w-10 h-10 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       title="Remove member"
                       aria-label={`Remove ${m.userName || m.userEmail}`}
                     >
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                     </button>
                   )}
                 </td>
