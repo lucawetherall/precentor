@@ -474,16 +474,17 @@ export const serviceRoleSlots = pgTable("service_role_slots", {
 ]);
 
 // ─── Migration operational tables ────────────────────────────
+export const migrationPhaseEnum = pgEnum("migration_phase", ["A", "B", "D"]);
+export const migrationSeverityEnum = pgEnum("migration_severity", ["INFO", "WARN", "ERROR"]);
+
 export const migrationPhaseState = pgTable("migration_phase_state", {
-  phase: text("phase").primaryKey(),  // "A" | "B" | "D"
+  phase: migrationPhaseEnum("phase").primaryKey(),
   completedAt: timestamp("completed_at").defaultNow().notNull(),
 });
 
-export const migrationSeverityEnum = pgEnum("migration_severity", ["INFO", "WARN", "ERROR"]);
-
 export const migrationAuditLog = pgTable("migration_audit_log", {
   id: uuid("id").primaryKey().defaultRandom(),
-  phase: text("phase").notNull(),
+  phase: migrationPhaseEnum("phase").notNull(),
   churchId: uuid("church_id").references(() => churches.id, { onDelete: "cascade" }),
   severity: migrationSeverityEnum("severity").notNull(),
   code: text("code").notNull(),
@@ -498,6 +499,10 @@ export const migrationAuditLog = pgTable("migration_audit_log", {
 
 export const quarantinedRotaEntries = pgTable("quarantined_rota_entries", {
   id: uuid("id").primaryKey().defaultRandom(),
+  // These columns intentionally have NO foreign keys: quarantined rows must
+  // survive deletion of the original service, user, or rota entry so the
+  // diagnostic history is preserved. Integrity is therefore best-effort,
+  // and readers must handle missing referents at display time.
   originalEntryId: uuid("original_entry_id").notNull(),
   serviceId: uuid("service_id").notNull(),
   userId: uuid("user_id").notNull(),
