@@ -385,3 +385,21 @@ export const rateLimitBuckets = pgTable("rate_limit_buckets", {
   uniqueIndex("rate_limit_bucket_pk").on(t.key, t.windowStart),
   index("rate_limit_expires_idx").on(t.expiresAt),
 ]);
+
+// ─── Role catalog (global, seeded) ───────────────────────────
+export const roleCatalog = pgTable("role_catalog", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(),
+  defaultName: text("default_name").notNull(),
+  category: roleCategoryEnum("category").notNull(),
+  rotaEligible: boolean("rota_eligible").default(false).notNull(),
+  institutional: boolean("institutional").default(false).notNull(),
+  defaultExclusive: boolean("default_exclusive").default(true).notNull(),
+  defaultMinCount: integer("default_min_count").default(1).notNull(),
+  defaultMaxCount: integer("default_max_count"),
+  displayOrder: integer("display_order").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("role_catalog_category_idx").on(t.category),
+  index("role_catalog_display_idx").on(t.displayOrder),
+]);
