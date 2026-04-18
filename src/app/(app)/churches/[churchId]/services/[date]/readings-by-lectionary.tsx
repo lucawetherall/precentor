@@ -28,7 +28,7 @@ function ReadingRows({ readings }: { readings: Reading[] }) {
     <div className="divide-y divide-border">
       {readings.map((r) => (
         <div key={r.id} className="flex gap-3 px-4 py-2.5 text-sm">
-          <span className="text-muted-foreground w-24 flex-shrink-0 font-mono text-xs">
+          <span className="text-muted-foreground w-20 sm:w-24 flex-shrink-0 font-mono text-xs truncate">
             {POSITION_LABELS[r.position] ?? r.position.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
           </span>
           <span className="font-heading">{r.reference}</span>
@@ -61,12 +61,12 @@ export function ReadingsByLectionary({ readings }: ReadingsByLectionaryProps) {
   return (
     <Tabs defaultValue={tracks[0]}>
       <div className="px-4 pt-2">
-        <TabsList className="h-7 bg-muted/50 p-0.5">
+        <TabsList className="h-auto bg-muted/50 p-0.5 flex-wrap">
           {tracks.map((key) => (
             <TabsTrigger
               key={key}
               value={key}
-              className="font-mono text-[9px] uppercase tracking-wider px-2.5 py-1 data-[state=active]:bg-background data-[state=active]:text-foreground"
+              className="small-caps text-xs px-2.5 py-1 data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
               {LECTIONARY_LABELS[key] ?? key}
             </TabsTrigger>

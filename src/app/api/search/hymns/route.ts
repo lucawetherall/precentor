@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rateLimited = rateLimit(`hymn-search:${user.id}`, { maxRequests: 30, windowMs: 60_000 });
+  const rateLimited = await rateLimit(`hymn-search:${user.id}`, { maxRequests: 30, windowMs: 60_000 });
   if (rateLimited) return rateLimited;
 
   const { searchParams } = new URL(request.url);

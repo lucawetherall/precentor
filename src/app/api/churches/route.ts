@@ -42,54 +42,51 @@ export async function POST(request: Request) {
     }
 
     const slug = slugify(name) + "-" + Date.now().toString(36);
+    const hasDefaults = Array.isArray(defaultServices) && defaultServices.length > 0;
 
-    const [church] = await db.insert(churches).values({
-      name: name.trim(),
-      slug,
-      diocese: diocese || null,
-      address: address || null,
-      ccliNumber: ccliNumber || null,
-    }).returning();
+    // Wrap the church + membership + settings + services inserts in a single
+    // transaction so a partial failure (e.g. a service batch dies mid-insert)
+    // doesn't leave a church with no admin or no services visible.
+    const church = await db.transaction(async (tx) => {
+      const [created] = await tx.insert(churches).values({
+        name: name.trim(),
+        slug,
+        diocese: diocese || null,
+        address: address || null,
+        ccliNumber: ccliNumber || null,
+        settings: hasDefaults ? { defaultServices } : {},
+      }).returning();
 
-    // Add creator as ADMIN
-    await db.insert(churchMemberships).values({
-      userId: dbUser[0].id,
-      churchId: church.id,
-      role: "ADMIN",
-    });
+      await tx.insert(churchMemberships).values({
+        userId: dbUser[0].id,
+        churchId: created.id,
+        role: "ADMIN",
+      });
 
-    if (defaultServices && Array.isArray(defaultServices) && defaultServices.length > 0) {
-      await db
-        .update(churches)
-        .set({ settings: { defaultServices } })
-        .where(eq(churches.id, church.id));
+      if (hasDefaults) {
+        const allDays = await tx
+          .select({ id: liturgicalDays.id })
+          .from(liturgicalDays);
 
-      const allDays = await db
-        .select({ id: liturgicalDays.id })
-        .from(liturgicalDays);
+        const serviceValues = allDays.flatMap((day) =>
+          (defaultServices as { type: string; time?: string }[]).map((svc) => ({
+            churchId: created.id,
+            liturgicalDayId: day.id,
+            serviceType: svc.type as (typeof serviceTypeEnum.enumValues)[number],
+            time: svc.time || null,
+            status: "DRAFT" as const,
+          }))
+        );
 
-      // Batch insert all services instead of one-by-one
-      const serviceValues = allDays.flatMap((day) =>
-        defaultServices.map((svc: { type: string; time?: string }) => ({
-          churchId: church.id,
-          liturgicalDayId: day.id,
-          serviceType: svc.type as (typeof serviceTypeEnum.enumValues)[number],
-          time: svc.time || null,
-          status: "DRAFT" as const,
-        }))
-      );
-
-      // Insert in chunks to avoid query size limits
-      const CHUNK_SIZE = 500;
-      for (let i = 0; i < serviceValues.length; i += CHUNK_SIZE) {
-        const chunk = serviceValues.slice(i, i + CHUNK_SIZE);
-        try {
-          await db.insert(services).values(chunk).onConflictDoNothing();
-        } catch {
-          // Skip constraint violations
+        const CHUNK_SIZE = 500;
+        for (let i = 0; i < serviceValues.length; i += CHUNK_SIZE) {
+          const chunk = serviceValues.slice(i, i + CHUNK_SIZE);
+          await tx.insert(services).values(chunk).onConflictDoNothing();
         }
       }
-    }
+
+      return created;
+    });
 
     return NextResponse.json(church, { status: 201 });
   } catch (error) {

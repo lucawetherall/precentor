@@ -12,7 +12,7 @@ test.describe("Navigation and routing", () => {
   test("unauthenticated users can access public pages", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL("/");
-    await expect(page.locator("h1")).toContainText("Precentor");
+    await expect(page.locator("h1")).toContainText("Sunday");
   });
 
   test("navigating from landing to login works", async ({ page }) => {

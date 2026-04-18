@@ -61,7 +61,7 @@ test.describe("Authentication pages", () => {
     test("enforces minimum password length", async ({ page }) => {
       await page.goto("/signup");
       const passwordInput = page.locator("#password");
-      await expect(passwordInput).toHaveAttribute("minlength", "8");
+      await expect(passwordInput).toHaveAttribute("minlength", "10");
     });
   });
 

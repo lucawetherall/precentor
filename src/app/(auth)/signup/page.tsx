@@ -5,6 +5,9 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/form-field";
+import { passwordSchema } from "@/lib/validation/schemas";
+import { validatePasswordAction } from "./actions";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -29,7 +32,8 @@ export default function SignupPage() {
   };
 
   const validatePassword = (value: string) => {
-    if (value.length < 8) return "Password must be at least 8 characters";
+    const result = passwordSchema.safeParse(value);
+    if (!result.success) return result.error.issues[0].message;
     return "";
   };
 
@@ -38,8 +42,9 @@ export default function SignupPage() {
     setError("");
     setMessage("");
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const serverError = await validatePasswordAction(password);
+    if (serverError) {
+      setError(serverError);
       return;
     }
     if (password !== confirmPassword) {
@@ -77,76 +82,55 @@ export default function SignupPage() {
         </div>
 
         {message ? (
-          <div className="p-4 border border-border bg-white text-center space-y-2">
+          <div className="p-4 border border-border bg-card text-center space-y-2">
             <p className="text-sm">{message}</p>
           </div>
         ) : (
           <form onSubmit={handleSignup} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-body">Full name</label>
+            <FormField id="name" label="Full name" required error={fieldErrors.name || null}>
               <Input
-                id="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onBlur={() => setFieldErrors((prev) => ({ ...prev, name: validateName(name) }))}
                 placeholder="John Smith"
                 required
-                className="bg-white"
               />
-              {fieldErrors.name && (
-                <p className="text-xs text-destructive mt-1">{fieldErrors.name}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-body">Email address</label>
+            <FormField id="email" label="Email address" required error={fieldErrors.email || null}>
               <Input
-                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setFieldErrors((prev) => ({ ...prev, email: validateEmail(email) }))}
                 placeholder="director@parish.org.uk"
                 required
-                className="bg-white"
               />
-              {fieldErrors.email && (
-                <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-body">Password</label>
+            <FormField id="password" label="Password" required error={fieldErrors.password || null} hint="Min. 10 characters">
               <Input
-                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={() => setFieldErrors((prev) => ({ ...prev, password: validatePassword(password) }))}
-                placeholder="Min. 8 characters"
+                placeholder="Min. 10 characters"
                 required
-                minLength={8}
-                className="bg-white"
+                minLength={10}
               />
-              {fieldErrors.password && (
-                <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <label htmlFor="confirm-password" className="text-sm font-body">Confirm password</label>
+            <FormField id="confirm-password" label="Confirm password" required>
               <Input
-                id="confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your password"
                 required
-                minLength={8}
-                className="bg-white"
+                minLength={10}
               />
-            </div>
+            </FormField>
 
             {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
@@ -158,7 +142,14 @@ export default function SignupPage() {
 
         <p className="text-sm text-center text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="text-primary underline hover:no-underline">Sign in</Link>
+          <Link href="/login" className="text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary">Sign in</Link>
+        </p>
+
+        <p className="text-xs text-center text-muted-foreground">
+          By creating an account, you agree to our{" "}
+          <Link href="/terms" className="underline hover:no-underline">Terms of Service</Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline hover:no-underline">Privacy Notice</Link>.
         </p>
       </div>
     </main>

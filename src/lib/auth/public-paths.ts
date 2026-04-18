@@ -1,5 +1,16 @@
 /** Paths that do not require authentication. */
-export const PUBLIC_PATHS = ["/", "/login", "/signup", "/forgot-password", "/reset-password"];
+export const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/privacy",
+  "/terms",
+  "/contact",
+  "/about",
+  "/faq",
+];
 
 /** Paths where authenticated users should be redirected away (e.g. to /dashboard). */
 export const AUTH_ONLY_PATHS = ["/login", "/signup", "/forgot-password"];

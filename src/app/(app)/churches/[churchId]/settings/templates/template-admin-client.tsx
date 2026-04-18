@@ -37,7 +37,7 @@ function getSectionTypeIcon(section: TemplateSection) {
     return <Music className="h-3.5 w-3.5 text-primary flex-shrink-0" strokeWidth={1.5} />;
   }
   if (section.placeholderType) {
-    return <BookOpen className="h-3.5 w-3.5 text-amber-700 flex-shrink-0" strokeWidth={1.5} />;
+    return <BookOpen className="h-3.5 w-3.5 text-warning-foreground flex-shrink-0" strokeWidth={1.5} />;
   }
   return <FileText className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" strokeWidth={1.5} />;
 }

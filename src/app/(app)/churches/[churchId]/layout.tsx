@@ -4,8 +4,7 @@ import { db } from "@/lib/db";
 import { churches, churchMemberships, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
-import { hasMinRole } from "@/lib/auth/permissions";
-import type { MemberRole } from "@/types";
+import { hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 import { ChurchSidebar } from "@/components/church-sidebar";
 
 interface Props {
@@ -51,7 +50,7 @@ export default async function ChurchLayout({ children, params }: Props) {
     redirect("/churches");
   }
 
-  const userRole = membership.role as MemberRole;
+  const userRole = coerceMemberRole(membership.role);
   const isAdmin = hasMinRole(userRole, "ADMIN");
 
   interface NavGroup {

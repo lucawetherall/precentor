@@ -13,8 +13,7 @@ import {
 import { eq, and, asc, inArray } from 'drizzle-orm'
 import type { InferSelectModel } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
-import { requireChurchRole, hasMinRole } from '@/lib/auth/permissions'
-import type { MemberRole } from '@/types'
+import { requireChurchRole, hasMinRole, coerceMemberRole } from '@/lib/auth/permissions'
 import type { AdjacentDayLinks, PopulatedMusicSlot } from '@/types/service-views'
 import { getAdjacentLiturgicalDays } from '@/lib/services/adjacent-liturgical-days'
 import { MemberServiceView } from './member-service-view'
@@ -34,7 +33,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   if (error) redirect('/login')
 
   const userId = user!.id
-  const role = membership!.role as MemberRole
+  const role = coerceMemberRole(membership!.role)
   const isEditor = hasMinRole(role, 'EDITOR')
   const isEditMode = isEditor && mode === 'edit'
 
@@ -153,7 +152,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
 
   if (!day) {
     return (
-      <div className="p-8 max-w-5xl">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
         <ServiceNav churchId={churchId} adjacent={adjacent} />
         <p className="text-muted-foreground">No liturgical data for {date}.</p>
       </div>
@@ -164,10 +163,12 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
     id: string; serviceType: string; time: string | null; choirStatus: string
   } | undefined) ?? null
 
-  // Edit mode: existing planner (editors/admins only)
+  // Edit mode: existing planner (editors/admins only).
+  // ServicePlanner renders its own ServiceNav internally (with "Back to service view"),
+  // so no BackLink at this level — the nav lives next to the planner's prev/next.
   if (isEditMode) {
     return (
-      <div className="p-8 max-w-5xl">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
         <ServicePlanner
           churchId={churchId}
           liturgicalDayId={day.id}

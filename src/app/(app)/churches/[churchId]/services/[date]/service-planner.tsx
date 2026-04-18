@@ -90,6 +90,8 @@ export function ServicePlanner({
   const [activeTab, setActiveTab] = useState<string>(services[0]?.id || "");
   const [editorTab, setEditorTab] = useState<"order" | "settings" | "preview">("order");
   const [creating, setCreating] = useState(false);
+  const [fetchedSectionsMap, setFetchedSectionsMap] = useState<Record<string, ServiceSection[]>>({});
+  const [fetchedSlotsMap, setFetchedSlotsMap] = useState<Record<string, MusicSlot[]>>({});
   const [deleting, setDeleting] = useState(false);
   const [newType, setNewType] = useState<ServiceType>("SUNG_EUCHARIST");
   const [newTime, setNewTime] = useState("10:00");
@@ -126,6 +128,16 @@ export function ServicePlanner({
           collectId: service.collectId ?? null,
           collectOverride: service.collectOverride ?? null,
         };
+        // Fetch the template sections and slots that were auto-created on the server
+        const [sectionsRes, slotsRes] = await Promise.all([
+          fetch(`/api/churches/${churchId}/services/${service.id}/sections`),
+          fetch(`/api/churches/${churchId}/services/${service.id}/slots`),
+        ]);
+        if (sectionsRes.ok && slotsRes.ok) {
+          const [sections, slots] = await Promise.all([sectionsRes.json(), slotsRes.json()]);
+          setFetchedSectionsMap((prev) => ({ ...prev, [service.id]: sections }));
+          setFetchedSlotsMap((prev) => ({ ...prev, [service.id]: slots }));
+        }
         setServices((prev) => [...prev, newService]);
         setActiveTab(newService.id);
         addToast("Service created", "success");
@@ -285,14 +297,14 @@ export function ServicePlanner({
           <div className="border border-border bg-card mb-4">
             <div className="px-4 py-2.5 border-b border-border bg-muted/30 flex items-center gap-2">
               <BookMarked className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
-              <h3 className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <h3 className="small-caps text-xs text-muted-foreground">
                 Readings — {LECTIONARY_LABELS[lectionary] ?? lectionary}
               </h3>
             </div>
             <div className="divide-y divide-border">
               {filtered.map((r) => (
-                <div key={r.id} className="flex gap-3 px-4 py-2.5 text-sm">
-                  <span className="text-muted-foreground w-24 flex-shrink-0 font-mono text-xs">
+                <div key={r.id} className="flex gap-3 px-4 py-3 text-sm">
+                  <span className="small-caps text-xs text-muted-foreground w-28 flex-shrink-0 pt-0.5">
                     {POSITION_LABELS[r.position] ?? r.position.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                   </span>
                   <span className="font-heading">{r.reference}</span>
@@ -309,7 +321,7 @@ export function ServicePlanner({
           key={activeService.id}
           serviceId={activeService.id}
           churchId={churchId}
-          initialSections={(editorSectionsMap[activeService.id] ?? []) as ServiceSection[]}
+          initialSections={(fetchedSectionsMap[activeService.id] ?? editorSectionsMap[activeService.id] ?? []) as ServiceSection[]}
           initialSettings={{
             sheetMode: activeService.sheetMode,
             eucharisticPrayer: activeService.eucharisticPrayer,
@@ -320,7 +332,7 @@ export function ServicePlanner({
             collectId: activeService.collectId,
             collectOverride: activeService.collectOverride,
           }}
-          initialSlots={(editorSlotsMap[activeService.id] ?? []) as MusicSlot[]}
+          initialSlots={(fetchedSlotsMap[activeService.id] ?? editorSlotsMap[activeService.id] ?? []) as MusicSlot[]}
         >
           {/* Editor sub-tabs with save status */}
           <div className="flex items-center border-b border-border mb-4">
@@ -329,7 +341,7 @@ export function ServicePlanner({
                 role="tab"
                 aria-selected={editorTab === "order"}
                 onClick={() => setEditorTab("order")}
-                className={`pb-2 font-mono text-[10px] uppercase tracking-[0.1em] border-b-2 transition-colors ${
+                className={`pb-2 small-caps text-xs border-b-2 transition-colors ${
                   editorTab === "order"
                     ? "border-foreground text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -341,7 +353,7 @@ export function ServicePlanner({
                 role="tab"
                 aria-selected={editorTab === "settings"}
                 onClick={() => setEditorTab("settings")}
-                className={`pb-2 font-mono text-[10px] uppercase tracking-[0.1em] border-b-2 transition-colors ${
+                className={`pb-2 small-caps text-xs border-b-2 transition-colors ${
                   editorTab === "settings"
                     ? "border-foreground text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -353,7 +365,7 @@ export function ServicePlanner({
                 role="tab"
                 aria-selected={editorTab === "preview"}
                 onClick={() => setEditorTab("preview")}
-                className={`pb-2 font-mono text-[10px] uppercase tracking-[0.1em] border-b-2 transition-colors ${
+                className={`pb-2 small-caps text-xs border-b-2 transition-colors ${
                   editorTab === "preview"
                     ? "border-foreground text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -432,7 +444,7 @@ export function ServicePlanner({
 
       {/* PDF Preview Dialog */}
       <Dialog open={pdfDialogOpen} onOpenChange={(open) => { if (!open) handlePdfDialogClose(); }}>
-        <DialogContent className="w-screen h-screen max-w-none m-0 p-0 rounded-none flex flex-col">
+        <DialogContent className="w-[95vw] max-w-4xl h-[90vh] p-0 flex flex-col">
           <DialogHeader className="px-4 py-3 border-b border-border flex-shrink-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="font-heading text-sm">PDF Preview</DialogTitle>

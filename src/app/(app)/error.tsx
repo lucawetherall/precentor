@@ -18,8 +18,15 @@ export default function AppError({
         <h2 className="text-xl font-heading font-semibold text-destructive">Something went wrong</h2>
       </div>
       <p className="text-sm text-muted-foreground mb-4">
-        {error.message || "An unexpected error occurred."}
+        {process.env.NODE_ENV === "development" && error.message
+          ? error.message
+          : "An unexpected error occurred. Please try again in a moment."}
       </p>
+      {error.digest && (
+        <p className="text-xs text-muted-foreground font-mono mb-4">
+          Error reference: <span className="select-all">{error.digest}</span>
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button onClick={reset}>
           Try again

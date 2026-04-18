@@ -2,6 +2,7 @@
 
 import { useServiceEditor } from "./service-editor-context";
 import { CHOIR_STATUS_LABELS } from "../choir-status-constants";
+import { EucharisticPrayerBrowser } from "./eucharistic-prayer-browser";
 
 const EUCHARIST_TYPES = new Set(["SUNG_EUCHARIST", "SAID_EUCHARIST"]);
 
@@ -40,25 +41,10 @@ export function ServiceSettings({
         </label>
 
         {showBookletOptions && isEucharist && (
-          <label className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs">
             <span className="text-muted-foreground">Eucharistic Prayer:</span>
-            <select
-              value={settings.eucharisticPrayer ?? ""}
-              onChange={(e) =>
-                updateSettings({
-                  eucharisticPrayer: e.target.value || null,
-                })
-              }
-              className="px-2 py-1 text-xs border border-border bg-background"
-            >
-              <option value="">Not set</option>
-              {["A", "B", "C", "D", "E", "F", "G", "H"].map((p) => (
-                <option key={p} value={p}>
-                  Prayer {p}
-                </option>
-              ))}
-            </select>
-          </label>
+            <EucharisticPrayerBrowser />
+          </div>
         )}
 
         {showBookletOptions && (

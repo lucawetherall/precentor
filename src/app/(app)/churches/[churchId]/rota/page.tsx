@@ -69,7 +69,7 @@ export default async function RotaPage({ params }: Props) {
   } catch (err) { console.error("Failed to load data:", err); }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <h1 className="text-3xl font-heading font-semibold mb-6">Choir Rota</h1>
       <RotaGrid
         churchId={churchId}

@@ -14,12 +14,16 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
 
   // Email invite state
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [role, setRole] = useState("MEMBER");
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
   const [showEmailInvite, setShowEmailInvite] = useState(false);
 
   const { addToast } = useToast();
+
+  // Matches Zod's default email regex (simple but covers >99% of real addresses).
+  const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const handleQuickInvite = async () => {
     setQuickLoading(true);
@@ -47,7 +51,16 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
   };
 
   const handleEmailInvite = async (sendEmail: boolean) => {
-    if (!email) return;
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setEmailError("Please enter an email address.");
+      return;
+    }
+    if (!EMAIL_PATTERN.test(trimmed)) {
+      setEmailError("Please enter a valid email address.");
+      return;
+    }
+    setEmailError(null);
     setLoading(true);
     setInviteLink("");
 
@@ -55,7 +68,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
       const res = await fetch(`/api/churches/${churchId}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role, sendEmail }),
+        body: JSON.stringify({ email: trimmed, role, sendEmail }),
       });
 
       const data = await res.json();
@@ -63,6 +76,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
         const link = `${window.location.origin}/invite/${data.token}`;
         if (sendEmail) {
           addToast("Invite email sent", "success");
+          setShowEmailInvite(false);
         } else {
           setInviteLink(link);
           addToast("Invite link generated — copy and share it", "success");
@@ -100,7 +114,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
               id="quick-role"
               value={quickRole}
               onChange={(e) => setQuickRole(e.target.value)}
-              className="w-full sm:w-auto h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full sm:w-auto h-9 rounded-md px-3 py-1 text-sm border border-input bg-card shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="MEMBER">Member</option>
               <option value="EDITOR">Editor</option>
@@ -161,12 +175,21 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
                 id="invite-email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError(null);
+                }}
                 placeholder="singer@parish.org.uk"
                 autoComplete="email"
                 required
-                className="bg-white"
+                aria-invalid={emailError ? true : undefined}
+                aria-describedby={emailError ? "invite-email-error" : undefined}
               />
+              {emailError && (
+                <p id="invite-email-error" className="mt-1 text-xs text-destructive">
+                  {emailError}
+                </p>
+              )}
             </div>
             <div>
               <label htmlFor="invite-role" className="block text-sm font-body mb-1">Role</label>
@@ -174,7 +197,7 @@ export function InviteMemberForm({ churchId }: { churchId: string }) {
                 id="invite-role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full sm:w-auto h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="w-full sm:w-auto h-9 rounded-md px-3 py-1 text-sm border border-input bg-card shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="MEMBER">Member</option>
                 <option value="EDITOR">Editor</option>

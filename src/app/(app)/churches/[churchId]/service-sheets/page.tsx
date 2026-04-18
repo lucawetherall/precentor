@@ -4,11 +4,14 @@ import { db } from "@/lib/db";
 import { services, liturgicalDays, users, churchMemberships } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { format, parseISO } from "date-fns";
-import { hasMinRole } from "@/lib/auth/permissions";
+import { hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType, MemberRole } from "@/types";
 import { ServiceSheetActions, BatchDownloadActions } from "./actions-client";
-import { BookOpen } from "lucide-react";
+import { BookOpen, FileText } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { StatusBadge } from "@/components/status-badge";
+import { formatLiturgicalDayName } from "@/lib/liturgical-display";
 
 interface Props {
   params: Promise<{ churchId: string }>;
@@ -30,7 +33,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
         .from(churchMemberships)
         .where(and(eq(churchMemberships.userId, dbUser[0].id), eq(churchMemberships.churchId, churchId)))
         .limit(1);
-      if (membership.length > 0) userRole = membership[0].role as MemberRole;
+      if (membership.length > 0) userRole = coerceMemberRole(membership[0].role);
     }
   } catch (err) { console.error("Failed to load data:", err); }
 
@@ -75,18 +78,18 @@ export default async function ServiceSheetsPage({ params }: Props) {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <h1 className="text-3xl font-heading font-semibold mb-6">Service Sheets</h1>
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="prose-measure text-sm text-muted-foreground mb-6">
         Generate PDF or Word service sheets for any planned service.
         Choose <strong>Summary</strong> for a music and readings overview, or{" "}
         <strong>Booklet</strong> for a full liturgical order with congregational responses.
       </p>
 
       {recentServices.length === 0 ? (
-        <div className="border border-border bg-card p-8 text-center">
-          <p className="text-muted-foreground">
-            No services found. Plan music for a Sunday first.
-          </p>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="No services yet"
+          description="Plan music for a Sunday first, then return here to generate service sheets."
+        />
       ) : (
         <div className="space-y-2">
           <BatchDownloadActions serviceIds={serviceIds} churchId={churchId} />
@@ -102,30 +105,27 @@ export default async function ServiceSheetsPage({ params }: Props) {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-heading text-lg">{s.cwName}</p>
+                    <p className="font-heading text-lg">{formatLiturgicalDayName(s.cwName, s.date)}</p>
                     {s.sheetMode === "booklet" && (
-                      <span
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded ${
-                          isBookletReady
-                            ? "bg-green-100 text-green-800"
-                            : "bg-amber-100 text-amber-800"
-                        }`}
+                      <StatusBadge
+                        status={isBookletReady ? "ready" : "incomplete"}
+                        label={isBookletReady ? "Booklet ready" : "Booklet incomplete"}
                         title={
                           isBookletReady
                             ? "Booklet data complete"
                             : "Booklet missing eucharistic prayer"
                         }
+                        className="gap-1"
                       >
                         <BookOpen className="h-2.5 w-2.5" strokeWidth={2} aria-hidden="true" />
-                        {isBookletReady ? "Booklet ready" : "Booklet incomplete"}
-                      </span>
+                      </StatusBadge>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {SERVICE_TYPE_LABELS[s.serviceType as ServiceType] || s.serviceType}
                     {s.time && ` — ${s.time}`}
                   </p>
-                  <p className="text-xs text-muted-foreground font-mono">
+                  <p className="small-caps text-xs text-muted-foreground">
                     {format(parseISO(s.date), "d MMM yyyy")}
                   </p>
                 </div>

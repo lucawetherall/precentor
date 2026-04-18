@@ -2,6 +2,8 @@
 
 import { Plus } from "lucide-react";
 import type { ServiceSection } from "./section-row";
+import { MUSIC_SLOT_LABELS } from "@/types";
+import type { MusicSlotType } from "@/types";
 import { HymnPicker } from "./hymn-picker";
 import { MassSettingControl } from "./mass-setting-control";
 import { CollectChooser } from "./collect-chooser";
@@ -60,7 +62,7 @@ export function SectionInlineControl({ section, churchId }: SectionInlineControl
         !musicSlotType.startsWith("MASS_SETTING_") &&
         musicSlotType !== "ANTHEM" && (
           <span className="text-xs text-muted-foreground italic">
-            {musicSlotType.replace(/_/g, " ").toLowerCase()}
+            {MUSIC_SLOT_LABELS[musicSlotType as MusicSlotType] ?? musicSlotType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
           </span>
         )}
 

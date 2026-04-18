@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/sheet";
 import { Home, Calendar, Users, Music, FileText, ScrollText, Settings } from "lucide-react";
 
+const ICON_STROKE = 1.5;
+const SIDEBAR_WIDTH = "w-60";
+
 interface NavItem {
   href: string;
   label: string;
@@ -45,12 +48,12 @@ function NavGroups({
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="flex flex-col flex-1">
+    <nav aria-label="Church navigation" className="flex flex-col flex-1">
       {navGroups.map((group, gi) => (
         <div key={gi}>
           {gi > 0 && <div className="border-t border-border my-3" />}
           {group.label && (
-            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1 px-2">
+            <p className="small-caps text-xs text-muted-foreground mb-1 px-2">
               {group.label}
             </p>
           )}
@@ -68,15 +71,15 @@ function NavGroups({
                   onClick={onNavigate}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-2 px-2 py-1.5 text-sm transition-colors",
+                    "flex items-center gap-2 rounded-sm px-2 py-2.5 md:py-1.5 text-sm transition-colors min-h-[44px] md:min-h-0",
                     isActive
-                      ? "bg-primary/10 text-primary font-medium"
+                      ? "border-l-2 border-primary bg-primary/10 pl-[calc(0.5rem-2px)] text-primary font-medium"
                       : isMuted
                       ? "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
                       : "hover:bg-sidebar-accent text-foreground"
                   )}
                 >
-                  <Icon className="h-4 w-4" strokeWidth={1.5} />
+                  <Icon className="h-4 w-4" strokeWidth={ICON_STROKE} />
                   {item.label}
                 </Link>
               );
@@ -109,7 +112,7 @@ export function ChurchSidebar({
 
   const sidebarContent = (
     <>
-      <h2 className="font-heading text-lg font-semibold mb-1 truncate" title={churchName}>
+      <h2 className="font-heading text-lg font-semibold mb-1 leading-tight text-balance" title={churchName}>
         {churchName}
       </h2>
       <p className="text-xs text-muted-foreground mb-6">{roleLabel}</p>
@@ -122,6 +125,12 @@ export function ChurchSidebar({
 
       <div className="mt-auto pt-4 border-t border-border">
         <p className="text-xs text-muted-foreground mb-2 truncate">{userEmail}</p>
+        <Link
+          href="/account"
+          className="block text-xs text-muted-foreground hover:text-foreground mb-2 underline hover:no-underline"
+        >
+          Account settings
+        </Link>
         <SignOutButton />
       </div>
     </>
@@ -133,19 +142,19 @@ export function ChurchSidebar({
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
             <button
-              className="p-1 hover:bg-sidebar-accent transition-colors"
+              className="p-2 hover:bg-sidebar-accent transition-colors"
               aria-label="Open navigation menu"
             >
-              <Menu className="h-5 w-5" strokeWidth={1.5} />
+              <Menu className="h-5 w-5" strokeWidth={ICON_STROKE} />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-56 p-4 flex flex-col">
+          <SheetContent side="left" className={cn(SIDEBAR_WIDTH, "p-4 flex flex-col")}>
             {sidebarContent}
           </SheetContent>
         </Sheet>
         <span className="font-heading font-semibold truncate">{churchName}</span>
       </div>
-      <aside className="hidden md:flex w-56 border-r border-border bg-sidebar p-4 flex-col">
+      <aside className={cn("hidden md:flex border-r border-border bg-sidebar p-4 flex-col", SIDEBAR_WIDTH)}>
         {sidebarContent}
       </aside>
     </>

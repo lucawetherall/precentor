@@ -1,4 +1,4 @@
-import { requireChurchRole } from "./permissions";
+import { requireChurchRole, coerceMemberRole } from "./permissions";
 import type { MemberRole } from "@/types";
 import type { NextRequest } from "next/server";
 
@@ -22,7 +22,7 @@ export function withChurchAuth(
     return handler(request, {
       userId: user!.id,
       churchId,
-      role: membership!.role as MemberRole,
+      role: coerceMemberRole(membership!.role),
     }, resolvedParams);
   };
 }

@@ -73,7 +73,9 @@ async function handleAuthenticatedUser(
           return buildRedirect(request, origin, "/login?error=auth");
         }
         const [newUser] = await db.insert(users).values({
-          email: user.email,
+          // Normalise to lowercase so case-different duplicates resolve to the same row.
+          // Supabase Auth already treats emails case-insensitively; the DB must agree.
+          email: user.email.toLowerCase(),
           supabaseId: user.id,
           name: user.user_metadata?.name || null,
         }).returning();
