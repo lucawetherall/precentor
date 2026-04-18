@@ -39,6 +39,24 @@ export const choirStatusEnum = pgEnum("choir_status", [
   "SAID_SERVICE_ONLY",
   "NO_SERVICE",
 ]);
+export const roleCategoryEnum = pgEnum("role_category", [
+  "VOICE",
+  "MUSIC_DIRECTION",
+  "MUSIC_INSTRUMENT",
+  "CLERGY_PARISH",
+  "CLERGY_CATHEDRAL",
+  "LAY_MINISTRY",
+]);
+export const choirRequirementEnum = pgEnum("choir_requirement", [
+  "FULL_CHOIR",
+  "ORGANIST_ONLY",
+  "SAID",
+]);
+export const musicListFieldSetEnum = pgEnum("music_list_field_set", [
+  "CHORAL",
+  "HYMNS_ONLY",
+  "READINGS_ONLY",
+]);
 
 // ─── Users & Churches ────────────────────────────────────────
 export const users = pgTable("users", {
