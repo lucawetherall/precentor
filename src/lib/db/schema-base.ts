@@ -167,6 +167,7 @@ export const services = pgTable("services", {
   sheetMode: text("sheet_mode").default("summary").notNull(),
   liturgicalOverrides: json("liturgical_overrides").default({}).$type<Record<string, string>>(),
   choirStatus: choirStatusEnum("choir_status").default("CHOIR_REQUIRED").notNull(),
+  presetId: uuid("preset_id").references(() => churchServicePresets.id, { onDelete: "set null" }),
   defaultMassSettingId: uuid("default_mass_setting_id").references(() => massSettings.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -302,9 +303,12 @@ export const rotaEntries = pgTable("rota_entries", {
   serviceId: uuid("service_id").notNull().references(() => services.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   confirmed: boolean("confirmed").default(false).notNull(),
+  catalogRoleId: uuid("catalog_role_id").references(() => roleCatalog.id, { onDelete: "restrict" }),
+  quarantinedAt: timestamp("quarantined_at"),
 }, (t) => [
   uniqueIndex("rota_unique").on(t.serviceId, t.userId),
   index("rota_service_idx").on(t.serviceId),
+  index("rota_service_active_idx").on(t.serviceId).where(sql`quarantined_at IS NULL`),
 ]);
 
 // ─── Performance Log ─────────────────────────────────────────
@@ -340,6 +344,7 @@ export const churchServicePatterns = pgTable("church_service_patterns", {
   serviceType: serviceTypeEnum("service_type").notNull(),
   time: text("time"),  // e.g. "10:00"
   enabled: boolean("enabled").default(true).notNull(),
+  presetId: uuid("preset_id").references(() => churchServicePresets.id, { onDelete: "set null" }),
 }, (t) => [
   uniqueIndex("church_service_pattern_unique").on(t.churchId, t.dayOfWeek, t.serviceType),
 ]);
