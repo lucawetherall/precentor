@@ -5,6 +5,7 @@ import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 import { ChurchSettingsForm } from "./settings-form";
+import { readSheetMusicLink } from "@/lib/churches/settings";
 
 interface Props {
   params: Promise<{ churchId: string }>;
@@ -24,10 +25,19 @@ export default async function ChurchSettingsPage({ params }: Props) {
 
   if (!church) redirect("/churches");
 
+  const churchForForm = {
+    id: church.id,
+    name: church.name,
+    diocese: church.diocese,
+    address: church.address,
+    ccliNumber: church.ccliNumber,
+    sheetMusicLink: readSheetMusicLink(church.settings),
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-lg">
       <h1 className="text-3xl font-heading font-semibold mb-6">Church Settings</h1>
-      <ChurchSettingsForm church={church} />
+      <ChurchSettingsForm church={churchForForm} />
     </div>
   );
 }
