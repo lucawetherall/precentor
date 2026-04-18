@@ -1,13 +1,13 @@
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
-import { ChevronLeft } from 'lucide-react'
 import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from '@/types'
 import type { LiturgicalColour, MemberRole } from '@/types'
 import { hasMinRole } from '@/lib/auth/permissions'
-import type { PopulatedMusicSlot } from '@/types/service-views'
+import type { AdjacentDayLinks, PopulatedMusicSlot } from '@/types/service-views'
 import { AvailabilityWidget } from '@/components/availability-widget'
 import { ServiceMusicList } from './service-music-list'
 import { ReadingsByLectionary } from './readings-by-lectionary'
+import { ServiceNav } from './service-nav'
 import { CHOIR_STATUS_LABELS, CHOIR_STATUS_PILL_CLASSES } from '../choir-status-constants'
 
 interface Reading {
@@ -41,6 +41,7 @@ interface MemberServiceViewProps {
   role: MemberRole
   confirmedCount?: number
   editUrl: string
+  adjacent: AdjacentDayLinks
 }
 
 export function MemberServiceView({
@@ -53,20 +54,15 @@ export function MemberServiceView({
   role,
   confirmedCount,
   editUrl,
+  adjacent,
 }: MemberServiceViewProps) {
   const colour = LITURGICAL_COLOURS[day.colour as LiturgicalColour] ?? '#4A6741'
   const isEditor = hasMinRole(role, 'EDITOR')
 
   return (
     <div className="p-8 max-w-5xl">
-      {/* Back link */}
-      <Link
-        href={`/churches/${churchId}/services`}
-        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-      >
-        <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-        Back to Services
-      </Link>
+      {/* Nav: Back link + Prev/Next */}
+      <ServiceNav churchId={churchId} adjacent={adjacent} />
 
       {/* Editor notice (EDITOR/ADMIN only) */}
       {isEditor && (

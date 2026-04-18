@@ -11,7 +11,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Home, Calendar, Users, Music, FileText, Settings } from "lucide-react";
+import { Home, Calendar, Users, Music, FileText, ScrollText, Settings } from "lucide-react";
 
 interface NavItem {
   href: string;
@@ -31,6 +31,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; strokeWi
   Users,
   Music,
   FileText,
+  ScrollText,
   Settings,
 };
 

@@ -13,13 +13,13 @@ import {
 import { eq, and, asc, inArray } from 'drizzle-orm'
 import type { InferSelectModel } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
 import { requireChurchRole, hasMinRole } from '@/lib/auth/permissions'
 import type { MemberRole } from '@/types'
-import type { PopulatedMusicSlot } from '@/types/service-views'
+import type { AdjacentDayLinks, PopulatedMusicSlot } from '@/types/service-views'
+import { getAdjacentLiturgicalDays } from '@/lib/services/adjacent-liturgical-days'
 import { MemberServiceView } from './member-service-view'
 import { ServicePlanner } from './service-planner'
+import { ServiceNav } from './service-nav'
 
 interface Props {
   params: Promise<{ churchId: string; date: string }>
@@ -45,17 +45,22 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   let populatedSlots: PopulatedMusicSlot[] = []
   let userAvail: 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null = null
   let confirmedCount = 0
+  let adjacent: AdjacentDayLinks = { prev: null, next: null }
   // Editor data: per-service sections and raw music slots
   const editorSectionsMap: Record<string, InferSelectModel<typeof serviceSections>[]> = {}
   const editorSlotsMap: Record<string, InferSelectModel<typeof musicSlots>[]> = {}
 
   try {
-    const days = await db
-      .select()
-      .from(liturgicalDays)
-      .where(eq(liturgicalDays.date, date))
-      .limit(1)
+    const [days, adjacentResult] = await Promise.all([
+      db
+        .select()
+        .from(liturgicalDays)
+        .where(eq(liturgicalDays.date, date))
+        .limit(1),
+      getAdjacentLiturgicalDays(date),
+    ])
     day = days[0] ?? null
+    adjacent = adjacentResult
 
     if (day) {
       dayReadings = await db
@@ -148,15 +153,9 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
 
   if (!day) {
     return (
-      <div className="p-8">
+      <div className="p-8 max-w-5xl">
+        <ServiceNav churchId={churchId} adjacent={adjacent} />
         <p className="text-muted-foreground">No liturgical data for {date}.</p>
-        <Link
-          href={`/churches/${churchId}/services`}
-          className="flex items-center gap-1 text-sm text-primary underline mt-2"
-        >
-          <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-          Back to Services
-        </Link>
       </div>
     )
   }
@@ -169,13 +168,6 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   if (isEditMode) {
     return (
       <div className="p-8 max-w-5xl">
-        <Link
-          href={`/churches/${churchId}/services/${date}`}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-        >
-          <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-          Back to service view
-        </Link>
         <ServicePlanner
           churchId={churchId}
           liturgicalDayId={day.id}
@@ -184,6 +176,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
           editorSectionsMap={editorSectionsMap}
           editorSlotsMap={editorSlotsMap}
           readings={dayReadings}
+          adjacent={adjacent}
         />
       </div>
     )
@@ -207,6 +200,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
       role={role}
       confirmedCount={isEditor ? confirmedCount : undefined}
       editUrl={`/churches/${churchId}/services/${date}?mode=edit`}
+      adjacent={adjacent}
     />
   )
 }
