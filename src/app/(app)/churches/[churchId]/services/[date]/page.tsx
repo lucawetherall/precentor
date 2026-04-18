@@ -163,7 +163,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   // Edit mode: existing planner (editors/admins only)
   if (isEditMode) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
         <div className="mb-4">
           <BackLink href={`/churches/${churchId}/services/${date}`}>Back to service view</BackLink>
         </div>

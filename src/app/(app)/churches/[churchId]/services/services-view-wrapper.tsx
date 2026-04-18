@@ -1,7 +1,6 @@
 'use client'
 
-import { useSearchParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { ServicesList } from './services-list'
 import { ServicesCalendar } from './services-calendar'
@@ -39,33 +38,18 @@ export function ServicesViewWrapper({
   liturgicalDays,
   role,
 }: ServicesViewWrapperProps) {
-  const searchParams = useSearchParams()
-  const router = useRouter()
   const isDesktop = useIsDesktop()
-
-  const urlView = searchParams.get('view') as ViewMode | null
-  const isValidUrl = urlView && VALID_VIEWS.includes(urlView)
-
-  let view: ViewMode = 'list'
-  if (isValidUrl) {
-    view = urlView
-  } else if (typeof localStorage !== 'undefined') {
+  // Lazy initializer reads localStorage once on mount. SSR returns 'list'
+  // deterministically, which matches the first client render before hydration.
+  const [view, setViewState] = useState<ViewMode>(() => {
+    if (typeof window === 'undefined') return 'list'
     const stored = localStorage.getItem(LS_KEY) as ViewMode | null
-    if (stored && VALID_VIEWS.includes(stored)) view = stored
-  }
-
-  if (!isDesktop) {
-    view = 'list'
-  }
-
-  useEffect(() => {
-    if (isValidUrl) localStorage.setItem(LS_KEY, urlView)
-  }, [urlView, isValidUrl])
+    return stored && VALID_VIEWS.includes(stored) ? stored : 'list'
+  })
 
   function setView(v: ViewMode) {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('view', v)
-    router.replace(`?${params.toString()}`, { scroll: false })
+    setViewState(v)
+    localStorage.setItem(LS_KEY, v)
   }
 
   return (

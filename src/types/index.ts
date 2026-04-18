@@ -126,6 +126,7 @@ export const POSITION_LABELS: Record<string, string> = {
   OLD_TESTAMENT: "Old Testament",
   PSALM: "Psalm",
   NEW_TESTAMENT: "New Testament",
+  EPISTLE: "New Testament", // backward compat for pre-migration data
   GOSPEL: "Gospel",
   CANTICLE: "Canticle",
 };

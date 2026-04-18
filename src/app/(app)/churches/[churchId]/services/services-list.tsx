@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
 import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from '@/types'
@@ -24,7 +25,7 @@ function groupByMonth(
   return Array.from(map.entries())
 }
 
-export function ServicesList({ churchId, days }: ServicesListProps) {
+export const ServicesList = memo(function ServicesList({ churchId, days }: ServicesListProps) {
   if (days.length === 0) {
     return (
       <div className="border border-border bg-card p-8 text-center">
@@ -152,4 +153,4 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
       ))}
     </div>
   )
-}
+})
