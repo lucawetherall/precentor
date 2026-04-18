@@ -63,11 +63,38 @@ const COMMON_PASSWORDS = new Set([
   "1234567890", "0123456789", "9876543210", "1111111111", "1234512345",
 ]);
 
+// Count the number of character classes (lower, upper, digit, symbol) present.
+function characterClassCount(value: string): number {
+  let count = 0;
+  if (/[a-z]/.test(value)) count++;
+  if (/[A-Z]/.test(value)) count++;
+  if (/[0-9]/.test(value)) count++;
+  if (/[^a-zA-Z0-9]/.test(value)) count++;
+  return count;
+}
+
+// Reject passwords that are a single character repeated (e.g. "aaaaaaaaaa")
+// or a simple run of the same numeric/letter pattern.
+function isTriviallyPatterned(value: string): boolean {
+  if (/^(.)\1+$/.test(value)) return true;
+  // Four or more consecutive same chars anywhere.
+  if (/(.)\1{3,}/.test(value)) return true;
+  return false;
+}
+
 export const passwordSchema = z
   .string()
   .min(10, "Password must be at least 10 characters")
   .max(128, "Password must be 128 characters or fewer")
   .refine(
     (val) => !COMMON_PASSWORDS.has(val),
-    "This password is too common. Please choose a more unique password."
+    "This password is too common. Please choose a more unique password.",
+  )
+  .refine(
+    (val) => characterClassCount(val) >= 3,
+    "Password must include at least three of: lowercase, uppercase, digit, symbol.",
+  )
+  .refine(
+    (val) => !isTriviallyPatterned(val),
+    "Password must not repeat the same character four or more times in a row.",
   );

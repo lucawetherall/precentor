@@ -34,6 +34,9 @@ export const env = new Proxy(
         case "RESEND_API_KEY":
           return process.env.RESEND_API_KEY || "";
         case "CRON_SECRET":
+          // Required in production so the cron endpoint can't silently accept
+          // every request. Optional in dev/test so CI and local runs work.
+          if (process.env.NODE_ENV === "production") return requireEnv("CRON_SECRET");
           return process.env.CRON_SECRET || "";
         case "NEXT_PUBLIC_APP_URL":
           return process.env.NEXT_PUBLIC_APP_URL || "https://precentor.app";
