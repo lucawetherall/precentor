@@ -13,7 +13,7 @@ export async function GET(
 
   // Rate-limit by IP so an attacker can't burn through token space.
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
-  const limited = rateLimit(`invite-get:${ip}`, { maxRequests: 20, windowMs: 60_000 });
+  const limited = await rateLimit(`invite-get:${ip}`, { maxRequests: 20, windowMs: 60_000 });
   if (limited) return limited;
 
   try {

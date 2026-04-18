@@ -8,13 +8,14 @@ import { eq, and, gte, desc } from "drizzle-orm";
 import { format, subWeeks } from "date-fns";
 import type { SuggestionContext } from "@/lib/ai/types";
 import { rateLimit } from "@/lib/rate-limit";
+import { consumeAiQuota } from "@/lib/ai/quota";
 
 export async function POST(request: Request) {
   // Auth check and rate limit before expensive operations
   const { user: authUser, error: authErr } = await requireAuth();
   if (authErr) return authErr;
 
-  const rateLimited = rateLimit(`ai-suggest:${authUser!.id}`, { maxRequests: 10, windowMs: 60_000 });
+  const rateLimited = await rateLimit(`ai-suggest:${authUser!.id}`, { maxRequests: 10, windowMs: 60_000 });
   if (rateLimited) return rateLimited;
 
   let body;
@@ -50,6 +51,19 @@ export async function POST(request: Request) {
     // Verify the user is a member of this church (auth check scoped to the resolved churchId)
     const { error: authError } = await requireChurchRole(service.churchId, "MEMBER");
     if (authError) return authError;
+
+    // Enforce per-church daily quota before paying for the Gemini call.
+    // Atomic UPSERT inside — no TOCTOU between check and increment.
+    const quota = await consumeAiQuota(service.churchId);
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          error: `Daily AI suggestion quota reached (${quota.limit}). Resets at midnight UTC.`,
+          quota,
+        },
+        { status: 429 },
+      );
+    }
 
     // Get readings for the day
     const dayReadings = await db

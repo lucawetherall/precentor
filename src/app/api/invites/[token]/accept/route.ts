@@ -14,7 +14,7 @@ export async function POST(
 
   // Rate limit by IP to prevent brute-force token enumeration.
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
-  const limited = rateLimit(`invite-accept:${ip}`, { maxRequests: 10, windowMs: 60_000 });
+  const limited = await rateLimit(`invite-accept:${ip}`, { maxRequests: 10, windowMs: 60_000 });
   if (limited) return limited;
 
   const supabase = await createClient();
