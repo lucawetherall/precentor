@@ -11,6 +11,8 @@ import { SaveStatusIndicator } from "./save-status-indicator";
 import { SectionCountBadge } from "./section-count-badge";
 import type { ServiceSection } from "./section-row";
 import type { MusicSlot } from "./use-service-editor";
+import type { AdjacentDayLinks } from "@/types/service-views";
+import { ServiceNav } from "./service-nav";
 import { Plus, Loader2, Trash2, FileDown, FileText, Eye, BookMarked } from "lucide-react";
 import { POSITION_LABELS } from "@/types";
 import { useToast } from "@/components/ui/toast";
@@ -68,10 +70,12 @@ interface Service {
 export function ServicePlanner({
   churchId,
   liturgicalDayId,
+  date,
   existingServices,
   editorSectionsMap = {},
   editorSlotsMap = {},
   readings = [],
+  adjacent,
 }: {
   churchId: string;
   liturgicalDayId: string;
@@ -80,6 +84,7 @@ export function ServicePlanner({
   editorSectionsMap?: Record<string, ServiceSection[]>;
   editorSlotsMap?: Record<string, MusicSlot[]>;
   readings?: Reading[];
+  adjacent: AdjacentDayLinks;
 }) {
   const [services, setServices] = useState<Service[]>(existingServices);
   const [activeTab, setActiveTab] = useState<string>(services[0]?.id || "");
@@ -222,6 +227,15 @@ export function ServicePlanner({
 
   return (
     <div>
+      <ServiceNav
+        churchId={churchId}
+        adjacent={adjacent}
+        preserveEditMode
+        back={{
+          href: `/churches/${churchId}/services/${date}`,
+          label: "Back to service view",
+        }}
+      />
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-xl font-heading font-semibold">Services</h2>
       </div>

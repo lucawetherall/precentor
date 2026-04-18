@@ -1,13 +1,13 @@
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
 import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from '@/types'
-import { BackLink } from '@/components/back-link'
 import type { LiturgicalColour, MemberRole } from '@/types'
 import { hasMinRole } from '@/lib/auth/permissions'
-import type { PopulatedMusicSlot } from '@/types/service-views'
+import type { AdjacentDayLinks, PopulatedMusicSlot } from '@/types/service-views'
 import { AvailabilityWidget } from '@/components/availability-widget'
 import { ServiceMusicList } from './service-music-list'
 import { ReadingsByLectionary } from './readings-by-lectionary'
+import { ServiceNav } from './service-nav'
 import { formatLiturgicalDayName } from '@/lib/liturgical-display'
 import { CHOIR_STATUS_LABELS, CHOIR_STATUS_PILL_CLASSES } from '../choir-status-constants'
 
@@ -42,6 +42,7 @@ interface MemberServiceViewProps {
   role: MemberRole
   confirmedCount?: number
   editUrl: string
+  adjacent: AdjacentDayLinks
 }
 
 export function MemberServiceView({
@@ -54,16 +55,15 @@ export function MemberServiceView({
   role,
   confirmedCount,
   editUrl,
+  adjacent,
 }: MemberServiceViewProps) {
   const colour = LITURGICAL_COLOURS[day.colour as LiturgicalColour] ?? '#4A6741'
   const isEditor = hasMinRole(role, 'EDITOR')
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
-      {/* Back link */}
-      <div className="mb-4">
-        <BackLink href={`/churches/${churchId}/services`}>Back to Services</BackLink>
-      </div>
+      {/* Nav: Back link + Prev/Next */}
+      <ServiceNav churchId={churchId} adjacent={adjacent} />
 
       {/* Editor notice (EDITOR/ADMIN only) */}
       {isEditor && (

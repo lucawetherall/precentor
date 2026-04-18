@@ -31,6 +31,11 @@ export interface LiturgicalDayWithService {
   services: ServiceSummary[]
 }
 
+export interface AdjacentDayLinks {
+  prev: string | null
+  next: string | null
+}
+
 export interface PopulatedMusicSlot {
   id: string
   slotType: MusicSlotType

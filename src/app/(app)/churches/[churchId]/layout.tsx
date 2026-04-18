@@ -77,6 +77,7 @@ export default async function ChurchLayout({ children, params }: Props) {
       items: [
         { href: `/churches/${churchId}/members`, label: "Members", iconName: "Users" },
         { href: `/churches/${churchId}/service-sheets`, label: "Service Sheets", iconName: "FileText" },
+        { href: `/churches/${churchId}/music-list`, label: "Music List", iconName: "ScrollText" },
         { href: `/churches/${churchId}/settings`, label: "Settings", iconName: "Settings" },
       ],
     }] : []),
