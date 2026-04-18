@@ -254,6 +254,11 @@ export const invites = pgTable("invites", {
   invitedBy: uuid("invited_by").notNull().references(() => users.id, { onDelete: "cascade" }),
   expiresAt: timestamp("expires_at").notNull(),
   acceptedAt: timestamp("accepted_at"),
+  // Last error string from the transactional email send, if any. Admins can
+  // surface "email didn't send — resend?" in the UI without needing to grep
+  // server logs. Null = email never attempted (open invite) or sent OK.
+  lastSendError: text("last_send_error"),
+  emailSentAt: timestamp("email_sent_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -313,4 +318,47 @@ export const churchServicePatterns = pgTable("church_service_patterns", {
   enabled: boolean("enabled").default(true).notNull(),
 }, (t) => [
   uniqueIndex("church_service_pattern_unique").on(t.churchId, t.dayOfWeek, t.serviceType),
+]);
+
+// ─── Operational: AI usage quota ─────────────────────────────
+// One row per (churchId, date). Counter is incremented atomically on every
+// Gemini suggestion call. A daily cap stops a compromised or abusive account
+// from running up unlimited spend.
+export const aiUsageDaily = pgTable("ai_usage_daily", {
+  churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  day: date("day").notNull(),
+  count: integer("count").default(0).notNull(),
+}, (t) => [
+  uniqueIndex("ai_usage_daily_pk").on(t.churchId, t.day),
+]);
+
+// ─── Operational: User deletion audit ────────────────────────
+// Written immediately before a hard-delete so we retain an auditable record
+// of who had access to what, without retaining PII beyond necessity.
+// Redacted of email/name — we keep only structural metadata.
+export const userDeletions = pgTable("user_deletions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  // The user's UUID at delete-time. Not an FK — the user row is gone after delete.
+  deletedUserId: uuid("deleted_user_id").notNull(),
+  churchIds: uuid("church_ids").array().notNull(),
+  deletedAt: timestamp("deleted_at").defaultNow().notNull(),
+  reason: text("reason"),
+});
+
+// ─── Operational: Rate limit buckets ─────────────────────────
+// Durable counterpart of lib/rate-limit.ts. Serverless environments spin up
+// many instances — an in-memory Map gives each instance its own limit, which
+// collapses the effective rate limit to (limit × instanceCount). A single row
+// per (key, window_start) gives us a shared counter with millisecond
+// granularity that costs one UPSERT per request.
+export const rateLimitBuckets = pgTable("rate_limit_buckets", {
+  key: text("key").notNull(),
+  // Start of the current window (millisecond epoch). Old rows are swept
+  // periodically by the cleanup job — see /api/cron/sweep-rate-limits.
+  windowStart: timestamp("window_start").notNull(),
+  count: integer("count").default(0).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+}, (t) => [
+  uniqueIndex("rate_limit_bucket_pk").on(t.key, t.windowStart),
+  index("rate_limit_expires_idx").on(t.expiresAt),
 ]);

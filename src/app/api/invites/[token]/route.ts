@@ -3,12 +3,18 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { invites, churches } from "@/lib/db/schema";
 import { eq, and, isNull, gt } from "drizzle-orm";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
+
+  // Rate-limit by IP so an attacker can't burn through token space.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  const limited = await rateLimit(`invite-get:${ip}`, { maxRequests: 20, windowMs: 60_000 });
+  if (limited) return limited;
 
   try {
     const result = await db

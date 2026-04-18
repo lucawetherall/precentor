@@ -3,13 +3,19 @@ import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { invites, users, churchMemberships } from "@/lib/db/schema";
-import { eq, and, isNull, gt } from "drizzle-orm";
+import { eq, and, isNull, gt, sql } from "drizzle-orm";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
+
+  // Rate limit by IP to prevent brute-force token enumeration.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  const limited = await rateLimit(`invite-accept:${ip}`, { maxRequests: 10, windowMs: 60_000 });
+  if (limited) return limited;
 
   const supabase = await createClient();
   const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -18,7 +24,7 @@ export async function POST(
   }
 
   try {
-    // Find valid invite
+    // Find valid invite outside the transaction so we can fail fast with 404.
     const inviteResult = await db
       .select()
       .from(invites)
@@ -37,7 +43,7 @@ export async function POST(
 
     const invite = inviteResult[0];
 
-    // Verify the authenticated user's email matches the invite (skip for open invites)
+    // Skip email check for open invites (no recipient email specified).
     if (invite.email) {
       if (authUser.email?.toLowerCase() !== invite.email.toLowerCase()) {
         return NextResponse.json(
@@ -47,36 +53,64 @@ export async function POST(
       }
     }
 
-    // Find or create the DB user
-    let dbUser = await db
-      .select()
-      .from(users)
-      .where(eq(users.supabaseId, authUser.id))
-      .limit(1);
+    const result = await db.transaction(async (tx) => {
+      // Atomic claim: mark accepted only if still unclaimed.
+      // Concurrent accepts resolve here — losers get `claimed === undefined`.
+      const [claimed] = await tx
+        .update(invites)
+        .set({ acceptedAt: new Date() })
+        .where(and(eq(invites.id, invite.id), isNull(invites.acceptedAt)))
+        .returning();
 
-    if (dbUser.length === 0) {
-      const [newUser] = await db.insert(users).values({
-        email: authUser.email || invite.email || "",
-        supabaseId: authUser.id,
-        name: authUser.user_metadata?.name || null,
-      }).returning();
-      dbUser = [newUser];
+      if (!claimed) {
+        return { alreadyAccepted: true as const };
+      }
+
+      // Upsert the user record keyed by supabaseId (unique).
+      const existing = await tx
+        .select()
+        .from(users)
+        .where(eq(users.supabaseId, authUser.id))
+        .limit(1);
+
+      let userId: string;
+      if (existing.length > 0) {
+        userId = existing[0].id;
+      } else {
+        // Normalise email to lowercase for case-insensitive uniqueness.
+        const emailValue = (authUser.email || invite.email || "").toLowerCase();
+        const [newUser] = await tx
+          .insert(users)
+          .values({
+            email: emailValue,
+            supabaseId: authUser.id,
+            name: authUser.user_metadata?.name || null,
+          })
+          .onConflictDoUpdate({
+            target: users.supabaseId,
+            set: { updatedAt: sql`now()` },
+          })
+          .returning();
+        userId = newUser.id;
+      }
+
+      await tx
+        .insert(churchMemberships)
+        .values({
+          userId,
+          churchId: claimed.churchId,
+          role: claimed.role,
+        })
+        .onConflictDoNothing();
+
+      return { alreadyAccepted: false as const, churchId: claimed.churchId };
+    });
+
+    if (result.alreadyAccepted) {
+      return NextResponse.json({ error: "Invite already accepted." }, { status: 409 });
     }
 
-    // Add membership (ignore if already exists due to unique constraint)
-    await db.insert(churchMemberships).values({
-      userId: dbUser[0].id,
-      churchId: invite.churchId,
-      role: invite.role,
-    }).onConflictDoNothing();
-
-    // Mark invite as accepted
-    await db
-      .update(invites)
-      .set({ acceptedAt: new Date() })
-      .where(eq(invites.id, invite.id));
-
-    return NextResponse.json({ churchId: invite.churchId });
+    return NextResponse.json({ churchId: result.churchId });
   } catch (error) {
     logger.error("Failed to accept invite", error);
     return NextResponse.json({ error: "Failed to accept invite" }, { status: 500 });
