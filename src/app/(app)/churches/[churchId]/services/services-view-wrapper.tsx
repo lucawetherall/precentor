@@ -39,14 +39,13 @@ export function ServicesViewWrapper({
   role,
 }: ServicesViewWrapperProps) {
   const isDesktop = useIsDesktop()
-  const [view, setViewState] = useState<ViewMode>('list')
-
-  // Read localStorage on mount only (avoids hydration mismatch)
-
-  useEffect(() => {
+  // Lazy initializer reads localStorage once on mount. SSR returns 'list'
+  // deterministically, which matches the first client render before hydration.
+  const [view, setViewState] = useState<ViewMode>(() => {
+    if (typeof window === 'undefined') return 'list'
     const stored = localStorage.getItem(LS_KEY) as ViewMode | null
-    if (stored && VALID_VIEWS.includes(stored)) setViewState(stored)
-  }, [])
+    return stored && VALID_VIEWS.includes(stored) ? stored : 'list'
+  })
 
   function setView(v: ViewMode) {
     setViewState(v)
