@@ -73,6 +73,7 @@ export const churchMemberships = pgTable("church_memberships", {
 }, (t) => [
   uniqueIndex("membership_unique").on(t.userId, t.churchId),
   index("membership_user_idx").on(t.userId),
+  index("membership_church_role_idx").on(t.churchId, t.role),
 ]);
 
 // ─── Liturgical Calendar ─────────────────────────────────────
@@ -153,6 +154,7 @@ export const services = pgTable("services", {
 }, (t) => [
   uniqueIndex("service_unique").on(t.churchId, t.liturgicalDayId, t.serviceType),
   index("service_church_idx").on(t.churchId),
+  index("service_church_status_idx").on(t.churchId, t.status),
 ]);
 
 export const musicSlots = pgTable("music_slots", {
@@ -260,7 +262,10 @@ export const invites = pgTable("invites", {
   lastSendError: text("last_send_error"),
   emailSentAt: timestamp("email_sent_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("invite_church_idx").on(t.churchId),
+  index("invite_email_idx").on(t.email),
+]);
 
 // ─── Rota & Availability ─────────────────────────────────────
 export const availability = pgTable("availability", {

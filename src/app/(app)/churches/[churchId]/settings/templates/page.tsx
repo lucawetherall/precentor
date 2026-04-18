@@ -10,8 +10,7 @@ import {
   churchTemplateSections,
 } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { hasMinRole } from "@/lib/auth/permissions";
-import type { MemberRole } from "@/types";
+import { hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
 import { TemplateAdminClient } from "./template-admin-client";
@@ -52,7 +51,7 @@ export default async function TemplatesAdminPage({ params }: Props) {
 
     if (membership.length === 0) redirect("/churches");
 
-    const role = membership[0].role as MemberRole;
+    const role = coerceMemberRole(membership[0].role);
     if (!hasMinRole(role, "ADMIN")) redirect(`/churches/${churchId}/services`);
   } catch {
     redirect("/churches");

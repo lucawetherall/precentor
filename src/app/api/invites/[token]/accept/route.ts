@@ -78,7 +78,13 @@ export async function POST(
         userId = existing[0].id;
       } else {
         // Normalise email to lowercase for case-insensitive uniqueness.
-        const emailValue = (authUser.email || invite.email || "").toLowerCase();
+        // Reject if neither auth provider nor invite supplied an email — we
+        // must never persist an empty-string email and collide on the unique index.
+        const rawEmail = authUser.email || invite.email;
+        if (!rawEmail) {
+          return { missingEmail: true as const };
+        }
+        const emailValue = rawEmail.toLowerCase();
         const [newUser] = await tx
           .insert(users)
           .values({
@@ -106,11 +112,17 @@ export async function POST(
       return { alreadyAccepted: false as const, churchId: claimed.churchId };
     });
 
-    if (result.alreadyAccepted) {
+    if ("missingEmail" in result && result.missingEmail) {
+      return NextResponse.json(
+        { error: "No email address available on your account or this invite." },
+        { status: 400 }
+      );
+    }
+    if ("alreadyAccepted" in result && result.alreadyAccepted) {
       return NextResponse.json({ error: "Invite already accepted." }, { status: 409 });
     }
 
-    return NextResponse.json({ churchId: result.churchId });
+    return NextResponse.json({ churchId: (result as { churchId: string }).churchId });
   } catch (error) {
     logger.error("Failed to accept invite", error);
     return NextResponse.json({ error: "Failed to accept invite" }, { status: 500 });

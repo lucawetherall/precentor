@@ -13,9 +13,8 @@ import {
 import { eq, and, asc, inArray } from 'drizzle-orm'
 import type { InferSelectModel } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
-import { requireChurchRole, hasMinRole } from '@/lib/auth/permissions'
+import { requireChurchRole, hasMinRole, coerceMemberRole } from '@/lib/auth/permissions'
 import { BackLink } from '@/components/back-link'
-import type { MemberRole } from '@/types'
 import type { PopulatedMusicSlot } from '@/types/service-views'
 import { MemberServiceView } from './member-service-view'
 import { ServicePlanner } from './service-planner'
@@ -33,7 +32,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   if (error) redirect('/login')
 
   const userId = user!.id
-  const role = membership!.role as MemberRole
+  const role = coerceMemberRole(membership!.role)
   const isEditor = hasMinRole(role, 'EDITOR')
   const isEditMode = isEditor && mode === 'edit'
 

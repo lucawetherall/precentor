@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { requireChurchRole, hasMinRole } from "@/lib/auth/permissions";
+import { requireChurchRole, hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { availability, services, churchMemberships, availabilityStatusEnum } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import type { MemberRole } from "@/types";
 
 export async function POST(
   request: Request,
@@ -36,7 +35,7 @@ export async function POST(
 
   // Members can only set their own availability; editors+ can set for anyone
   const targetUserId = userId || user!.id;
-  if (targetUserId !== user!.id && !hasMinRole(membership!.role as MemberRole, "EDITOR")) {
+  if (targetUserId !== user!.id && !hasMinRole(coerceMemberRole(membership!.role), "EDITOR")) {
     return NextResponse.json({ error: "You can only update your own availability" }, { status: 403 });
   }
 
@@ -110,7 +109,7 @@ export async function DELETE(
   }
 
   const targetUserId = userId || user!.id;
-  if (targetUserId !== user!.id && !hasMinRole(membership!.role as MemberRole, "EDITOR")) {
+  if (targetUserId !== user!.id && !hasMinRole(coerceMemberRole(membership!.role), "EDITOR")) {
     return NextResponse.json({ error: "You can only update your own availability" }, { status: 403 });
   }
 
