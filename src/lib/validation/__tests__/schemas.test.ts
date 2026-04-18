@@ -5,6 +5,8 @@ import {
   churchUpdateSchema,
   uuidSchema,
   emailSchema,
+  httpsUrlSchema,
+  sheetMusicLinkSchema,
 } from "../schemas";
 
 describe("uuidSchema", () => {
@@ -203,6 +205,116 @@ describe("churchUpdateSchema", () => {
 
   it("rejects ccliNumber > 50 chars", () => {
     const result = churchUpdateSchema.safeParse({ ccliNumber: "x".repeat(51) });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a valid sheetMusicLink", () => {
+    const result = churchUpdateSchema.safeParse({
+      sheetMusicLink: { url: "https://example.com/folder", label: "Choir library" },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts null sheetMusicLink (to clear it)", () => {
+    const result = churchUpdateSchema.safeParse({ sheetMusicLink: null });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects sheetMusicLink with non-https URL", () => {
+    const result = churchUpdateSchema.safeParse({
+      sheetMusicLink: { url: "http://example.com" },
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("httpsUrlSchema", () => {
+  it("accepts an ordinary https URL", () => {
+    expect(httpsUrlSchema.safeParse("https://example.com/folder").success).toBe(true);
+  });
+
+  it("accepts a Dropbox-shaped URL", () => {
+    expect(
+      httpsUrlSchema.safeParse("https://www.dropbox.com/scl/fo/abc123/h?rlkey=xyz&dl=0").success,
+    ).toBe(true);
+  });
+
+  it("rejects http://", () => {
+    expect(httpsUrlSchema.safeParse("http://example.com").success).toBe(false);
+  });
+
+  it("rejects javascript: URLs", () => {
+    expect(httpsUrlSchema.safeParse("javascript:alert(1)").success).toBe(false);
+  });
+
+  it("rejects data: URLs", () => {
+    expect(
+      httpsUrlSchema.safeParse("data:text/html,<script>alert(1)</script>").success,
+    ).toBe(false);
+  });
+
+  it("rejects file:// URLs", () => {
+    expect(httpsUrlSchema.safeParse("file:///etc/passwd").success).toBe(false);
+  });
+
+  it("rejects mailto: URLs", () => {
+    expect(httpsUrlSchema.safeParse("mailto:user@example.com").success).toBe(false);
+  });
+
+  it("rejects garbage", () => {
+    expect(httpsUrlSchema.safeParse("not a url").success).toBe(false);
+  });
+
+  it("rejects empty string", () => {
+    expect(httpsUrlSchema.safeParse("").success).toBe(false);
+  });
+
+  it("rejects URL longer than 2048 chars", () => {
+    const long = "https://example.com/" + "x".repeat(2048);
+    expect(httpsUrlSchema.safeParse(long).success).toBe(false);
+  });
+
+  it("trims surrounding whitespace", () => {
+    const result = httpsUrlSchema.safeParse("  https://example.com  ");
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBe("https://example.com");
+    }
+  });
+});
+
+describe("sheetMusicLinkSchema", () => {
+  it("accepts url only", () => {
+    const result = sheetMusicLinkSchema.safeParse({ url: "https://example.com" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts url + label", () => {
+    const result = sheetMusicLinkSchema.safeParse({
+      url: "https://example.com",
+      label: "Dropbox folder",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects label > 60 chars", () => {
+    const result = sheetMusicLinkSchema.safeParse({
+      url: "https://example.com",
+      label: "x".repeat(61),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects unknown fields (strict)", () => {
+    const result = sheetMusicLinkSchema.safeParse({
+      url: "https://example.com",
+      extra: "nope",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing url", () => {
+    const result = sheetMusicLinkSchema.safeParse({ label: "Choir library" });
     expect(result.success).toBe(false);
   });
 });
