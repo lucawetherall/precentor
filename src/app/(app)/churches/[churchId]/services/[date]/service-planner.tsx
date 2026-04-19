@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
 import { SectionEditor } from "./section-editor";
@@ -60,12 +60,13 @@ interface Service {
   eucharisticPrayer: string | null;
   eucharisticPrayerId: string | null;
   includeReadingText: boolean;
-  choirStatus: string;
   defaultMassSettingId: string | null;
   collectId: string | null;
   collectOverride: string | null;
 }
 
+
+interface Preset { id: string; name: string; serviceType: string; }
 
 export function ServicePlanner({
   churchId,
@@ -95,6 +96,8 @@ export function ServicePlanner({
   const [deleting, setDeleting] = useState(false);
   const [newType, setNewType] = useState<ServiceType>("SUNG_EUCHARIST");
   const [newTime, setNewTime] = useState("10:00");
+  const [newPresetId, setNewPresetId] = useState<string>("");
+  const [presets, setPresets] = useState<Preset[]>([]);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -102,17 +105,31 @@ export function ServicePlanner({
   const pdfBlobUrlRef = useRef<string | null>(null);
   const { addToast } = useToast();
 
+  useEffect(() => {
+    fetch(`/api/churches/${churchId}/presets`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => {
+        if (Array.isArray(data)) setPresets(data);
+        else if (data?.data && Array.isArray(data.data)) setPresets(data.data);
+      })
+      .catch(() => {});
+  }, [churchId]);
+
   const handleCreateService = async () => {
     setCreating(true);
     try {
+      const body: Record<string, unknown> = {
+        liturgicalDayId,
+        serviceType: newType,
+        time: newTime,
+      };
+      if (newPresetId) {
+        body.presetId = newPresetId;
+      }
       const res = await fetch(`/api/churches/${churchId}/services`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          liturgicalDayId,
-          serviceType: newType,
-          time: newTime,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
@@ -123,7 +140,6 @@ export function ServicePlanner({
           eucharisticPrayer: service.eucharisticPrayer ?? null,
           eucharisticPrayerId: service.eucharisticPrayerId ?? null,
           includeReadingText: service.includeReadingText ?? true,
-          choirStatus: service.choirStatus ?? "CHOIR_REQUIRED",
           defaultMassSettingId: service.defaultMassSettingId ?? null,
           collectId: service.collectId ?? null,
           collectOverride: service.collectOverride ?? null,
@@ -281,6 +297,22 @@ export function ServicePlanner({
             onChange={(e) => setNewTime(e.target.value)}
             className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
+          {presets.length > 0 && (
+            <>
+              <label htmlFor="new-service-preset" className="sr-only">Preset</label>
+              <select
+                id="new-service-preset"
+                value={newPresetId}
+                onChange={(e) => setNewPresetId(e.target.value)}
+                className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">No preset</option>
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </>
+          )}
           <Button onClick={handleCreateService} disabled={creating} size="sm">
             {creating ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <Plus className="h-3 w-3" strokeWidth={1.5} />}
             Add
@@ -327,7 +359,6 @@ export function ServicePlanner({
             eucharisticPrayer: activeService.eucharisticPrayer,
             eucharisticPrayerId: activeService.eucharisticPrayerId,
             includeReadingText: activeService.includeReadingText,
-            choirStatus: activeService.choirStatus,
             defaultMassSettingId: activeService.defaultMassSettingId,
             collectId: activeService.collectId,
             collectOverride: activeService.collectOverride,

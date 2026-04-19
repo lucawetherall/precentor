@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { requireChurchRole, hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { availability, services, churchMemberships, availabilityStatusEnum } from "@/lib/db/schema";
+import { availability, services, churchMemberships, availabilityStatusEnum, serviceRoleSlots, churchMemberRoles } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { apiError, ErrorCodes } from "@/lib/api-helpers";
 
 export async function POST(
   request: Request,
@@ -49,6 +50,24 @@ export async function POST(
 
     if (service.length === 0) {
       return NextResponse.json({ error: "Service not found in this church" }, { status: 404 });
+    }
+
+    // Enforce role eligibility — always required in Phase D
+    const eligible = await db
+      .select({ id: serviceRoleSlots.id })
+      .from(serviceRoleSlots)
+      .innerJoin(
+        churchMemberRoles,
+        and(
+          eq(churchMemberRoles.catalogRoleId, serviceRoleSlots.catalogRoleId),
+          eq(churchMemberRoles.userId, targetUserId),
+          eq(churchMemberRoles.churchId, churchId),
+        ),
+      )
+      .where(eq(serviceRoleSlots.serviceId, serviceId))
+      .limit(1);
+    if (eligible.length === 0) {
+      return apiError("No eligible role for this service", 403, { code: ErrorCodes.NO_ELIGIBLE_ROLE });
     }
 
     // Verify target user is a member of this church

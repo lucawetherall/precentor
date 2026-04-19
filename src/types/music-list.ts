@@ -25,6 +25,8 @@ export interface MusicItemRow {
   sub?: string; // italic sub-text (psalm chant composer, "(transferred)")
 }
 
+export type MusicListFieldSet = "CHORAL" | "HYMNS_ONLY" | "READINGS_ONLY";
+
 export interface MusicListService {
   id: string;
   date: string; // YYYY-MM-DD
@@ -37,6 +39,7 @@ export interface MusicListService {
   items: MusicItemRow[]; // empty when isSaid
   colour: LiturgicalColour;
   season: LiturgicalSeason;
+  musicListFieldSet: MusicListFieldSet;
 }
 
 export interface MusicListMonth {

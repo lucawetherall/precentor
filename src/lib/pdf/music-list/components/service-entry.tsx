@@ -10,8 +10,22 @@ interface ServiceEntryProps {
   styles: ReturnType<typeof createMusicListStyles>;
 }
 
+/** Filter music items according to the preset's field-set. */
+function filterItems(service: MusicListService) {
+  const { items, musicListFieldSet } = service;
+  if (musicListFieldSet === "HYMNS_ONLY") {
+    return items.filter((item) => item.label === "Hymns");
+  }
+  if (musicListFieldSet === "READINGS_ONLY") {
+    return [];
+  }
+  // "CHORAL" (default) — show everything
+  return items;
+}
+
 export function ServiceEntry({ service, isFirst, styles }: ServiceEntryProps) {
   const { dayName, dayNum, ordinal, month } = formatOrdinalParts(service.date);
+  const visibleItems = filterItems(service);
 
   return (
     <View
@@ -49,7 +63,7 @@ export function ServiceEntry({ service, isFirst, styles }: ServiceEntryProps) {
             <Text style={styles.saidNote}>{service.saidNote}</Text>
           ) : null
         ) : (
-          service.items.map((item, i) => (
+          visibleItems.map((item, i) => (
             <MusicItemRow key={i} item={item} styles={styles} />
           ))
         )}

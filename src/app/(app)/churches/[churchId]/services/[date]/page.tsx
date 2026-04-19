@@ -160,7 +160,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   }
 
   const service = (dayServices[0] as {
-    id: string; serviceType: string; time: string | null; choirStatus: string
+    id: string; serviceType: string; time: string | null;
   } | undefined) ?? null
 
   // Edit mode: existing planner (editors/admins only).

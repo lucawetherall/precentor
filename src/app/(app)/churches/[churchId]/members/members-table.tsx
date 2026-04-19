@@ -8,14 +8,13 @@ import { cn } from "@/lib/utils";
 interface MemberRow {
   id: string;
   role: string;
-  voicePart: string | null;
   joinedAt: Date;
   userName: string | null;
   userEmail: string;
+  roles?: { id: string; catalogRoleId: string; name: string; isPrimary: boolean }[];
 }
 
 const ROLES = ["MEMBER", "EDITOR", "ADMIN"] as const;
-const VOICE_PARTS = ["SOPRANO", "ALTO", "TENOR", "BASS"] as const;
 
 export function MembersTable({
   initialMembers,
@@ -31,13 +30,13 @@ export function MembersTable({
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const { addToast } = useToast();
 
-  const updateMember = async (memberId: string, field: "role" | "voicePart", value: string | null) => {
+  const updateMember = async (memberId: string, field: "role", value: string | null) => {
     const prev = members.find((m) => m.id === memberId);
     if (!prev) return;
 
     // Optimistic update
     setMembers((ms) =>
-      ms.map((m) => (m.id === memberId ? { ...m, [field]: value } : m))
+      ms.map((m) => (m.id === memberId ? { ...m, [field]: value ?? m.role } : m))
     );
 
     try {
@@ -47,7 +46,7 @@ export function MembersTable({
         body: JSON.stringify({ [field]: value }),
       });
       if (res.ok) {
-        addToast(`${field === "role" ? "Role" : "Voice part"} updated`, "success");
+        addToast("Role updated", "success");
       } else {
         setMembers((ms) => ms.map((m) => (m.id === memberId ? prev : m)));
         addToast("Failed to update member", "error");
@@ -96,7 +95,7 @@ export function MembersTable({
             <th className="px-3 py-2 text-left font-body font-normal">Name</th>
             <th className="px-3 py-2 text-left font-body font-normal hidden sm:table-cell">Email</th>
             <th className="px-3 py-2 text-left font-body font-normal">Role</th>
-            <th className="px-3 py-2 text-left font-body font-normal">Voice Part</th>
+            <th className="px-3 py-2 text-left font-body font-normal">Roles</th>
             {isAdmin && <th className="px-3 py-2 w-10" aria-label="Actions"></th>}
           </tr>
         </thead>
@@ -125,21 +124,14 @@ export function MembersTable({
                 )}
               </td>
               <td className="px-3 py-2">
-                {isAdmin ? (
-                  <select
-                    value={m.voicePart || ""}
-                    onChange={(e) => updateMember(m.id, "voicePart", e.target.value || null)}
-                    aria-label={`Voice part for ${m.userName || m.userEmail}`}
-                    className="text-xs rounded-md border border-input px-1.5 py-1 bg-card shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value="">—</option>
-                    {VOICE_PARTS.map((vp) => (
-                      <option key={vp} value={vp}>{vp}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="text-xs">{m.voicePart || "—"}</span>
-                )}
+                <div className="flex flex-wrap gap-1">
+                  {(m.roles ?? []).map((r) => (
+                    <span key={r.id} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                      {r.name}{r.isPrimary ? " · primary" : ""}
+                    </span>
+                  ))}
+                  {(m.roles ?? []).length === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                </div>
               </td>
               {isAdmin && (
                 <td className="px-2 py-2">

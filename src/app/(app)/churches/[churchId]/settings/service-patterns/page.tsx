@@ -56,8 +56,7 @@ export default async function ServicePatternsPage({ params }: Props) {
     id: string;
     churchId: string;
     dayOfWeek: number;
-    serviceType: string;
-    time: string | null;
+    presetId: string;
     enabled: boolean;
   }[] = [];
 

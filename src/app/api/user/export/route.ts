@@ -28,7 +28,6 @@ export async function GET() {
     churchMemberships: memberships.map((m) => ({
       churchId: m.churchId,
       role: m.role,
-      voicePart: m.voicePart,
       joinedAt: m.joinedAt,
     })),
     availability: availabilityRecords.map((a) => ({

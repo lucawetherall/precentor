@@ -51,9 +51,6 @@ export const serviceUpdateSchema = z.object({
   collectOverride: z.string().max(2000).nullable().optional(),
   includeReadingText: z.boolean().optional(),
   sheetMode: z.string().max(50).optional(),
-  choirStatus: z.enum([
-    "CHOIR_REQUIRED", "NO_CHOIR_NEEDED", "SAID_SERVICE_ONLY", "NO_SERVICE",
-  ]).optional(),
   defaultMassSettingId: z.string().uuid().nullable().optional(),
   liturgicalOverrides: z.record(z.string(), z.string()).optional(),
 }).strict();
@@ -134,3 +131,49 @@ export const passwordSchema = z
     (val) => !isTriviallyPatterned(val),
     "Password must not repeat the same character four or more times in a row.",
   );
+
+export const memberRoleAssignmentSchema = z.object({
+  catalogRoleId: z.string().uuid(),
+  isPrimary: z.boolean().optional(),
+}).strict();
+
+export const memberRoleUpdateSchema = z.object({
+  isPrimary: z.boolean().optional(),
+  displayOrder: z.number().int().min(0).optional(),
+}).strict();
+
+export const presetCreateSchema = z.object({
+  name: z.string().min(1).max(200),
+  serviceType: z.enum(["SUNG_EUCHARIST","CHORAL_EVENSONG","SAID_EUCHARIST","CHORAL_MATINS","FAMILY_SERVICE","COMPLINE","CUSTOM"]),
+  defaultTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  choirRequirement: z.enum(["FULL_CHOIR","ORGANIST_ONLY","SAID"]),
+  musicListFieldSet: z.enum(["CHORAL","HYMNS_ONLY","READINGS_ONLY"]),
+  liturgicalTemplateId: z.string().uuid().nullable().optional(),
+  liturgicalSeasonTags: z.array(z.enum([
+    "ADVENT","CHRISTMAS","EPIPHANY","LENT","HOLY_WEEK","EASTER",
+    "ASCENSION","PENTECOST","TRINITY","ORDINARY","KINGDOM",
+  ])).optional(),
+}).strict();
+
+export const presetUpdateSchema = presetCreateSchema.partial().strict();
+
+export const presetSlotCreateSchema = z.object({
+  catalogRoleId: z.string().uuid(),
+  minCount: z.number().int().min(0),
+  maxCount: z.number().int().min(1).nullable().optional(),
+  exclusive: z.boolean(),
+  displayOrder: z.number().int().min(0),
+}).strict().refine(
+  (s) => !s.exclusive || (s.minCount <= 1 && (s.maxCount == null || s.maxCount === 1)),
+  { message: "Exclusive slots must have minCount ≤ 1 and maxCount ≤ 1" },
+).refine(
+  (s) => s.maxCount == null || s.maxCount >= s.minCount,
+  { message: "maxCount must be >= minCount" },
+);
+
+export const presetSlotUpdateSchema = z.object({
+  minCount: z.number().int().min(0).optional(),
+  maxCount: z.number().int().min(1).nullable().optional(),
+  exclusive: z.boolean().optional(),
+  displayOrder: z.number().int().min(0).optional(),
+}).strict();

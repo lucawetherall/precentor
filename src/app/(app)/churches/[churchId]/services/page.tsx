@@ -7,7 +7,6 @@ import {
   hymns,
   anthems,
   rotaEntries,
-  churchMemberships,
 } from '@/lib/db/schema'
 import { gte, asc, eq, and, inArray } from 'drizzle-orm'
 import { format } from 'date-fns'
@@ -16,7 +15,7 @@ import { Suspense } from 'react'
 import { requireChurchRole } from '@/lib/auth/permissions'
 import type { LiturgicalDayWithService, MusicSlotPreview } from '@/types/service-views'
 import { MUSIC_SLOT_LABELS } from '@/types'
-import type { MusicSlotType, VoicePart } from '@/types'
+import type { MusicSlotType } from '@/types'
 import { ServicesViewWrapper } from './services-view-wrapper'
 import { computeMusicStatus, computeRotaStatus } from './lib/service-status'
 
@@ -100,16 +99,8 @@ export default async function ServicesPage({ params }: Props) {
             .select({
               serviceId: rotaEntries.serviceId,
               confirmed: rotaEntries.confirmed,
-              voicePart: churchMemberships.voicePart,
             })
             .from(rotaEntries)
-            .innerJoin(
-              churchMemberships,
-              and(
-                eq(rotaEntries.userId, churchMemberships.userId),
-                eq(churchMemberships.churchId, churchId)
-              )
-            )
             .where(inArray(rotaEntries.serviceId, serviceIds))
         : []
 
@@ -165,19 +156,13 @@ export default async function ServicesPage({ params }: Props) {
             }))
           )
 
-          const rotaStatus = computeRotaStatus(
-            serviceRotas.map((r) => ({
-              confirmed: r.confirmed,
-              voicePart: r.voicePart as VoicePart | null,
-            }))
-          )
+          const rotaStatus = computeRotaStatus(serviceRotas)
 
           return {
             id: service.id,
             serviceType: service.serviceType,
             time: service.time,
             status: service.status,
-            choirStatus: service.choirStatus,
             userAvailability:
               (avail?.status as 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null) ??
               null,
