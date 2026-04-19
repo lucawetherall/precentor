@@ -108,3 +108,39 @@ export const memberRoleUpdateSchema = z.object({
   isPrimary: z.boolean().optional(),
   displayOrder: z.number().int().min(0).optional(),
 }).strict();
+
+export const presetCreateSchema = z.object({
+  name: z.string().min(1).max(200),
+  serviceType: z.enum(["SUNG_EUCHARIST","CHORAL_EVENSONG","SAID_EUCHARIST","CHORAL_MATINS","FAMILY_SERVICE","COMPLINE","CUSTOM"]),
+  defaultTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  choirRequirement: z.enum(["FULL_CHOIR","ORGANIST_ONLY","SAID"]),
+  musicListFieldSet: z.enum(["CHORAL","HYMNS_ONLY","READINGS_ONLY"]),
+  liturgicalTemplateId: z.string().uuid().nullable().optional(),
+  liturgicalSeasonTags: z.array(z.enum([
+    "ADVENT","CHRISTMAS","EPIPHANY","LENT","HOLY_WEEK","EASTER",
+    "ASCENSION","PENTECOST","TRINITY","ORDINARY","KINGDOM",
+  ])).optional(),
+}).strict();
+
+export const presetUpdateSchema = presetCreateSchema.partial().strict();
+
+export const presetSlotCreateSchema = z.object({
+  catalogRoleId: z.string().uuid(),
+  minCount: z.number().int().min(0),
+  maxCount: z.number().int().min(1).nullable().optional(),
+  exclusive: z.boolean(),
+  displayOrder: z.number().int().min(0),
+}).strict().refine(
+  (s) => !s.exclusive || (s.minCount <= 1 && (s.maxCount == null || s.maxCount === 1)),
+  { message: "Exclusive slots must have minCount ≤ 1 and maxCount ≤ 1" },
+).refine(
+  (s) => s.maxCount == null || s.maxCount >= s.minCount,
+  { message: "maxCount must be >= minCount" },
+);
+
+export const presetSlotUpdateSchema = z.object({
+  minCount: z.number().int().min(0).optional(),
+  maxCount: z.number().int().min(1).nullable().optional(),
+  exclusive: z.boolean().optional(),
+  displayOrder: z.number().int().min(0).optional(),
+}).strict();
