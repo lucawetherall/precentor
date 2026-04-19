@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { services, liturgicalDays, availability, rotaEntries, churchMemberships, users, churchMemberRoles, roleCatalog, serviceRoleSlots } from "@/lib/db/schema";
 import { eq, and, gte, asc, inArray } from "drizzle-orm";
 import { format } from "date-fns";
-import { RotaGridV2 } from "./rota-grid-v2";
+import { RotaGridV2 } from "./rota-grid";
 
 interface Props {
   params: Promise<{ churchId: string }>;
