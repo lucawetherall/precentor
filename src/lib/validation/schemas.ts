@@ -98,3 +98,13 @@ export const passwordSchema = z
     (val) => !isTriviallyPatterned(val),
     "Password must not repeat the same character four or more times in a row.",
   );
+
+export const memberRoleAssignmentSchema = z.object({
+  catalogRoleId: z.string().uuid(),
+  isPrimary: z.boolean().optional(),
+}).strict();
+
+export const memberRoleUpdateSchema = z.object({
+  isPrimary: z.boolean().optional(),
+  displayOrder: z.number().int().min(0).optional(),
+}).strict();
