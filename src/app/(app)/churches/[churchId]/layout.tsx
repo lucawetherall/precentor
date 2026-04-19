@@ -6,6 +6,8 @@ import { eq, and } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 import { hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 import { ChurchSidebar } from "@/components/church-sidebar";
+import { MigrationBanner } from "@/components/migration-banner";
+import { useRoleSlotsModel } from "@/lib/feature-flags";
 
 interface Props {
   children: React.ReactNode;
@@ -92,7 +94,10 @@ export default async function ChurchLayout({ children, params }: Props) {
         userEmail={user.email || ""}
         navGroups={navGroups}
       />
-      <main id="main-content" className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">
+        {useRoleSlotsModel() && <MigrationBanner churchId={churchId} />}
+        {children}
+      </main>
     </div>
   );
 }
