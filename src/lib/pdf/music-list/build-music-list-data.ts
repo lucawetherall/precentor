@@ -11,10 +11,11 @@ import {
   canticleSettings,
   responsesSettings,
   churches,
+  churchServicePresets,
 } from "@/lib/db/schema";
 import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
 import { format, parseISO } from "date-fns";
-import type { MusicListData, MusicListMonth, MusicListService } from "@/types/music-list";
+import type { MusicListData, MusicListMonth, MusicListService, MusicListFieldSet } from "@/types/music-list";
 import type { ServiceType, HymnBook } from "@/types";
 import {
   musicSlotRowsForService,
@@ -66,9 +67,11 @@ export async function buildMusicListData(
       cwName: liturgicalDays.cwName,
       colour: liturgicalDays.colour,
       season: liturgicalDays.season,
+      musicListFieldSet: churchServicePresets.musicListFieldSet,
     })
     .from(services)
     .innerJoin(liturgicalDays, eq(services.liturgicalDayId, liturgicalDays.id))
+    .leftJoin(churchServicePresets, eq(services.presetId, churchServicePresets.id))
     .where(
       and(
         eq(services.churchId, churchId),
@@ -201,6 +204,8 @@ export async function buildMusicListData(
       choirStatus,
     );
 
+    const fieldSet: MusicListFieldSet = (row.musicListFieldSet as MusicListFieldSet | null) ?? "CHORAL";
+
     const svc: MusicListService = {
       id: row.serviceId,
       date: row.date,
@@ -212,6 +217,7 @@ export async function buildMusicListData(
       items: isSaid ? [] : musicSlotRowsForService(slots),
       colour: row.colour,
       season: row.season,
+      musicListFieldSet: fieldSet,
     };
 
     const dt = parseISO(row.date);
