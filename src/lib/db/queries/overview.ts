@@ -55,7 +55,7 @@ export async function getThisSunday(churchId: string) {
 }
 
 /** Get rota summary for a list of services — count by voice part */
-export async function getRotaSummary(serviceIds: string[], churchId: string) {
+export async function getRotaSummary(serviceIds: string[], _churchId: string) {
   if (serviceIds.length === 0) return new Map<string, { total: number; byPart: Record<string, number> }>();
 
   const entries = await db

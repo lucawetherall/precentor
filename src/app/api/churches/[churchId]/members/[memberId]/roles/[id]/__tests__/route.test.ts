@@ -11,7 +11,7 @@ describe("DELETE /api/churches/[churchId]/members/[memberId]/roles/[id]", () => 
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 403 when non-admin", async () => {
-    (requireChurchRole as any).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
+    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
     const res = await DELETE(new Request("http://x"), {
       params: Promise.resolve({ churchId: "c1", memberId: "m1", id: "r1" }),
     });
@@ -19,10 +19,10 @@ describe("DELETE /api/churches/[churchId]/members/[memberId]/roles/[id]", () => 
   });
 
   it("deletes and returns 200", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
-    (db.delete as any).mockReturnValue({
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(db.delete).mockReturnValue({
       where: () => ({ returning: () => Promise.resolve([{ id: "r1" }]) }),
-    });
+    } as unknown as ReturnType<typeof db.delete>);
     const res = await DELETE(new Request("http://x"), {
       params: Promise.resolve({ churchId: "c1", memberId: "m1", id: "r1" }),
     });
@@ -34,7 +34,7 @@ describe("PATCH /api/churches/[churchId]/members/[memberId]/roles/[id]", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 403 when non-admin", async () => {
-    (requireChurchRole as any).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
+    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
     const res = await PATCH(new Request("http://x", { method: "PATCH", body: JSON.stringify({ isPrimary: true }), headers: { "content-type": "application/json" } }), {
       params: Promise.resolve({ churchId: "c1", memberId: "m1", id: "r1" }),
     });
@@ -42,9 +42,9 @@ describe("PATCH /api/churches/[churchId]/members/[memberId]/roles/[id]", () => {
   });
 
   it("updates isPrimary and returns 200", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null });
     const updated = { id: "r1", isPrimary: true };
-    (db.transaction as any).mockImplementation(async (fn: any) => fn({
+    vi.mocked(db.transaction).mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => fn({
       update: () => ({ set: () => ({ where: () => ({ returning: () => Promise.resolve([updated]) }) }) }),
     }));
     const res = await PATCH(

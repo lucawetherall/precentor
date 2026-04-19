@@ -23,11 +23,11 @@ describe("buildMusicListData — musicListFieldSet", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("defaults musicListFieldSet to CHORAL when service has no preset", async () => {
-    (db.select as any)
+    vi.mocked(db.select)
       // Query 1: church lookup
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "c1", name: "St Mary's" }]) }) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // Query 2: services in range — no preset (musicListFieldSet null)
       .mockReturnValueOnce({
         from: () => ({
@@ -39,7 +39,7 @@ describe("buildMusicListData — musicListFieldSet", () => {
             }),
           }),
         }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // Query 3: music slots
       .mockReturnValueOnce({
         from: () => ({
@@ -57,7 +57,7 @@ describe("buildMusicListData — musicListFieldSet", () => {
             }),
           }),
         }),
-      });
+      } as unknown as ReturnType<typeof db.select>);
 
     const result = await buildMusicListData("c1", "2026-05-01", "2026-05-31");
     expect(result).not.toBeNull();
@@ -66,11 +66,11 @@ describe("buildMusicListData — musicListFieldSet", () => {
   });
 
   it("uses musicListFieldSet from preset when present", async () => {
-    (db.select as any)
+    vi.mocked(db.select)
       // Query 1: church lookup
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "c1", name: "St Mary's" }]) }) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // Query 2: services in range — preset with HYMNS_ONLY
       .mockReturnValueOnce({
         from: () => ({
@@ -82,7 +82,7 @@ describe("buildMusicListData — musicListFieldSet", () => {
             }),
           }),
         }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // Query 3: music slots
       .mockReturnValueOnce({
         from: () => ({
@@ -100,7 +100,7 @@ describe("buildMusicListData — musicListFieldSet", () => {
             }),
           }),
         }),
-      });
+      } as unknown as ReturnType<typeof db.select>);
 
     const result = await buildMusicListData("c1", "2026-05-01", "2026-05-31");
     expect(result).not.toBeNull();

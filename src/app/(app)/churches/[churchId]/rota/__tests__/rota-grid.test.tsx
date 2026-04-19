@@ -3,7 +3,7 @@ import { vi, describe, it, expect } from "vitest";
 import { RotaGridV2 } from "../rota-grid";
 
 vi.mock("@/components/availability-widget", () => ({
-  AvailabilityWidget: ({ eligible }: any) => <div data-testid="avail" data-eligible={String(eligible)} />,
+  AvailabilityWidget: ({ eligible }: { eligible: boolean }) => <div data-testid="avail" data-eligible={String(eligible)} />,
 }));
 
 const services = [{

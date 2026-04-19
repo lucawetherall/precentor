@@ -11,7 +11,7 @@ describe("GET /api/admin/migration-log", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 403 when env allowlist is empty (no super-admin)", async () => {
-    (requireSuperAdmin as any).mockResolvedValue({
+    vi.mocked(requireSuperAdmin).mockResolvedValue({
       user: null,
       error: new Response(JSON.stringify({ error: "Super-admin only", code: "FORBIDDEN" }), { status: 403 }),
     });
@@ -20,7 +20,7 @@ describe("GET /api/admin/migration-log", () => {
   });
 
   it("returns 403 when email not in allowlist", async () => {
-    (requireSuperAdmin as any).mockResolvedValue({
+    vi.mocked(requireSuperAdmin).mockResolvedValue({
       user: null,
       error: new Response(JSON.stringify({ error: "Super-admin only", code: "FORBIDDEN" }), { status: 403 }),
     });
@@ -29,13 +29,13 @@ describe("GET /api/admin/migration-log", () => {
   });
 
   it("returns 200 with log rows when super-admin", async () => {
-    (requireSuperAdmin as any).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null });
+    vi.mocked(requireSuperAdmin).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null });
     const rows = [{ id: "l1", severity: "WARN", code: "MEMBER_NO_VOICE_PART" }];
-    (db.select as any).mockReturnValue({
+    vi.mocked(db.select).mockReturnValue({
       from: () => ({
         where: () => ({ orderBy: () => Promise.resolve(rows) }),
       }),
-    });
+    } as unknown as ReturnType<typeof db.select>);
     const res = await GET(new Request("http://x/api/admin/migration-log"));
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -44,12 +44,12 @@ describe("GET /api/admin/migration-log", () => {
   });
 
   it("passes filters as query params", async () => {
-    (requireSuperAdmin as any).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null });
-    (db.select as any).mockReturnValue({
+    vi.mocked(requireSuperAdmin).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null });
+    vi.mocked(db.select).mockReturnValue({
       from: () => ({
         where: () => ({ orderBy: () => Promise.resolve([]) }),
       }),
-    });
+    } as unknown as ReturnType<typeof db.select>);
     const res = await GET(new Request("http://x/api/admin/migration-log?severity=ERROR&includeDismissed=true"));
     expect(res.status).toBe(200);
   });

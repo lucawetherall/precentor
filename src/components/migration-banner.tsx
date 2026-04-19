@@ -8,11 +8,12 @@ interface MigrationIssues {
 
 export function MigrationBanner({ churchId }: { churchId: string }) {
   const [issues, setIssues] = useState<MigrationIssues | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !!localStorage.getItem(`migration-banner-dismissed-${churchId}`);
+  });
 
   useEffect(() => {
-    const key = `migration-banner-dismissed-${churchId}`;
-    if (localStorage.getItem(key)) { setDismissed(true); return; }
     fetch(`/api/churches/${churchId}/migration-issues`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => data && setIssues(data));

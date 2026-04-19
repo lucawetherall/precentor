@@ -19,7 +19,7 @@ describe("requireSuperAdmin", () => {
   });
 
   it("returns error when not authenticated", async () => {
-    (requireAuth as any).mockResolvedValue({
+    vi.mocked(requireAuth).mockResolvedValue({
       user: null,
       error: new Response("Unauthorized", { status: 401 }),
     });
@@ -30,7 +30,7 @@ describe("requireSuperAdmin", () => {
 
   it("returns 403 when env allowlist is empty", async () => {
     process.env.SUPER_ADMIN_EMAILS = "";
-    (requireAuth as any).mockResolvedValue({
+    vi.mocked(requireAuth).mockResolvedValue({
       user: { id: "u1", email: "user@example.com" },
       error: null,
     });
@@ -41,7 +41,7 @@ describe("requireSuperAdmin", () => {
 
   it("returns 403 when user email is not in allowlist", async () => {
     process.env.SUPER_ADMIN_EMAILS = "admin@example.com,other@example.com";
-    (requireAuth as any).mockResolvedValue({
+    vi.mocked(requireAuth).mockResolvedValue({
       user: { id: "u1", email: "notadmin@example.com" },
       error: null,
     });
@@ -53,7 +53,7 @@ describe("requireSuperAdmin", () => {
   it("returns user when email is in allowlist", async () => {
     process.env.SUPER_ADMIN_EMAILS = "admin@example.com,other@example.com";
     const user = { id: "u1", email: "admin@example.com" };
-    (requireAuth as any).mockResolvedValue({ user, error: null });
+    vi.mocked(requireAuth).mockResolvedValue({ user, error: null });
     const result = await requireSuperAdmin();
     expect(result.error).toBeNull();
     expect(result.user).toEqual(user);
@@ -62,7 +62,7 @@ describe("requireSuperAdmin", () => {
   it("trims whitespace from allowlist entries", async () => {
     process.env.SUPER_ADMIN_EMAILS = " admin@example.com , other@example.com ";
     const user = { id: "u1", email: "admin@example.com" };
-    (requireAuth as any).mockResolvedValue({ user, error: null });
+    vi.mocked(requireAuth).mockResolvedValue({ user, error: null });
     const result = await requireSuperAdmin();
     expect(result.error).toBeNull();
   });

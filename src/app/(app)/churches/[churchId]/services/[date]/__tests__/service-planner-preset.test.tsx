@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
@@ -15,7 +16,7 @@ vi.mock("../booklet-preview", () => ({
   BookletPreview: () => <div data-testid="booklet-preview" />,
 }));
 vi.mock("../service-editor-context", () => ({
-  ServiceEditorProvider: ({ children }: any) => <>{children}</>,
+  ServiceEditorProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 vi.mock("../save-status-indicator", () => ({
   SaveStatusIndicator: () => <div data-testid="save-status" />,
@@ -27,15 +28,15 @@ vi.mock("../service-nav", () => ({
   ServiceNav: () => <div data-testid="service-nav" />,
 }));
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, onClick, disabled }: any) => (
+  Button: ({ children, onClick, disabled }: { children: React.ReactNode; onClick?: React.MouseEventHandler<HTMLButtonElement>; disabled?: boolean }) => (
     <button onClick={onClick} disabled={disabled}>{children}</button>
   ),
 }));
 vi.mock("@/components/ui/dialog", () => ({
-  Dialog: ({ children }: any) => <>{children}</>,
-  DialogContent: ({ children }: any) => <div>{children}</div>,
-  DialogHeader: ({ children }: any) => <div>{children}</div>,
-  DialogTitle: ({ children }: any) => <div>{children}</div>,
+  Dialog: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 const mockFetch = vi.fn();

@@ -30,7 +30,7 @@ function makeReq(body: unknown) {
 describe("POST availability", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (requireChurchRole as any).mockResolvedValue({
+    vi.mocked(requireChurchRole).mockResolvedValue({
       user: { id: "u1" },
       membership: { role: "MEMBER" },
       error: null,
@@ -45,19 +45,19 @@ describe("POST availability", () => {
   });
 
   it("returns 403 NO_ELIGIBLE_ROLE when no eligible role slot exists", async () => {
-    (db.select as any)
+    vi.mocked(db.select)
       .mockReturnValueOnce({
         from: () => ({
           where: () => ({ limit: () => Promise.resolve([{ id: "s1", churchId: "c1" }]) }),
         }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       .mockReturnValueOnce({
         from: () => ({
           innerJoin: () => ({
             where: () => ({ limit: () => Promise.resolve([]) }),
           }),
         }),
-      });
+      } as unknown as ReturnType<typeof db.select>);
     const res = await POST(makeReq({ serviceId: "s1", status: "AVAILABLE" }), {
       params: Promise.resolve({ churchId: "c1" }),
     });
@@ -68,24 +68,24 @@ describe("POST availability", () => {
 
   it("allows availability update when user has an eligible role", async () => {
     const upsertMock = vi.fn().mockResolvedValue(undefined);
-    (db.select as any)
+    vi.mocked(db.select)
       .mockReturnValueOnce({
         from: () => ({
           where: () => ({ limit: () => Promise.resolve([{ id: "s1", churchId: "c1" }]) }),
         }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       .mockReturnValueOnce({
         from: () => ({
           innerJoin: () => ({
             where: () => ({ limit: () => Promise.resolve([{ id: "slot1" }]) }),
           }),
         }),
-      });
-    (db.insert as any).mockReturnValue({
+      } as unknown as ReturnType<typeof db.select>);
+    vi.mocked(db.insert).mockReturnValue({
       values: vi.fn().mockReturnValue({
         onConflictDoUpdate: upsertMock,
       }),
-    });
+    } as unknown as ReturnType<typeof db.insert>);
     const res = await POST(makeReq({ serviceId: "s1", status: "AVAILABLE" }), {
       params: Promise.resolve({ churchId: "c1" }),
     });

@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 
@@ -28,7 +27,6 @@ export function InstitutionClient({
   appointees: Appointee[];
   members: Member[];
 }) {
-  const router = useRouter();
   const { addToast } = useToast();
   const [appointees, setAppointees] = useState(initialAppointees);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});

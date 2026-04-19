@@ -24,7 +24,7 @@ describe("POST /api/churches/[churchId]/members/[memberId]/roles", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 403 when caller is not ADMIN", async () => {
-    (requireChurchRole as any).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
+    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
     const res = await POST(makeReq({ catalogRoleId: "550e8400-e29b-41d4-a716-446655440001" }), {
       params: Promise.resolve({ churchId: "c1", memberId: "m1" }),
     });
@@ -32,7 +32,7 @@ describe("POST /api/churches/[churchId]/members/[memberId]/roles", () => {
   });
 
   it("returns 400 on invalid body", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null });
     const res = await POST(makeReq({ catalogRoleId: "not-a-uuid" }), {
       params: Promise.resolve({ churchId: "c1", memberId: "m1" }),
     });
@@ -40,9 +40,9 @@ describe("POST /api/churches/[churchId]/members/[memberId]/roles", () => {
   });
 
   it("inserts the assignment and returns 201 with id", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null });
     const inserted = { id: "new-id", userId: "m1", churchId: "c1", catalogRoleId: "550e8400-e29b-41d4-a716-446655440001", isPrimary: false, displayOrder: 0 };
-    (db.transaction as any).mockImplementation(async (fn: any) => fn({
+    vi.mocked(db.transaction).mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => fn({
       select: () => ({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ userId: "m1" }]) }) }) }),
       update: () => ({ set: () => ({ where: () => Promise.resolve() }) }),
       insert: () => ({ values: () => ({ onConflictDoNothing: () => ({ returning: () => Promise.resolve([inserted]) }) }) }),

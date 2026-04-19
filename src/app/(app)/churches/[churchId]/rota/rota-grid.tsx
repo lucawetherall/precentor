@@ -136,7 +136,7 @@ export function RotaGridV2({
                         <AvailabilityWidget
                           serviceId={svc.serviceId}
                           churchId={churchId}
-                          currentStatus={(availLookup[`${member.userId}-${svc.serviceId}`] as any) ?? null}
+                          currentStatus={(availLookup[`${member.userId}-${svc.serviceId}`] as "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE" | null) ?? null}
                           size="sm"
                           eligible={eligible}
                           eligibleReason={eligible ? undefined : "NO_ROLE"}
@@ -187,7 +187,7 @@ export function RotaGridV2({
                                   <AvailabilityWidget
                                     serviceId={svc.serviceId}
                                     churchId={churchId}
-                                    currentStatus={(availLookup[`${member.userId}-${svc.serviceId}`] as any) ?? null}
+                                    currentStatus={(availLookup[`${member.userId}-${svc.serviceId}`] as "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE" | null) ?? null}
                                     size="sm"
                                     eligible={eligible}
                                     eligibleReason={eligible ? undefined : "NO_ROLE"}
