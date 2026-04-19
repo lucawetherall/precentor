@@ -19,7 +19,8 @@
     "db:seed-collects": "tsx scripts/seed-collects.ts",
     "db:scrape-hymns": "tsx scripts/scrape-hymn-text.ts",
     "db:scrape-collects": "tsx scripts/scrape-collects.ts",
-    "db:migrate-services": "tsx scripts/migrate-existing-services.ts"
+    "db:migrate-services": "tsx scripts/migrate-existing-services.ts",
+    "db:seed-role-catalog": "tsx scripts/seed-role-catalog.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
