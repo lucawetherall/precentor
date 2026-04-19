@@ -53,6 +53,7 @@ export default async function ChurchLayout({ children, params }: Props) {
 
   const userRole = membership.role as MemberRole;
   const isAdmin = hasMinRole(userRole, "ADMIN");
+  const canEdit = hasMinRole(userRole, "EDITOR");
 
   interface NavGroup {
     label?: string;
@@ -64,6 +65,7 @@ export default async function ChurchLayout({ children, params }: Props) {
       items: [
         { href: `/churches/${churchId}`, label: "Overview", iconName: "Home", exactMatch: true },
         { href: `/churches/${churchId}/services`, label: "Services", iconName: "Calendar" },
+        ...(canEdit ? [{ href: `/churches/${churchId}/planning`, label: "Planning", iconName: "LayoutGrid" }] : []),
         { href: `/churches/${churchId}/rota`, label: "Rota", iconName: "Users" },
       ],
     },
