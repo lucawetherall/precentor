@@ -94,7 +94,7 @@ export default async function ChurchLayout({ children, params }: Props) {
         navGroups={navGroups}
       />
       <main id="main-content" className="flex-1">
-        <MigrationBanner churchId={churchId} />
+        {isAdmin && <MigrationBanner churchId={churchId} />}
         {children}
       </main>
     </div>

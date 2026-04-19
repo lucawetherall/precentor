@@ -22,11 +22,10 @@ describe("PresetDetailClient", () => {
     expect(screen.getByText("Organist")).toBeInTheDocument();
   });
 
-  it("voice-part exclusive checkbox is disabled", () => {
+  it("voice-part exclusive column shows N/A", () => {
     const voiceSlot = [{ id: "sl2", catalogRoleId: "r1", minCount: 1, maxCount: null, exclusive: false, displayOrder: 10 }];
     render(<PresetDetailClient churchId="c1" preset={preset} slots={voiceSlot} catalog={catalog} />);
-    const cb = screen.getByRole("checkbox", { name: /exclusive/i });
-    expect(cb).toBeDisabled();
+    expect(screen.getByText("N/A")).toBeInTheDocument();
   });
 
   it("Add slot button triggers POST", async () => {
@@ -34,7 +33,7 @@ describe("PresetDetailClient", () => {
     render(<PresetDetailClient churchId="c1" preset={preset} slots={[]} catalog={catalog} />);
     fireEvent.click(screen.getByText("+ Add slot"));
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "r1" } });
-    fireEvent.click(screen.getByText("Add"));
+    fireEvent.click(screen.getByText("Add slot"));
     await waitFor(() => expect(mockFetch).toHaveBeenCalledWith(
       "/api/churches/c1/presets/p1/slots",
       expect.objectContaining({ method: "POST" }),

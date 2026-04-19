@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
+import Link from "next/link";
 import { ChurchSettingsForm } from "./settings-form";
 
 interface Props {
@@ -30,14 +31,14 @@ export default async function ChurchSettingsPage({ params }: Props) {
       <ChurchSettingsForm church={church} />
       <nav className="mt-8 space-y-2">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Role configurability</h2>
-        <a href={`/churches/${churchId}/settings/service-presets`} className="block rounded-md border px-4 py-3 hover:bg-accent">
+        <Link href={`/churches/${churchId}/settings/service-presets`} className="block rounded-md border px-4 py-3 hover:bg-accent transition-colors">
           <div className="font-medium">Service presets</div>
           <div className="text-sm text-muted-foreground">Configure role slots for each service type</div>
-        </a>
-        <a href={`/churches/${churchId}/settings/institution`} className="block rounded-md border px-4 py-3 hover:bg-accent">
+        </Link>
+        <Link href={`/churches/${churchId}/settings/institution`} className="block rounded-md border px-4 py-3 hover:bg-accent transition-colors">
           <div className="font-medium">Institution</div>
           <div className="text-sm text-muted-foreground">Assign clergy and institutional appointees</div>
-        </a>
+        </Link>
       </nav>
     </div>
   );

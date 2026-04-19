@@ -1,6 +1,8 @@
 "use client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 interface Preset {
   id: string;
@@ -27,12 +29,12 @@ export function PresetsClient({ churchId, presets }: { churchId: string; presets
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
       <header className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-heading font-semibold">Service presets</h1>
-        <a
+        <Link
           href={`/churches/${churchId}/settings/service-presets/new`}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className={buttonVariants({ variant: "default" })}
         >
           Create preset
-        </a>
+        </Link>
       </header>
       {presets.length === 0 ? (
         <p className="text-muted-foreground">No presets yet. Create one to get started.</p>
@@ -47,18 +49,19 @@ export function PresetsClient({ churchId, presets }: { churchId: string; presets
                 </div>
               </div>
               <div className="flex gap-2">
-                <a
+                <Link
                   href={`/churches/${churchId}/settings/service-presets/${p.id}`}
-                  className="rounded border px-3 py-1 text-sm hover:bg-accent"
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
                 >
                   Edit
-                </a>
-                <button
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => archive(p.id)}
-                  className="rounded border px-3 py-1 text-sm hover:bg-accent"
                 >
                   Archive
-                </button>
+                </Button>
               </div>
             </li>
           ))}

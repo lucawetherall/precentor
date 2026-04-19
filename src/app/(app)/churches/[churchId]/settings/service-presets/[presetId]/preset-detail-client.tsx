@@ -2,6 +2,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectItem } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface Preset { id: string; name: string; serviceType: string; defaultTime: string | null; choirRequirement: string; musicListFieldSet: string; }
 interface Slot { id: string; catalogRoleId: string; minCount: number; maxCount: number | null; exclusive: boolean; displayOrder: number; }
@@ -23,10 +27,17 @@ export function PresetDetailClient({ churchId, preset, slots: initialSlots, cata
   const [slots, setSlots] = useState(initialSlots);
   const [showAddSlot, setShowAddSlot] = useState(false);
   const [addingRoleId, setAddingRoleId] = useState("");
+  const [addingMin, setAddingMin] = useState(1);
+  const [addingMax, setAddingMax] = useState<string>(""); // empty = unlimited
+  const [addingExclusive, setAddingExclusive] = useState(true);
 
   // Roles not yet in slots
   const usedRoleIds = new Set(slots.map((s) => s.catalogRoleId));
-  const availableRoles = catalog.filter((r) => !usedRoleIds.has(r.id));
+  const availableRoles = catalog.filter((r) => !usedRoleIds.has(r.id) && r.rotaEligible);
+
+  // Reflect VOICE category constraint
+  const addingRole = catalog.find((r) => r.id === addingRoleId);
+  const addingIsVoice = addingRole?.category === "VOICE";
 
   async function saveBasic(e: React.FormEvent) {
     e.preventDefault();
@@ -45,16 +56,15 @@ export function PresetDetailClient({ churchId, preset, slots: initialSlots, cata
 
   async function addSlot() {
     if (!addingRoleId) return;
-    const role = catalog.find((r) => r.id === addingRoleId)!;
-    const isVoice = role.category === "VOICE";
+    const exclusive = addingIsVoice ? false : addingExclusive;
     const res = await fetch(`/api/churches/${churchId}/presets/${preset.id}/slots`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         catalogRoleId: addingRoleId,
-        minCount: 1,
-        maxCount: null,
-        exclusive: !isVoice,
+        minCount: addingMin,
+        maxCount: addingMax === "" ? null : parseInt(addingMax, 10),
+        exclusive,
         displayOrder: (slots.length + 1) * 10,
       }),
     });
@@ -66,6 +76,9 @@ export function PresetDetailClient({ churchId, preset, slots: initialSlots, cata
     setSlots((prev) => [...prev, created]);
     setShowAddSlot(false);
     setAddingRoleId("");
+    setAddingMin(1);
+    setAddingMax("");
+    setAddingExclusive(true);
     addToast("Slot added", "success");
   }
 
@@ -83,18 +96,24 @@ export function PresetDetailClient({ churchId, preset, slots: initialSlots, cata
       {/* Basic section */}
       <section>
         <h2 className="text-lg font-semibold mb-3">Basic</h2>
-        <form onSubmit={saveBasic} className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
-            <input className="w-full border rounded px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} required />
+        <form onSubmit={saveBasic} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="preset-name" required>Name</Label>
+            <Input id="preset-name" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Default time</label>
-            <input className="w-full border rounded px-3 py-2" value={defaultTime} onChange={(e) => setDefaultTime(e.target.value)} placeholder="10:00" />
+          <div className="space-y-1.5">
+            <Label htmlFor="preset-time">Default time</Label>
+            <Input
+              id="preset-time"
+              type="time"
+              value={defaultTime}
+              onChange={(e) => setDefaultTime(e.target.value)}
+              placeholder="10:00"
+            />
           </div>
-          <button type="submit" disabled={saving} className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
-            {saving ? "Saving…" : "Save"}
-          </button>
+          <Button type="submit" disabled={saving} size="sm">
+            {saving ? "Saving…" : "Save changes"}
+          </Button>
         </form>
       </section>
 
@@ -111,7 +130,7 @@ export function PresetDetailClient({ churchId, preset, slots: initialSlots, cata
                 <th className="text-left px-3 py-2">Min</th>
                 <th className="text-left px-3 py-2">Max</th>
                 <th className="text-left px-3 py-2">Exclusive</th>
-                <th />
+                <th className="w-16" />
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -120,21 +139,27 @@ export function PresetDetailClient({ churchId, preset, slots: initialSlots, cata
                 const isVoice = role?.category === "VOICE";
                 return (
                   <tr key={slot.id}>
-                    <td className="px-3 py-2">{role?.defaultName ?? slot.catalogRoleId}</td>
+                    <td className="px-3 py-2 font-medium">{role?.defaultName ?? slot.catalogRoleId}</td>
                     <td className="px-3 py-2">{slot.minCount}</td>
                     <td className="px-3 py-2">{slot.maxCount ?? "∞"}</td>
                     <td className="px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={slot.exclusive}
-                        disabled={isVoice}
-                        title={isVoice ? "Voice parts cannot be exclusive" : undefined}
-                        readOnly
-                        aria-label="exclusive"
-                      />
+                      {isVoice ? (
+                        <span className="text-muted-foreground text-xs">N/A</span>
+                      ) : (
+                        <span className={slot.exclusive ? "text-foreground" : "text-muted-foreground"}>
+                          {slot.exclusive ? "Yes" : "No"}
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-2">
-                      <button onClick={() => removeSlot(slot.id)} className="text-destructive text-xs">Remove</button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeSlot(slot.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        Remove
+                      </Button>
                     </td>
                   </tr>
                 );
@@ -144,21 +169,71 @@ export function PresetDetailClient({ churchId, preset, slots: initialSlots, cata
         )}
 
         {showAddSlot ? (
-          <div className="mt-3 flex gap-2 items-end">
-            <div>
-              <label className="block text-sm font-medium mb-1">Role</label>
-              <select className="border rounded px-2 py-1.5 text-sm" value={addingRoleId} onChange={(e) => setAddingRoleId(e.target.value)}>
-                <option value="">Select role…</option>
-                {availableRoles.map((r) => <option key={r.id} value={r.id}>{r.defaultName}</option>)}
-              </select>
+          <div className="mt-4 border rounded-md p-4 space-y-4 bg-muted/20">
+            <h3 className="text-sm font-semibold">Add role slot</h3>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="col-span-2 space-y-1.5">
+                <Label htmlFor="add-role">Role</Label>
+                <Select
+                  id="add-role"
+                  value={addingRoleId}
+                  onChange={(e) => {
+                    setAddingRoleId(e.target.value);
+                    const r = catalog.find((r) => r.id === e.target.value);
+                    if (r?.category === "VOICE") setAddingExclusive(false);
+                  }}
+                >
+                  <option value="">Select role…</option>
+                  {availableRoles.map((r) => <SelectItem key={r.id} value={r.id}>{r.defaultName}</SelectItem>)}
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="add-min">Min</Label>
+                <Input
+                  id="add-min"
+                  type="number"
+                  min={0}
+                  value={addingMin}
+                  onChange={(e) => setAddingMin(parseInt(e.target.value, 10) || 0)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="add-max">Max (blank = ∞)</Label>
+                <Input
+                  id="add-max"
+                  type="number"
+                  min={1}
+                  value={addingMax}
+                  onChange={(e) => setAddingMax(e.target.value)}
+                  placeholder="∞"
+                />
+              </div>
             </div>
-            <button onClick={addSlot} className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">Add</button>
-            <button onClick={() => setShowAddSlot(false)} className="rounded border px-3 py-1.5 text-sm">Cancel</button>
+            {!addingIsVoice && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={addingExclusive}
+                  onChange={(e) => setAddingExclusive(e.target.checked)}
+                  className="rounded border-input"
+                />
+                Exclusive (member can only fill this one role on the service)
+              </label>
+            )}
+            {addingIsVoice && (
+              <p className="text-xs text-muted-foreground">Voice part slots are never exclusive.</p>
+            )}
+            <div className="flex gap-2">
+              <Button size="sm" onClick={addSlot} disabled={!addingRoleId}>Add slot</Button>
+              <Button size="sm" variant="outline" onClick={() => { setShowAddSlot(false); setAddingRoleId(""); }}>
+                Cancel
+              </Button>
+            </div>
           </div>
         ) : (
-          <button onClick={() => setShowAddSlot(true)} className="mt-3 rounded border px-3 py-1.5 text-sm">
+          <Button variant="outline" size="sm" className="mt-3" onClick={() => setShowAddSlot(true)}>
             + Add slot
-          </button>
+          </Button>
         )}
       </section>
     </div>

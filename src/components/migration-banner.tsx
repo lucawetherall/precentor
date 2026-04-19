@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 interface MigrationIssues {
@@ -27,13 +28,26 @@ export function MigrationBanner({ churchId }: { churchId: string }) {
 
   const hasError = issues.counts.ERROR > 0;
   const hasWarn = issues.counts.WARN > 0;
-  const bgClass = hasError ? "bg-destructive/15 border-destructive/30" : hasWarn ? "bg-yellow-50 border-yellow-300" : "bg-blue-50 border-blue-300";
-  const label = hasError ? "Migration errors require attention" : hasWarn ? "Migration warnings need review" : "Migration in progress";
+  const bgClass = hasError
+    ? "bg-destructive/15 border-destructive/30 text-destructive"
+    : hasWarn
+    ? "bg-warning/15 border-warning/30 text-foreground"
+    : "bg-muted border-border text-muted-foreground";
+  const label = hasError
+    ? "Migration errors require attention"
+    : hasWarn
+    ? "Migration warnings need review"
+    : "Migration in progress";
 
   return (
-    <div role="alert" className={`flex items-center justify-between border rounded-md px-4 py-3 text-sm ${bgClass}`}>
-      <span>{label} — <a href={`/churches/${churchId}/settings/migration-issues`} className="underline">View details</a></span>
-      <button onClick={dismiss} aria-label="Dismiss" className="ml-4 text-muted-foreground hover:text-foreground">×</button>
+    <div role="alert" className={`flex items-center justify-between border rounded-md px-4 py-3 text-sm mx-4 mt-4 ${bgClass}`}>
+      <span>
+        {label} —{" "}
+        <Link href={`/churches/${churchId}/settings/migration-issues`} className="underline hover:no-underline">
+          View details
+        </Link>
+      </span>
+      <button onClick={dismiss} aria-label="Dismiss" className="ml-4 opacity-60 hover:opacity-100">×</button>
     </div>
   );
 }

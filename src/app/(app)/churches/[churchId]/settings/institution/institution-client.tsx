@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
 
 interface Role { id: string; key: string; defaultName: string; category: string; }
 interface Appointee { assignmentId: string; userId: string; catalogRoleId: string; userName: string | null; userEmail: string; }
@@ -97,7 +98,13 @@ export function InstitutionClient({
                         {roleAppointees.map((a) => (
                           <span key={a.assignmentId} className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs">
                             {a.userName ?? a.userEmail}
-                            <button onClick={() => revoke(a.assignmentId, a.userId)} aria-label="Remove" className="ml-1 text-muted-foreground hover:text-destructive">×</button>
+                            <button
+                              onClick={() => revoke(a.assignmentId, a.userId)}
+                              aria-label={`Remove ${a.userName ?? a.userEmail}`}
+                              className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                            >
+                              ×
+                            </button>
                           </span>
                         ))}
                       </div>
@@ -115,18 +122,55 @@ export function InstitutionClient({
 
 function AddAppointeeButton({ members, existing, onAdd }: { members: Member[]; existing: string[]; onAdd: (userId: string) => void }) {
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const available = members.filter((m) => !existing.includes(m.id));
+
+  // Close on click-outside
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open]);
+
   if (available.length === 0) return null;
   return (
-    <div className="relative">
-      <button onClick={() => setOpen((o) => !o)} className="rounded border px-2 py-0.5 text-xs">+ Add</button>
+    <div className="relative" ref={containerRef}>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        + Add
+      </Button>
       {open && (
-        <div className="absolute right-0 top-6 z-10 min-w-40 rounded border bg-popover shadow-md">
+        <div
+          role="listbox"
+          className="absolute right-0 top-full mt-1 z-10 min-w-40 rounded-md border bg-popover shadow-md overflow-hidden"
+        >
           {available.map((m) => (
             <button
               key={m.id}
+              role="option"
+              aria-selected={false}
               onClick={() => { onAdd(m.id); setOpen(false); }}
-              className="block w-full px-3 py-2 text-left text-sm hover:bg-accent"
+              className="block w-full px-3 py-2 text-left text-sm hover:bg-accent focus:bg-accent outline-none"
             >
               {m.name ?? m.email}
             </button>

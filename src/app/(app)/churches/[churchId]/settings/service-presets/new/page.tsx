@@ -2,10 +2,23 @@
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectItem } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { SERVICE_TYPE_LABELS } from "@/types";
 
-const SERVICE_TYPES = ["SUNG_EUCHARIST","CHORAL_EVENSONG","SAID_EUCHARIST","CHORAL_MATINS","FAMILY_SERVICE","COMPLINE","CUSTOM"] as const;
-const CHOIR_REQS = ["FULL_CHOIR","ORGANIST_ONLY","SAID"] as const;
-const MUSIC_FIELDS = ["CHORAL","HYMNS_ONLY","READINGS_ONLY"] as const;
+const SERVICE_TYPES = ["SUNG_EUCHARIST", "CHORAL_EVENSONG", "SAID_EUCHARIST", "CHORAL_MATINS", "FAMILY_SERVICE", "COMPLINE", "CUSTOM"] as const;
+const CHOIR_REQUIREMENT_LABELS: Record<string, string> = {
+  FULL_CHOIR: "Full choir",
+  ORGANIST_ONLY: "Organist only",
+  SAID: "Said (no music)",
+};
+const MUSIC_FIELD_SET_LABELS: Record<string, string> = {
+  CHORAL: "Choral",
+  HYMNS_ONLY: "Hymns only",
+  READINGS_ONLY: "Readings only",
+};
 
 export default function NewPresetPage() {
   const { churchId } = useParams() as { churchId: string };
@@ -44,39 +57,79 @@ export default function NewPresetPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit} aria-label="Create preset form" className="p-4 sm:p-6 lg:p-8 max-w-lg space-y-4">
+    <form onSubmit={handleSubmit} aria-label="Create preset form" className="p-4 sm:p-6 lg:p-8 max-w-lg space-y-5">
       <h1 className="text-2xl font-heading font-semibold">Create preset</h1>
-      <div>
-        <label className="block text-sm font-medium mb-1">Name</label>
-        <input className="w-full border rounded px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} required />
+
+      <div className="space-y-1.5">
+        <Label htmlFor="preset-name" required>Name</Label>
+        <Input
+          id="preset-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          placeholder="e.g. Sunday Sung Eucharist"
+        />
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Service type</label>
-        <select className="w-full border rounded px-3 py-2" value={serviceType} onChange={(e) => setServiceType(e.target.value)}>
-          {SERVICE_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
-        </select>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="preset-service-type">Service type</Label>
+        <Select
+          id="preset-service-type"
+          value={serviceType}
+          onChange={(e) => setServiceType(e.target.value)}
+        >
+          {SERVICE_TYPES.map((t) => (
+            <SelectItem key={t} value={t}>
+              {SERVICE_TYPE_LABELS[t]}
+            </SelectItem>
+          ))}
+        </Select>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Choir requirement</label>
-        <select className="w-full border rounded px-3 py-2" value={choirRequirement} onChange={(e) => setChoirRequirement(e.target.value)}>
-          {CHOIR_REQS.map((r) => <option key={r} value={r}>{r.replace(/_/g, " ")}</option>)}
-        </select>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="preset-choir-req">Choir requirement</Label>
+        <Select
+          id="preset-choir-req"
+          value={choirRequirement}
+          onChange={(e) => setChoirRequirement(e.target.value)}
+        >
+          {Object.entries(CHOIR_REQUIREMENT_LABELS).map(([k, v]) => (
+            <SelectItem key={k} value={k}>{v}</SelectItem>
+          ))}
+        </Select>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Music list field set</label>
-        <select className="w-full border rounded px-3 py-2" value={musicListFieldSet} onChange={(e) => setMusicListFieldSet(e.target.value)}>
-          {MUSIC_FIELDS.map((f) => <option key={f} value={f}>{f.replace(/_/g, " ")}</option>)}
-        </select>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="preset-music-fields">Music list field set</Label>
+        <Select
+          id="preset-music-fields"
+          value={musicListFieldSet}
+          onChange={(e) => setMusicListFieldSet(e.target.value)}
+        >
+          {Object.entries(MUSIC_FIELD_SET_LABELS).map(([k, v]) => (
+            <SelectItem key={k} value={k}>{v}</SelectItem>
+          ))}
+        </Select>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Default time (HH:MM, optional)</label>
-        <input type="time" className="w-full border rounded px-3 py-2" value={defaultTime} onChange={(e) => setDefaultTime(e.target.value)} placeholder="10:00" />
+
+      <div className="space-y-1.5">
+        <Label htmlFor="preset-time">Default time (optional)</Label>
+        <Input
+          id="preset-time"
+          type="time"
+          value={defaultTime}
+          onChange={(e) => setDefaultTime(e.target.value)}
+          placeholder="10:00"
+        />
       </div>
-      <div className="flex gap-2">
-        <button type="submit" disabled={submitting} className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+
+      <div className="flex gap-2 pt-1">
+        <Button type="submit" disabled={submitting}>
           {submitting ? "Creating…" : "Create preset"}
-        </button>
-        <button type="button" onClick={() => router.back()} className="rounded border px-4 py-2 text-sm">Cancel</button>
+        </Button>
+        <Button type="button" variant="outline" onClick={() => router.back()}>
+          Cancel
+        </Button>
       </div>
     </form>
   );

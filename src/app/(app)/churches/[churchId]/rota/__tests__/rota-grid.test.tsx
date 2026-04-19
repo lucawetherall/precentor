@@ -34,7 +34,7 @@ describe("RotaGridV2", () => {
 
   it("toggles to role-grouped view", () => {
     render(<RotaGridV2 churchId="c1" services={services} members={members} availabilityData={[]} rotaData={[]} />);
-    fireEvent.click(screen.getByText("View by role"));
+    fireEvent.click(screen.getByText("By role"));
     expect(screen.getByText("Soprano")).toBeInTheDocument(); // role header
   });
 });
