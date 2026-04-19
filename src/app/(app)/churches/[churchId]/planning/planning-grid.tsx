@@ -13,6 +13,7 @@ import type {
 import { DateRangeControls } from "./date-range-controls";
 import { usePlanningGrid, rowKey } from "./use-planning-grid";
 import { PlanningCell } from "./planning-cell";
+import { getColumnSearch } from "./column-search";
 
 // ─── API response types ───────────────────────────────────────
 
@@ -250,6 +251,65 @@ function rowSortKey(row: PlanningRow): string {
   return `${row.date}T${time}`;
 }
 
+// ─── Build rows from API response ────────────────────────────
+
+function buildRowsFromApi(data: ApiResponse, from: string, to: string): PlanningRow[] {
+  const daysById = new Map<string, ApiDay>(data.days.map((d) => [d.id, d]));
+
+  const slotsByService = new Map<string, ApiSlot[]>();
+  for (const slot of data.slots) {
+    const existing = slotsByService.get(slot.serviceId) ?? [];
+    existing.push(slot);
+    slotsByService.set(slot.serviceId, existing);
+  }
+
+  const readingsByDay = new Map<string, ApiReading[]>();
+  for (const reading of data.readings) {
+    const existing = readingsByDay.get(reading.liturgicalDayId) ?? [];
+    existing.push(reading);
+    readingsByDay.set(reading.liturgicalDayId, existing);
+  }
+
+  const realRows: PlanningRow[] = [];
+  for (const svc of data.services) {
+    const day = daysById.get(svc.liturgicalDayId);
+    if (!day) continue;
+    realRows.push(buildRealRow(svc, day, slotsByService, readingsByDay));
+  }
+
+  const existingRefs: ExistingServiceRef[] = data.services.map((s) => {
+    const day = daysById.get(s.liturgicalDayId);
+    return {
+      date: day?.date ?? "",
+      serviceType: s.serviceType as ExistingServiceRef["serviceType"],
+    };
+  }).filter((r) => r.date !== "");
+
+  const ghosts = computeGhostRows({ from, to, patterns: data.patterns, existingServices: existingRefs });
+
+  const ghostRows: PlanningRow[] = ghosts.map((g) => ({
+    kind: "ghost",
+    ghostId: g.ghostId,
+    date: g.date,
+    serviceType: g.serviceType,
+    time: g.time,
+    cells: {
+      introit: emptyCell(),
+      hymns: emptyCell(),
+      setting: emptyCell(),
+      psalm: emptyCell(),
+      chant: emptyCell(),
+      respAccl: emptyCell(),
+      anthem: emptyCell(),
+      voluntary: emptyCell(),
+      info: emptyCell(),
+    },
+    readings: [],
+  }));
+
+  return [...realRows, ...ghostRows].sort((a, b) => rowSortKey(a).localeCompare(rowSortKey(b)));
+}
+
 // ─── Column order ─────────────────────────────────────────────
 
 const COLUMNS = [
@@ -409,6 +469,16 @@ export function PlanningGrid({ churchId, from, to }: Props) {
         return;
       }
 
+      // Copy focused cell (Cmd/Ctrl-C)
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c" && !state.editing && state.focus) {
+        const row = state.rows.find((r) => rowKey(r) === state.focus!.rowKey);
+        if (!row) return;
+        const cell = getCell(row, state.focus.column);
+        void navigator.clipboard.writeText(cell.displayText ?? "");
+        e.preventDefault();
+        return;
+      }
+
       if (state.editing) return;
       if (!state.focus) return;
 
@@ -430,7 +500,81 @@ export function PlanningGrid({ churchId, from, to }: Props) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.editing, state.focus, state.rows, state.lastEdit, dispatch]);
+  }, [state.editing, state.focus, state.rows, state.lastEdit, dispatch, getCell]);
+
+  // ─── Paste handler: multi-row paste from spreadsheets ─────
+  useEffect(() => {
+    async function onPaste(e: ClipboardEvent) {
+      if (state.editing) return;
+      if (!state.focus) return;
+      const text = e.clipboardData?.getData("text/plain");
+      if (!text) return;
+      if (!text.includes("\n") && !text.includes("\t")) return;
+      e.preventDefault();
+
+      const grid = text
+        .replace(/\r\n?/g, "\n")
+        .replace(/\n$/, "")
+        .split("\n")
+        .map((line) => line.split("\t"));
+
+      const startRowIdx = state.rows.findIndex((r) => rowKey(r) === state.focus!.rowKey);
+      const startColIdx = COLUMN_ORDER.indexOf(state.focus!.column);
+      if (startRowIdx < 0 || startColIdx < 0) return;
+
+      const changes: Array<{
+        serviceId?: string;
+        ghost?: { date: string; serviceType: string; time: string | null };
+        column: GridColumn;
+        value: { text: string; refId: string | null };
+      }> = [];
+
+      grid.forEach((cells, dr) => {
+        const row = state.rows[startRowIdx + dr];
+        if (!row) return;
+        cells.forEach((cellValue, dc) => {
+          const colIdx = startColIdx + dc;
+          if (colIdx >= COLUMN_ORDER.length) return;
+          const column = COLUMN_ORDER[colIdx];
+          const value = { text: cellValue, refId: null };
+          const change = row.kind === "real"
+            ? { serviceId: row.serviceId, column, value }
+            : { ghost: { date: row.date, serviceType: row.serviceType, time: row.time }, column, value };
+          changes.push(change);
+          dispatch({
+            type: "COMMIT_CELL",
+            rowKey: rowKey(row),
+            column,
+            value: { displayText: cellValue, refId: null, isUnmatched: cellValue.length > 0 },
+            previous: getCell(row, column),
+          });
+        });
+      });
+
+      if (changes.length === 0) return;
+      dispatch({ type: "SAVE_STATUS", status: "saving" });
+      const res = await fetch(`/api/churches/${churchId}/planning/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ changes }),
+      });
+      if (res.ok) {
+        dispatch({ type: "SAVE_STATUS", status: "saved" });
+        setTimeout(() => dispatch({ type: "SAVE_STATUS", status: "idle" }), 1500);
+        // Refetch to get real service ids for ghost rows
+        const refetch = await fetch(`/api/churches/${churchId}/planning?from=${from}&to=${to}`);
+        if (refetch.ok) {
+          const data = await refetch.json() as ApiResponse;
+          dispatch({ type: "SET_ROWS", rows: buildRowsFromApi(data, from, to) });
+        }
+      } else {
+        dispatch({ type: "SAVE_STATUS", status: "error" });
+      }
+    }
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.editing, state.focus, state.rows, churchId, from, to, dispatch, getCell]);
 
   // ─── Render ────────────────────────────────────────────────
 
@@ -530,6 +674,8 @@ export function PlanningGrid({ churchId, from, to }: Props) {
                       focused={isFocused}
                       editing={isEditing}
                       serviceType={row.serviceType}
+                      churchId={churchId}
+                      search={getColumnSearch(col.key, row.serviceType)}
                       onFocus={() => dispatch({ type: "FOCUS", rowKey: rk, column: col.key })}
                       onEnterEdit={() => {
                         dispatch({ type: "FOCUS", rowKey: rk, column: col.key });

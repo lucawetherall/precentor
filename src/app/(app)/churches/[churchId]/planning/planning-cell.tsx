@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { CellDisplay, GridColumn } from "./types";
+import { CellAutocomplete } from "./cell-autocomplete";
+import type { ColumnSearch } from "./column-search";
 
 interface Props {
   column: GridColumn;
@@ -9,6 +11,8 @@ interface Props {
   focused: boolean;
   editing: boolean;
   serviceType: string;
+  churchId: string;
+  search: ColumnSearch | null;
   onFocus: () => void;
   onEnterEdit: () => void;
   onCancelEdit: () => void;
@@ -16,7 +20,8 @@ interface Props {
 }
 
 export function PlanningCell({
-  column, value, focused, editing, serviceType, onFocus, onEnterEdit, onCancelEdit, onCommit,
+  column, value, focused, editing, serviceType, churchId, search,
+  onFocus, onEnterEdit, onCancelEdit, onCommit,
 }: Props) {
   const [draft, setDraft] = useState(value.displayText);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -35,6 +40,20 @@ export function PlanningCell({
   }
 
   if (editing) {
+    if (search) {
+      return (
+        <td className="px-1 py-0 border-r border-t align-top min-w-[120px]">
+          <CellAutocomplete
+            value={value.displayText}
+            searchUrl={(q) => search.searchUrl(churchId, q)}
+            mapResponse={search.mapResponse}
+            onCommit={({ text, refId }) => onCommit({ displayText: text, refId, isUnmatched: !refId && text.length > 0 })}
+            onCancel={onCancelEdit}
+          />
+        </td>
+      );
+    }
+
     return (
       <td className="px-1 py-0 border-r border-t align-top min-w-[120px]">
         <input
