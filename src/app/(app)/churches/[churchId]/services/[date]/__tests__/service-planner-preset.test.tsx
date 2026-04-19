@@ -50,7 +50,7 @@ describe("ServicePlanner preset dropdown", () => {
     mockFetch.mockReset();
   });
 
-  it("shows preset dropdown when roleSlotsEnabled and presets exist", async () => {
+  it("shows preset dropdown when presets exist", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ data: [{ id: "p1", name: "Sunday Eucharist", serviceType: "SUNG_EUCHARIST" }] }),
@@ -63,7 +63,6 @@ describe("ServicePlanner preset dropdown", () => {
         date="2026-05-01"
         existingServices={[]}
         adjacent={adjacent}
-        roleSlotsEnabled={true}
       />
     );
 
@@ -71,23 +70,6 @@ describe("ServicePlanner preset dropdown", () => {
       expect(screen.getByLabelText("Preset")).toBeInTheDocument();
     });
     expect(screen.getByRole("option", { name: "Sunday Eucharist" })).toBeInTheDocument();
-  });
-
-  it("does not show preset dropdown when roleSlotsEnabled is false", async () => {
-    render(
-      <ServicePlanner
-        churchId="c1"
-        liturgicalDayId="d1"
-        date="2026-05-01"
-        existingServices={[]}
-        adjacent={adjacent}
-        roleSlotsEnabled={false}
-      />
-    );
-
-    // No fetch should have been made for presets
-    expect(mockFetch).not.toHaveBeenCalled();
-    expect(screen.queryByLabelText("Preset")).not.toBeInTheDocument();
   });
 
   it("sends presetId in POST body when preset is selected", async () => {
@@ -98,7 +80,7 @@ describe("ServicePlanner preset dropdown", () => {
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ id: "svc1", serviceType: "SUNG_EUCHARIST", sheetMode: "summary", choirStatus: "CHOIR_REQUIRED", includeReadingText: true, status: "DRAFT", notes: null, eucharisticPrayer: null, eucharisticPrayerId: null, defaultMassSettingId: null, collectId: null, collectOverride: null, time: null }),
+        json: () => Promise.resolve({ id: "svc1", serviceType: "SUNG_EUCHARIST", sheetMode: "summary", includeReadingText: true, status: "DRAFT", notes: null, eucharisticPrayer: null, eucharisticPrayerId: null, defaultMassSettingId: null, collectId: null, collectOverride: null, time: null }),
       })
       .mockResolvedValue({ ok: true, json: () => Promise.resolve([]) });
 
@@ -109,7 +91,6 @@ describe("ServicePlanner preset dropdown", () => {
         date="2026-05-01"
         existingServices={[]}
         adjacent={adjacent}
-        roleSlotsEnabled={true}
       />
     );
 

@@ -77,7 +77,6 @@ export function ServicePlanner({
   editorSlotsMap = {},
   readings = [],
   adjacent,
-  roleSlotsEnabled = false,
 }: {
   churchId: string;
   liturgicalDayId: string;
@@ -87,7 +86,6 @@ export function ServicePlanner({
   editorSlotsMap?: Record<string, MusicSlot[]>;
   readings?: Reading[];
   adjacent: AdjacentDayLinks;
-  roleSlotsEnabled?: boolean;
 }) {
   const [services, setServices] = useState<Service[]>(existingServices);
   const [activeTab, setActiveTab] = useState<string>(services[0]?.id || "");
@@ -108,7 +106,6 @@ export function ServicePlanner({
   const { addToast } = useToast();
 
   useEffect(() => {
-    if (!roleSlotsEnabled) return;
     fetch(`/api/churches/${churchId}/presets`)
       .then((r) => r.ok ? r.json() : [])
       .then((data) => {
@@ -116,7 +113,7 @@ export function ServicePlanner({
         else if (data?.data && Array.isArray(data.data)) setPresets(data.data);
       })
       .catch(() => {});
-  }, [churchId, roleSlotsEnabled]);
+  }, [churchId]);
 
   const handleCreateService = async () => {
     setCreating(true);
@@ -126,7 +123,7 @@ export function ServicePlanner({
         serviceType: newType,
         time: newTime,
       };
-      if (roleSlotsEnabled && newPresetId) {
+      if (newPresetId) {
         body.presetId = newPresetId;
       }
       const res = await fetch(`/api/churches/${churchId}/services`, {
@@ -300,7 +297,7 @@ export function ServicePlanner({
             onChange={(e) => setNewTime(e.target.value)}
             className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
-          {roleSlotsEnabled && presets.length > 0 && (
+          {presets.length > 0 && (
             <>
               <label htmlFor="new-service-preset" className="sr-only">Preset</label>
               <select

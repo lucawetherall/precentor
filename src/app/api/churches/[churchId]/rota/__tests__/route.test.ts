@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/auth/permissions", () => ({ requireChurchRole: vi.fn() }));
 vi.mock("@/lib/db", () => ({
@@ -24,7 +24,7 @@ function makeReq(body: unknown) {
   });
 }
 
-describe("POST rota — USE_ROLE_SLOTS_MODEL=false (default)", () => {
+describe("POST rota", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (requireChurchRole as any).mockResolvedValue({ user: { id: "editor1" }, error: null });
@@ -43,39 +43,6 @@ describe("POST rota — USE_ROLE_SLOTS_MODEL=false (default)", () => {
       params: Promise.resolve({ churchId: "c1" }),
     });
     expect(res.status).toBe(400);
-  });
-
-  it("inserts rota entry when service and membership found", async () => {
-    const upsertMock = vi.fn().mockResolvedValue(undefined);
-    (db.select as any)
-      .mockReturnValueOnce({
-        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "s1" }]) }) }),
-      })
-      .mockReturnValueOnce({
-        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "m1" }]) }) }),
-      });
-    (db.insert as any).mockReturnValue({
-      values: vi.fn().mockReturnValue({
-        onConflictDoUpdate: upsertMock,
-      }),
-    });
-    const res = await POST(makeReq({ userId: "u1", serviceId: "s1", confirmed: true }), {
-      params: Promise.resolve({ churchId: "c1" }),
-    });
-    expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json.success).toBe(true);
-  });
-});
-
-describe("POST rota — USE_ROLE_SLOTS_MODEL=true", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    process.env.USE_ROLE_SLOTS_MODEL = "true";
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "editor1" }, error: null });
-  });
-  afterEach(() => {
-    delete process.env.USE_ROLE_SLOTS_MODEL;
   });
 
   it("returns 400 missing catalogRoleId", async () => {
