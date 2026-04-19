@@ -15,7 +15,7 @@ import {
   migrationAuditLog,
   quarantinedRotaEntries,
 } from "../src/lib/db/schema";
-import { eq, and, isNotNull, isNull } from "drizzle-orm";
+import { eq, and, isNotNull, isNull, sql } from "drizzle-orm";
 import {
   mapServiceTypeAndChoirStatusToPresetKey,
   resolveDefaultTime,
@@ -58,36 +58,33 @@ export async function runPhaseB(dbInstance = db) {
 }
 
 async function step1_backfillMemberRoles(tx: Tx, catalogByKey: Map<string, { id: string; key: string }>) {
-  const memberships = await tx
-    .select()
-    .from(churchMemberships)
-    .where(isNotNull(churchMemberships.voicePart));
+  // voice_part was dropped in Phase D schema; access via raw SQL for this pre-Phase-D migration
+  const memberships = await tx.execute<{ id: string; user_id: string; church_id: string; voice_part: string | null }>(
+    sql`SELECT id, user_id, church_id, voice_part FROM church_memberships`,
+  );
   for (const m of memberships) {
-    const role = catalogByKey.get(m.voicePart!);
+    if (!m.voice_part) {
+      await tx.insert(migrationAuditLog).values({
+        phase: "B",
+        churchId: m.church_id,
+        severity: "INFO",
+        code: "MEMBER_NO_VOICE_PART",
+        details: { userId: m.user_id },
+      });
+      continue;
+    }
+    const role = catalogByKey.get(m.voice_part);
     if (!role) continue;
     await tx
       .insert(churchMemberRoles)
       .values({
-        userId: m.userId,
-        churchId: m.churchId,
+        userId: m.user_id,
+        churchId: m.church_id,
         catalogRoleId: role.id,
         isPrimary: true,
         displayOrder: 0,
       })
       .onConflictDoNothing();
-  }
-  const withoutVoice = await tx
-    .select()
-    .from(churchMemberships)
-    .where(isNull(churchMemberships.voicePart));
-  for (const m of withoutVoice) {
-    await tx.insert(migrationAuditLog).values({
-      phase: "B",
-      churchId: m.churchId,
-      severity: "INFO",
-      code: "MEMBER_NO_VOICE_PART",
-      details: { userId: m.userId },
-    });
   }
 }
 
@@ -178,14 +175,17 @@ async function step3_populateDefaultSlots(
 }
 
 async function step4_mapPatterns(tx: Tx, presetsByChurch: Map<string, PresetMap>) {
-  const patterns = await tx.select().from(churchServicePatterns);
+  // service_type and time were dropped from church_service_patterns in Phase D; use raw SQL
+  const patterns = await tx.execute<{ id: string; church_id: string; service_type: string; time: string | null }>(
+    sql`SELECT id, church_id, service_type, "time" FROM church_service_patterns`,
+  );
   const timesByPreset = new Map<string, Array<string | null>>();
 
   for (const p of patterns) {
-    const pKeys = presetsByChurch.get(p.churchId);
+    const pKeys = presetsByChurch.get(p.church_id);
     if (!pKeys) continue;
     const targetKey = mapServiceTypeAndChoirStatusToPresetKey(
-      p.serviceType as ServiceTypeKey,
+      p.service_type as ServiceTypeKey,
       "CHOIR_REQUIRED",
     );
     const presetId = pKeys[targetKey];
@@ -218,29 +218,32 @@ async function step4_mapPatterns(tx: Tx, presetsByChurch: Map<string, PresetMap>
 }
 
 async function step5_mapServices(tx: Tx, presetsByChurch: Map<string, PresetMap>) {
-  const all = await tx.select().from(services);
-  for (const s of all) {
-    const pKeys = presetsByChurch.get(s.churchId);
+  // choir_status was dropped in Phase D schema; access via raw SQL for this pre-Phase-D migration
+  const allRaw = await tx.execute<{ id: string; church_id: string; service_type: string; choir_status: string }>(
+    sql`SELECT id, church_id, service_type, choir_status FROM services`,
+  );
+  for (const s of allRaw) {
+    const pKeys = presetsByChurch.get(s.church_id);
     if (!pKeys) continue;
     const targetKey = mapServiceTypeAndChoirStatusToPresetKey(
-      s.serviceType as ServiceTypeKey,
-      s.choirStatus as ChoirStatusKey,
+      s.service_type as ServiceTypeKey,
+      s.choir_status as ChoirStatusKey,
     );
     await tx.update(services).set({ presetId: pKeys[targetKey] }).where(eq(services.id, s.id));
   }
 }
 
 async function step6_snapshotServiceSlots(tx: Tx) {
-  const all = await tx
-    .select({ id: services.id, presetId: services.presetId, choirStatus: services.choirStatus })
-    .from(services)
-    .where(isNotNull(services.presetId));
+  // choir_status was dropped in Phase D schema; access via raw SQL for this pre-Phase-D migration
+  const all = await tx.execute<{ id: string; preset_id: string | null; choir_status: string | null }>(
+    sql`SELECT id, preset_id, choir_status FROM services WHERE preset_id IS NOT NULL`,
+  );
   for (const s of all) {
-    if (s.choirStatus === "SAID_SERVICE_ONLY" || s.choirStatus === "NO_SERVICE") continue;
+    if (s.choir_status === "SAID_SERVICE_ONLY" || s.choir_status === "NO_SERVICE") continue;
     const slots = await tx
       .select()
       .from(presetRoleSlots)
-      .where(eq(presetRoleSlots.presetId, s.presetId!));
+      .where(eq(presetRoleSlots.presetId, s.preset_id!));
     for (const sl of slots) {
       await tx
         .insert(serviceRoleSlots)
@@ -258,30 +261,23 @@ async function step6_snapshotServiceSlots(tx: Tx) {
 }
 
 async function step7_backfillRotaEntries(tx: Tx, catalogByKey: Map<string, { id: string; key: string }>) {
-  const rows = await tx
-    .select({
-      entryId: rotaEntries.id,
-      userId: rotaEntries.userId,
-      serviceId: rotaEntries.serviceId,
-      churchId: services.churchId,
-      voicePart: churchMemberships.voicePart,
-    })
-    .from(rotaEntries)
-    .innerJoin(services, eq(services.id, rotaEntries.serviceId))
-    .leftJoin(
-      churchMemberships,
-      and(
-        eq(churchMemberships.userId, rotaEntries.userId),
-        eq(churchMemberships.churchId, services.churchId),
-      ),
-    )
-    .where(isNull(rotaEntries.catalogRoleId));
+  // voice_part was dropped in Phase D schema; use raw SQL join for this pre-Phase-D migration
+  const rows = await tx.execute<{
+    entry_id: string; user_id: string; service_id: string; church_id: string; voice_part: string | null;
+  }>(sql`
+    SELECT re.id AS entry_id, re.user_id, re.service_id, s.church_id,
+           cm.voice_part
+    FROM rota_entries re
+    INNER JOIN services s ON s.id = re.service_id
+    LEFT JOIN church_memberships cm ON cm.user_id = re.user_id AND cm.church_id = s.church_id
+    WHERE re.catalog_role_id IS NULL
+  `);
 
   for (const r of rows) {
-    if (!r.voicePart) continue;
-    const role = catalogByKey.get(r.voicePart);
+    if (!r.voice_part) continue;
+    const role = catalogByKey.get(r.voice_part);
     if (!role) continue;
-    await tx.update(rotaEntries).set({ catalogRoleId: role.id }).where(eq(rotaEntries.id, r.entryId));
+    await tx.update(rotaEntries).set({ catalogRoleId: role.id }).where(eq(rotaEntries.id, r.entry_id));
   }
 
   const remaining = await tx.select().from(rotaEntries).where(isNull(rotaEntries.catalogRoleId));
@@ -302,7 +298,8 @@ async function step7_backfillRotaEntries(tx: Tx, catalogByKey: Map<string, { id:
 }
 
 async function step8_archiveNoService(tx: Tx) {
-  await tx.update(services).set({ status: "ARCHIVED" }).where(eq(services.choirStatus, "NO_SERVICE"));
+  // choir_status was dropped in Phase D schema; use raw SQL for this pre-Phase-D migration
+  await tx.execute(sql`UPDATE services SET status = 'ARCHIVED' WHERE choir_status = 'NO_SERVICE'`);
 }
 
 async function step9_quarantineOrphans(tx: Tx) {

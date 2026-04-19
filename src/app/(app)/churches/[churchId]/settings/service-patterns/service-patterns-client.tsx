@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { SERVICE_TYPE_LABELS } from "@/types";
-import type { ServiceType } from "@/types";
 import { Button } from "@/components/ui/button";
 
 const DAY_NAMES = [
@@ -15,14 +13,11 @@ const DAY_NAMES = [
   "Saturday",
 ] as const;
 
-const SERVICE_TYPES = Object.keys(SERVICE_TYPE_LABELS) as ServiceType[];
-
 interface ServicePattern {
   id: string;
   churchId: string;
   dayOfWeek: number;
-  serviceType: string;
-  time: string | null;
+  presetId: string;
   enabled: boolean;
 }
 
@@ -33,8 +28,7 @@ interface Props {
 
 interface AddFormState {
   dayOfWeek: number;
-  serviceType: ServiceType;
-  time: string;
+  presetId: string;
   enabled: boolean;
 }
 
@@ -43,8 +37,7 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState<AddFormState>({
     dayOfWeek: 0,
-    serviceType: "SUNG_EUCHARIST",
-    time: "10:00",
+    presetId: "",
     enabled: true,
   });
   const [saving, setSaving] = useState(false);
@@ -98,8 +91,7 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         dayOfWeek: addForm.dayOfWeek,
-        serviceType: addForm.serviceType,
-        time: addForm.time || null,
+        presetId: addForm.presetId,
         enabled: addForm.enabled,
       }),
     });
@@ -110,8 +102,7 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
       setShowAddForm(false);
       setAddForm({
         dayOfWeek: 0,
-        serviceType: "SUNG_EUCHARIST",
-        time: "10:00",
+        presetId: "",
         enabled: true,
       });
     } else {
@@ -172,12 +163,8 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
                 <span className="font-medium w-24">
                   {DAY_NAMES[pattern.dayOfWeek]}
                 </span>
-                <span className="text-muted-foreground w-40">
-                  {SERVICE_TYPE_LABELS[pattern.serviceType as ServiceType] ??
-                    pattern.serviceType}
-                </span>
-                <span className="text-muted-foreground w-16">
-                  {pattern.time ?? "—"}
+                <span className="text-muted-foreground font-mono text-xs">
+                  preset: {pattern.presetId.slice(0, 8)}…
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -234,38 +221,16 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="ap-type" className="text-xs text-muted-foreground">
-                Service Type
-              </label>
-              <select
-                id="ap-type"
-                value={addForm.serviceType}
-                onChange={(e) =>
-                  setAddForm((f) => ({
-                    ...f,
-                    serviceType: e.target.value as ServiceType,
-                  }))
-                }
-                className="px-2 py-1.5 text-sm rounded-md border border-input bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                {SERVICE_TYPES.map((st) => (
-                  <option key={st} value={st}>
-                    {SERVICE_TYPE_LABELS[st]}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="ap-time" className="text-xs text-muted-foreground">
-                Time
+              <label htmlFor="ap-preset" className="text-xs text-muted-foreground">
+                Preset ID
               </label>
               <input
-                id="ap-time"
-                type="time"
-                value={addForm.time}
+                id="ap-preset"
+                type="text"
+                placeholder="Preset UUID"
+                value={addForm.presetId}
                 onChange={(e) =>
-                  setAddForm((f) => ({ ...f, time: e.target.value }))
+                  setAddForm((f) => ({ ...f, presetId: e.target.value }))
                 }
                 className="px-2 py-1.5 text-sm rounded-md border border-input bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />

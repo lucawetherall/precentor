@@ -1,30 +1,20 @@
 import type { ServiceType } from "@/types";
 
-export type ChoirStatus =
-  | "CHOIR_REQUIRED"
-  | "NO_CHOIR_NEEDED"
-  | "SAID_SERVICE_ONLY"
-  | "NO_SERVICE";
-
 /**
- * Resolve the music-list service label for a (serviceType, choirStatus) pair.
+ * Resolve the music-list service label for a serviceType.
  *
- * Said variants:
- *  - SUNG_EUCHARIST + SAID_SERVICE_ONLY → "Said Mass"
- *  - CHORAL_EVENSONG + SAID_SERVICE_ONLY → "Said Evensong"
- *  - SAID_EUCHARIST is always "Said Mass" regardless of status
+ * The choirStatus concept has been removed in Phase D — service type alone
+ * now determines the label. SAID_EUCHARIST services use the "Said Mass" label
+ * natively; "Sung Mass" etc. come from the serviceType enum.
  */
 export function serviceTypeLabelFor(
   serviceType: ServiceType,
-  choirStatus: ChoirStatus,
 ): string {
-  const isSaid = choirStatus === "SAID_SERVICE_ONLY";
-
   switch (serviceType) {
     case "SUNG_EUCHARIST":
-      return isSaid ? "Said Mass" : "Sung Mass";
+      return "Sung Mass";
     case "CHORAL_EVENSONG":
-      return isSaid ? "Said Evensong" : "Choral Evensong";
+      return "Choral Evensong";
     case "SAID_EUCHARIST":
       return "Said Mass";
     case "CHORAL_MATINS":

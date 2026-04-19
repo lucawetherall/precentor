@@ -9,7 +9,6 @@ import { ServiceMusicList } from './service-music-list'
 import { ReadingsByLectionary } from './readings-by-lectionary'
 import { ServiceNav } from './service-nav'
 import { formatLiturgicalDayName } from '@/lib/liturgical-display'
-import { CHOIR_STATUS_LABELS, CHOIR_STATUS_PILL_CLASSES } from '../choir-status-constants'
 
 interface Reading {
   id: string
@@ -23,7 +22,6 @@ interface ServiceInfo {
   id: string
   serviceType: string
   time: string | null
-  choirStatus: string
 }
 
 interface MemberServiceViewProps {
@@ -82,16 +80,6 @@ export function MemberServiceView({
         </div>
       )}
 
-      {/* Choir status badge (all roles, only if service exists and non-default) */}
-      {service && service.choirStatus !== 'CHOIR_REQUIRED' && (
-        <div className="mb-4">
-          <span
-            className={`small-caps text-xs px-2 py-1 ${CHOIR_STATUS_PILL_CLASSES[service.choirStatus] ?? 'bg-muted text-muted-foreground border border-border'}`}
-          >
-            {CHOIR_STATUS_LABELS[service.choirStatus] ?? service.choirStatus}
-          </span>
-        </div>
-      )}
 
       {/* Service header */}
       <div className="flex items-start gap-4 mb-6">

@@ -36,57 +36,47 @@ describe('computeMusicStatus', () => {
 })
 
 describe('computeRotaStatus', () => {
-  it('returns "empty" when there are no confirmed rota entries', () => {
+  it('returns "empty" when there are no rota entries', () => {
     expect(computeRotaStatus([])).toBe('empty')
   })
 
   it('returns "empty" when entries exist but none are confirmed', () => {
     expect(
       computeRotaStatus([
-        { confirmed: false, voicePart: 'SOPRANO' },
-        { confirmed: false, voicePart: 'ALTO' },
+        { confirmed: false },
+        { confirmed: false },
       ])
     ).toBe('empty')
   })
 
-  it('returns "partial" when at least one voice part has no confirmed singer', () => {
+  it('returns "partial" when some entries are confirmed', () => {
     expect(
       computeRotaStatus([
-        { confirmed: true, voicePart: 'SOPRANO' },
-        { confirmed: true, voicePart: 'ALTO' },
-        { confirmed: true, voicePart: 'TENOR' },
-        // BASS missing
+        { confirmed: true },
+        { confirmed: false },
       ])
     ).toBe('partial')
   })
 
-  it('returns "ready" when every voice part has at least one confirmed singer', () => {
+  it('returns "partial" when at least one entry is confirmed', () => {
     expect(
       computeRotaStatus([
-        { confirmed: true, voicePart: 'SOPRANO' },
-        { confirmed: true, voicePart: 'ALTO' },
-        { confirmed: true, voicePart: 'TENOR' },
-        { confirmed: true, voicePart: 'BASS' },
-      ])
-    ).toBe('ready')
-  })
-
-  it('ignores unconfirmed entries when computing coverage', () => {
-    expect(
-      computeRotaStatus([
-        { confirmed: true, voicePart: 'SOPRANO' },
-        { confirmed: false, voicePart: 'ALTO' },
-        { confirmed: true, voicePart: 'TENOR' },
-        { confirmed: true, voicePart: 'BASS' },
+        { confirmed: true },
+        { confirmed: true },
+        { confirmed: true },
+        { confirmed: false },
       ])
     ).toBe('partial')
   })
 
-  it('treats members with no voice part as not counting toward any part', () => {
+  it('returns "partial" when all entries are confirmed', () => {
     expect(
       computeRotaStatus([
-        { confirmed: true, voicePart: null },
+        { confirmed: true },
+        { confirmed: true },
+        { confirmed: true },
+        { confirmed: true },
       ])
-    ).toBe('empty')
+    ).toBe('partial')
   })
 })

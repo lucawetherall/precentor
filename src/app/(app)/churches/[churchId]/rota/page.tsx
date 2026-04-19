@@ -21,7 +21,7 @@ export default async function RotaPage({ params }: Props) {
   const today = format(new Date(), "yyyy-MM-dd");
 
   interface ServiceRow { serviceId: string; serviceType: string; time: string | null; date: string; cwName: string; }
-  interface MemberRow { userId: string; name: string | null; email: string; voicePart: string | null; role: string; }
+  interface MemberRow { userId: string; name: string | null; email: string; role: string; }
   interface AvailabilityRow { id: string; userId: string; serviceId: string; status: string; }
   interface RotaRow { id: string; serviceId: string; userId: string; confirmed: boolean; catalogRoleId: string | null; }
   let upcomingServices: ServiceRow[] = [];
@@ -52,7 +52,6 @@ export default async function RotaPage({ params }: Props) {
         userId: users.id,
         name: users.name,
         email: users.email,
-        voicePart: churchMemberships.voicePart,
         role: churchMemberships.role,
       })
       .from(churchMemberships)

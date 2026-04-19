@@ -19,7 +19,6 @@ interface Member {
   userId: string;
   name: string | null;
   email: string;
-  voicePart: string | null;
   role: string;
 }
 
@@ -114,10 +113,10 @@ export function RotaGrid({
     }
   }, [rota, churchId, addToast]);
 
-  // Group members by voice part
+  // Group members by role
   const grouped: Record<string, Member[]> = {};
   for (const m of members) {
-    const part = m.voicePart || "Unassigned";
+    const part = m.role || "Member";
     if (!grouped[part]) grouped[part] = [];
     grouped[part].push(m);
   }

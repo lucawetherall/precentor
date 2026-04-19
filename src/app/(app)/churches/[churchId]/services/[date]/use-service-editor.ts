@@ -12,7 +12,6 @@ export interface ServiceSettings {
   eucharisticPrayer: string | null;
   eucharisticPrayerId: string | null;
   includeReadingText: boolean;
-  choirStatus: string;
   defaultMassSettingId: string | null;
   collectId: string | null;
   collectOverride: string | null;

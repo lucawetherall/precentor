@@ -17,9 +17,6 @@ export const serviceUpdateSchema = z.object({
   collectOverride: z.string().max(2000).nullable().optional(),
   includeReadingText: z.boolean().optional(),
   sheetMode: z.string().max(50).optional(),
-  choirStatus: z.enum([
-    "CHOIR_REQUIRED", "NO_CHOIR_NEEDED", "SAID_SERVICE_ONLY", "NO_SERVICE",
-  ]).optional(),
   defaultMassSettingId: z.string().uuid().nullable().optional(),
   liturgicalOverrides: z.record(z.string(), z.string()).optional(),
 }).strict();

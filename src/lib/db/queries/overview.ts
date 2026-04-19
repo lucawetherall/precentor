@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import {
   liturgicalDays, services, musicSlots, availability,
-  rotaEntries, churchMemberships, hymns, anthems,
+  rotaEntries, hymns, anthems,
 } from "@/lib/db/schema";
 import { eq, and, gte, asc, inArray, sql } from "drizzle-orm";
 import { format } from "date-fns";
@@ -61,13 +61,8 @@ export async function getRotaSummary(serviceIds: string[], churchId: string) {
   const entries = await db
     .select({
       serviceId: rotaEntries.serviceId,
-      voicePart: churchMemberships.voicePart,
     })
     .from(rotaEntries)
-    .innerJoin(churchMemberships, and(
-      eq(rotaEntries.userId, churchMemberships.userId),
-      eq(churchMemberships.churchId, churchId)
-    ))
     .where(inArray(rotaEntries.serviceId, serviceIds));
 
   const result = new Map<string, { total: number; byPart: Record<string, number> }>();
@@ -78,8 +73,6 @@ export async function getRotaSummary(serviceIds: string[], churchId: string) {
   for (const entry of entries) {
     const summary = result.get(entry.serviceId)!;
     summary.total++;
-    const part = entry.voicePart || "Unassigned";
-    summary.byPart[part] = (summary.byPart[part] || 0) + 1;
   }
 
   return result;

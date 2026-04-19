@@ -68,7 +68,6 @@ export async function PATCH(
   if ("collectId" in data) updates.collectId = data.collectId;
   if ("collectOverride" in data) updates.collectOverride = data.collectOverride;
   if ("defaultMassSettingId" in data) updates.defaultMassSettingId = data.defaultMassSettingId;
-  if ("choirStatus" in data) updates.choirStatus = data.choirStatus;
   if ("serviceType" in data) updates.serviceType = data.serviceType;
   if ("time" in data) updates.time = data.time;
   if ("status" in data) updates.status = data.status;

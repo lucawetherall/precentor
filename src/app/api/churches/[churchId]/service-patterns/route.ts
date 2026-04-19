@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { churchServicePatterns, serviceTypeEnum } from "@/lib/db/schema";
+import { churchServicePatterns } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(
@@ -33,14 +33,14 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body: { dayOfWeek?: unknown; serviceType?: unknown; time?: unknown; enabled?: unknown; presetId?: unknown };
+  let body: { dayOfWeek?: unknown; enabled?: unknown; presetId?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { dayOfWeek, serviceType, time, enabled, presetId } = body;
+  const { dayOfWeek, enabled, presetId } = body;
 
   if (!presetId || typeof presetId !== "string") {
     return NextResponse.json({ error: "presetId is required" }, { status: 400 });
@@ -57,25 +57,12 @@ export async function POST(
     );
   }
 
-  if (
-    !serviceType ||
-    typeof serviceType !== "string" ||
-    !(serviceTypeEnum.enumValues as readonly string[]).includes(serviceType)
-  ) {
-    return NextResponse.json(
-      { error: `serviceType must be one of: ${serviceTypeEnum.enumValues.join(", ")}` },
-      { status: 400 },
-    );
-  }
-
   try {
     const [pattern] = await db
       .insert(churchServicePatterns)
       .values({
         churchId,
         dayOfWeek,
-        serviceType: serviceType as (typeof serviceTypeEnum.enumValues)[number],
-        time: typeof time === "string" ? time : null,
         enabled: typeof enabled === "boolean" ? enabled : true,
         presetId: presetId as string,
       })

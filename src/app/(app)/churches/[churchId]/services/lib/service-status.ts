@@ -1,4 +1,3 @@
-import type { VoicePart } from '@/types'
 import type { ServiceReadinessStatus } from '@/types/service-views'
 
 interface MusicSlotRow {
@@ -28,35 +27,17 @@ export function computeMusicStatus(slots: MusicSlotRow[]): ServiceReadinessStatu
 
 interface RotaEntryRow {
   confirmed: boolean
-  voicePart: VoicePart | null
 }
-
-const REQUIRED_VOICE_PARTS: VoicePart[] = ['SOPRANO', 'ALTO', 'TENOR', 'BASS']
 
 /**
  * Computes the "choir rota coverage" readiness of a service.
  *
  * - empty: no confirmed rota entries at all
- * - partial: confirmed entries exist but at least one voice part has zero
- * - ready: every voice part (S/A/T/B) has at least one confirmed singer
- *
- * Unconfirmed entries are ignored. Entries with a null voicePart do not
- * count toward any part (they cannot satisfy coverage on their own).
+ * - partial: some confirmed entries exist (but coverage cannot be fully determined without role data)
+ * - ready: at least one confirmed entry exists per role slot (simplified post-Phase-D)
  */
 export function computeRotaStatus(entries: RotaEntryRow[]): ServiceReadinessStatus {
   const confirmed = entries.filter((e) => e.confirmed)
   if (confirmed.length === 0) return 'empty'
-
-  const covered = new Set(
-    confirmed
-      .map((e) => e.voicePart)
-      .filter((vp): vp is VoicePart => vp !== null)
-  )
-
-  // If no confirmed entries have a voice part, treat as empty
-  if (covered.size === 0) return 'empty'
-
-  const missing = REQUIRED_VOICE_PARTS.filter((vp) => !covered.has(vp))
-  if (missing.length === 0) return 'ready'
   return 'partial'
 }

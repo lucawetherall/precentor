@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 
 // ─── Enums ───────────────────────────────────────────────────
 export const memberRoleEnum = pgEnum("member_role", ["ADMIN", "EDITOR", "MEMBER"]);
-export const voicePartEnum = pgEnum("voice_part", ["SOPRANO", "ALTO", "TENOR", "BASS"]);
+// voicePartEnum removed in Phase D — replaced by churchMemberRoles
 export const liturgicalSeasonEnum = pgEnum("liturgical_season", [
   "ADVENT", "CHRISTMAS", "EPIPHANY", "LENT", "HOLY_WEEK", "EASTER",
   "ASCENSION", "PENTECOST", "TRINITY", "ORDINARY", "KINGDOM",
@@ -34,12 +34,7 @@ export const canticleTypeEnum = pgEnum("canticle_type", [
 export const availabilityStatusEnum = pgEnum("availability_status", [
   "AVAILABLE", "UNAVAILABLE", "TENTATIVE",
 ]);
-export const choirStatusEnum = pgEnum("choir_status", [
-  "CHOIR_REQUIRED",
-  "NO_CHOIR_NEEDED",
-  "SAID_SERVICE_ONLY",
-  "NO_SERVICE",
-]);
+// choirStatusEnum removed in Phase D — superseded by serviceRoleSlots
 export const roleCategoryEnum = pgEnum("role_category", [
   "VOICE",
   "MUSIC_DIRECTION",
@@ -86,7 +81,6 @@ export const churchMemberships = pgTable("church_memberships", {
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
   role: memberRoleEnum("role").default("MEMBER").notNull(),
-  voicePart: voicePartEnum("voice_part"),
   permissions: json("permissions").default({}).$type<Record<string, boolean>>(),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
 }, (t) => [
@@ -166,7 +160,6 @@ export const services = pgTable("services", {
   includeReadingText: boolean("include_reading_text").default(true).notNull(),
   sheetMode: text("sheet_mode").default("summary").notNull(),
   liturgicalOverrides: json("liturgical_overrides").default({}).$type<Record<string, string>>(),
-  choirStatus: choirStatusEnum("choir_status").default("CHOIR_REQUIRED").notNull(),
   presetId: uuid("preset_id").references(() => churchServicePresets.id, { onDelete: "set null" }),
   defaultMassSettingId: uuid("default_mass_setting_id").references(() => massSettings.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -343,12 +336,10 @@ export const churchServicePatterns = pgTable("church_service_patterns", {
   id: uuid("id").primaryKey().defaultRandom(),
   churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
   dayOfWeek: integer("day_of_week").notNull(),  // 0=Sun, 6=Sat
-  serviceType: serviceTypeEnum("service_type").notNull(),
-  time: text("time"),  // e.g. "10:00"
   enabled: boolean("enabled").default(true).notNull(),
   presetId: uuid("preset_id").notNull().references(() => churchServicePresets.id, { onDelete: "restrict" }),
 }, (t) => [
-  uniqueIndex("church_service_pattern_unique").on(t.churchId, t.dayOfWeek, t.serviceType),
+  uniqueIndex("church_service_pattern_unique").on(t.churchId, t.dayOfWeek, t.presetId),
 ]);
 
 // ─── Operational: AI usage quota ─────────────────────────────

@@ -21,7 +21,7 @@ import {
   musicSlotRowsForService,
   type MusicSlotRow,
 } from "./label-mapping";
-import { serviceTypeLabelFor, type ChoirStatus } from "./service-type-label";
+import { serviceTypeLabelFor } from "./service-type-label";
 import { formatPeriodSubtitle } from "./period-subtitle";
 
 /**
@@ -61,7 +61,6 @@ export async function buildMusicListData(
       serviceId: services.id,
       serviceType: services.serviceType,
       time: services.time,
-      choirStatus: services.choirStatus,
       notes: services.notes,
       date: liturgicalDays.date,
       cwName: liturgicalDays.cwName,
@@ -81,10 +80,7 @@ export async function buildMusicListData(
     )
     .orderBy(asc(liturgicalDays.date), asc(services.time));
 
-  // Drop services where the choir status explicitly says "no service".
-  // Silent filter — this is expected/normal behaviour, not worth logging
-  // per-occurrence (would flood logs on churches with many NO_SERVICE days).
-  const visible = serviceRows.filter((r) => r.choirStatus !== "NO_SERVICE");
+  const visible = serviceRows;
 
   if (visible.length === 0) {
     return {
@@ -197,11 +193,9 @@ export async function buildMusicListData(
 
   for (const row of visible) {
     const slots = slotsByService.get(row.serviceId) ?? [];
-    const choirStatus = row.choirStatus as ChoirStatus;
-    const isSaid = choirStatus === "SAID_SERVICE_ONLY";
+    const isSaid = row.serviceType === "SAID_EUCHARIST";
     const serviceTypeLabel = serviceTypeLabelFor(
       row.serviceType as ServiceType,
-      choirStatus,
     );
 
     const fieldSet: MusicListFieldSet = (row.musicListFieldSet as MusicListFieldSet | null) ?? "CHORAL";

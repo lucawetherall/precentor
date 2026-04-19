@@ -60,7 +60,6 @@ interface Service {
   eucharisticPrayer: string | null;
   eucharisticPrayerId: string | null;
   includeReadingText: boolean;
-  choirStatus: string;
   defaultMassSettingId: string | null;
   collectId: string | null;
   collectOverride: string | null;
@@ -144,7 +143,6 @@ export function ServicePlanner({
           eucharisticPrayer: service.eucharisticPrayer ?? null,
           eucharisticPrayerId: service.eucharisticPrayerId ?? null,
           includeReadingText: service.includeReadingText ?? true,
-          choirStatus: service.choirStatus ?? "CHOIR_REQUIRED",
           defaultMassSettingId: service.defaultMassSettingId ?? null,
           collectId: service.collectId ?? null,
           collectOverride: service.collectOverride ?? null,
@@ -364,7 +362,6 @@ export function ServicePlanner({
             eucharisticPrayer: activeService.eucharisticPrayer,
             eucharisticPrayerId: activeService.eucharisticPrayerId,
             includeReadingText: activeService.includeReadingText,
-            choirStatus: activeService.choirStatus,
             defaultMassSettingId: activeService.defaultMassSettingId,
             collectId: activeService.collectId,
             collectOverride: activeService.collectOverride,

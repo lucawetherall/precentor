@@ -2,6 +2,7 @@ import { getDay, parseISO } from "date-fns";
 import { db } from "@/lib/db";
 import {
   churchServicePatterns,
+  churchServicePresets,
   services,
   serviceSections,
   musicSlots,
@@ -18,10 +19,19 @@ export async function generateServicesForChurch(
   fromDate: string,
   toDate: string,
 ): Promise<{ created: number }> {
-  // 1. Load enabled patterns for the church
+  // 1. Load enabled patterns for the church, joining their preset for serviceType+time
   const patterns = await db
-    .select()
+    .select({
+      id: churchServicePatterns.id,
+      churchId: churchServicePatterns.churchId,
+      dayOfWeek: churchServicePatterns.dayOfWeek,
+      presetId: churchServicePatterns.presetId,
+      enabled: churchServicePatterns.enabled,
+      serviceType: churchServicePresets.serviceType,
+      time: churchServicePresets.defaultTime,
+    })
     .from(churchServicePatterns)
+    .innerJoin(churchServicePresets, eq(churchServicePatterns.presetId, churchServicePresets.id))
     .where(
       and(
         eq(churchServicePatterns.churchId, churchId),
@@ -70,7 +80,7 @@ export async function generateServicesForChurch(
           liturgicalDayId: day.id,
           serviceType: pattern.serviceType,
           time: pattern.time ?? null,
-          choirStatus: "CHOIR_REQUIRED",
+          presetId: pattern.presetId,
         })
         .onConflictDoNothing()
         .returning({ id: services.id });

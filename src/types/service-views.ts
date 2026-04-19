@@ -14,7 +14,6 @@ export interface ServiceSummary {
   serviceType: string
   time: string | null
   status: string
-  choirStatus: string
   userAvailability: 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null
   musicPreview: MusicSlotPreview[]
   musicStatus: ServiceReadinessStatus

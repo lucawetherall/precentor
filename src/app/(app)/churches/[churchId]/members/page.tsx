@@ -6,7 +6,6 @@ import { eq, and } from "drizzle-orm";
 import { InviteMemberForm } from "./invite-form";
 import { MembersTable } from "./members-table";
 import { hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
-import { useRoleSlotsModel } from "@/lib/feature-flags";
 import type { MemberRole } from "@/types";
 
 interface Props {
@@ -22,7 +21,6 @@ export default async function MembersPage({ params }: Props) {
   interface MemberRow {
     id: string;
     role: string;
-    voicePart: string | null;
     joinedAt: Date;
     userName: string | null;
     userEmail: string;
@@ -30,7 +28,6 @@ export default async function MembersPage({ params }: Props) {
   }
   let members: MemberRow[] = [];
   let userRole: MemberRole = "MEMBER";
-  const roleSlotsEnabled = useRoleSlotsModel();
 
   try {
     const dbUser = await db
@@ -60,7 +57,6 @@ export default async function MembersPage({ params }: Props) {
       .select({
         id: churchMemberships.id,
         role: churchMemberships.role,
-        voicePart: churchMemberships.voicePart,
         joinedAt: churchMemberships.joinedAt,
         userName: users.name,
         userEmail: users.email,
@@ -70,40 +66,36 @@ export default async function MembersPage({ params }: Props) {
       .innerJoin(users, eq(churchMemberships.userId, users.id))
       .where(eq(churchMemberships.churchId, churchId));
 
-    if (roleSlotsEnabled) {
-      const memberRoles = await db
-        .select({
-          membershipId: churchMemberships.id,
-          id: churchMemberRoles.id,
-          catalogRoleId: churchMemberRoles.catalogRoleId,
-          name: roleCatalog.defaultName,
-          isPrimary: churchMemberRoles.isPrimary,
-        })
-        .from(churchMemberRoles)
-        .innerJoin(roleCatalog, eq(roleCatalog.id, churchMemberRoles.catalogRoleId))
-        .innerJoin(churchMemberships, and(
-          eq(churchMemberships.userId, churchMemberRoles.userId),
-          eq(churchMemberships.churchId, churchMemberRoles.churchId),
-        ))
-        .where(eq(churchMemberRoles.churchId, churchId));
+    const memberRoles = await db
+      .select({
+        membershipId: churchMemberships.id,
+        id: churchMemberRoles.id,
+        catalogRoleId: churchMemberRoles.catalogRoleId,
+        name: roleCatalog.defaultName,
+        isPrimary: churchMemberRoles.isPrimary,
+      })
+      .from(churchMemberRoles)
+      .innerJoin(roleCatalog, eq(roleCatalog.id, churchMemberRoles.catalogRoleId))
+      .innerJoin(churchMemberships, and(
+        eq(churchMemberships.userId, churchMemberRoles.userId),
+        eq(churchMemberships.churchId, churchMemberRoles.churchId),
+      ))
+      .where(eq(churchMemberRoles.churchId, churchId));
 
-      const rolesByMembershipId = memberRoles.reduce<Record<string, typeof memberRoles>>((acc, r) => {
-        (acc[r.membershipId] ??= []).push(r);
-        return acc;
-      }, {});
+    const rolesByMembershipId = memberRoles.reduce<Record<string, typeof memberRoles>>((acc, r) => {
+      (acc[r.membershipId] ??= []).push(r);
+      return acc;
+    }, {});
 
-      members = baseMembers.map(({ userId: _userId, ...m }) => ({
-        ...m,
-        roles: (rolesByMembershipId[m.id] ?? []).map((r) => ({
-          id: r.id,
-          catalogRoleId: r.catalogRoleId,
-          name: r.name,
-          isPrimary: r.isPrimary,
-        })),
-      }));
-    } else {
-      members = baseMembers.map(({ userId: _userId, ...m }) => m);
-    }
+    members = baseMembers.map(({ userId: _userId, ...m }) => ({
+      ...m,
+      roles: (rolesByMembershipId[m.id] ?? []).map((r) => ({
+        id: r.id,
+        catalogRoleId: r.catalogRoleId,
+        name: r.name,
+        isPrimary: r.isPrimary,
+      })),
+    }));
   } catch (err) { console.error("Failed to load data:", err); }
 
   const isAdmin = hasMinRole(userRole, "ADMIN");
@@ -118,7 +110,6 @@ export default async function MembersPage({ params }: Props) {
         initialMembers={members}
         churchId={churchId}
         isAdmin={isAdmin}
-        roleSlotsEnabled={roleSlotsEnabled}
       />
     </div>
   );
