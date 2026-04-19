@@ -14,6 +14,8 @@ import { DateRangeControls } from "./date-range-controls";
 import { usePlanningGrid, rowKey } from "./use-planning-grid";
 import { PlanningCell } from "./planning-cell";
 import { getColumnSearch } from "./column-search";
+import { Button } from "@/components/ui/button";
+import { CsvImportModal } from "./csv-import-modal";
 
 // ─── API response types ───────────────────────────────────────
 
@@ -337,6 +339,7 @@ interface Props {
 export function PlanningGrid({ churchId, from, to }: Props) {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [csvOpen, setCsvOpen] = useState(false);
 
   const { state, dispatch, getCell } = usePlanningGrid([]);
 
@@ -547,7 +550,10 @@ export function PlanningGrid({ churchId, from, to }: Props) {
 
   return (
     <div className="overflow-x-auto">
-      <DateRangeControls from={from} to={to} />
+      <div className="flex items-center gap-2 mb-1">
+        <DateRangeControls from={from} to={to} />
+        <Button size="sm" variant="outline" onClick={() => setCsvOpen(true)}>Import CSV</Button>
+      </div>
 
       {/* Save status indicator */}
       <div className="text-xs text-muted-foreground h-5 mb-2">
@@ -555,6 +561,14 @@ export function PlanningGrid({ churchId, from, to }: Props) {
         {state.saveStatus === "saved" && "Saved ✓"}
         {state.saveStatus === "error" && <span className="text-destructive">Error saving</span>}
       </div>
+
+      {csvOpen && (
+        <CsvImportModal
+          churchId={churchId}
+          onClose={() => setCsvOpen(false)}
+          onImported={() => window.location.reload()}
+        />
+      )}
 
       <table className="w-full text-sm border-collapse">
         <thead>
