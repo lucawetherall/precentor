@@ -167,6 +167,7 @@ export const musicSlots = pgTable("music_slots", {
   responsesSettingId: uuid("responses_setting_id").references(() => responsesSettings.id),
   freeText: text("free_text"),
   notes: text("notes"),
+  psalmChant: text("psalm_chant"),  // NEW — populated only on PSALM slots
   verseCount: integer("verse_count"),
   selectedVerses: integer("selected_verses").array(),
 }, (t) => [
