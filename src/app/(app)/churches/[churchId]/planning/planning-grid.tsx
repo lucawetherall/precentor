@@ -352,69 +352,7 @@ export function PlanningGrid({ churchId, from, to }: Props) {
         return res.json() as Promise<ApiResponse>;
       })
       .then((data) => {
-        const daysById = new Map<string, ApiDay>(data.days.map((d) => [d.id, d]));
-
-        const slotsByService = new Map<string, ApiSlot[]>();
-        for (const slot of data.slots) {
-          const existing = slotsByService.get(slot.serviceId) ?? [];
-          existing.push(slot);
-          slotsByService.set(slot.serviceId, existing);
-        }
-
-        const readingsByDay = new Map<string, ApiReading[]>();
-        for (const reading of data.readings) {
-          const existing = readingsByDay.get(reading.liturgicalDayId) ?? [];
-          existing.push(reading);
-          readingsByDay.set(reading.liturgicalDayId, existing);
-        }
-
-        const realRows: PlanningRow[] = [];
-        for (const svc of data.services) {
-          const day = daysById.get(svc.liturgicalDayId);
-          if (!day) continue;
-          realRows.push(buildRealRow(svc, day, slotsByService, readingsByDay));
-        }
-
-        const existingRefs: ExistingServiceRef[] = data.services.map((s) => {
-          const day = daysById.get(s.liturgicalDayId);
-          return {
-            date: day?.date ?? "",
-            serviceType: s.serviceType as ExistingServiceRef["serviceType"],
-          };
-        }).filter((r) => r.date !== "");
-
-        const ghosts = computeGhostRows({
-          from,
-          to,
-          patterns: data.patterns,
-          existingServices: existingRefs,
-        });
-
-        const ghostRows: PlanningRow[] = ghosts.map((g) => ({
-          kind: "ghost",
-          ghostId: g.ghostId,
-          date: g.date,
-          serviceType: g.serviceType,
-          time: g.time,
-          cells: {
-            introit: emptyCell(),
-            hymns: emptyCell(),
-            setting: emptyCell(),
-            psalm: emptyCell(),
-            chant: emptyCell(),
-            respAccl: emptyCell(),
-            anthem: emptyCell(),
-            voluntary: emptyCell(),
-            info: emptyCell(),
-          },
-          readings: [],
-        }));
-
-        const allRows = [...realRows, ...ghostRows].sort((a, b) =>
-          rowSortKey(a).localeCompare(rowSortKey(b))
-        );
-
-        dispatch({ type: "SET_ROWS", rows: allRows });
+        dispatch({ type: "SET_ROWS", rows: buildRowsFromApi(data, from, to) });
         setLoading(false);
       })
       .catch((err: unknown) => {
