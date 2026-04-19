@@ -27,11 +27,11 @@ function makeReq(body: unknown) {
 describe("POST rota", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "editor1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "editor1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
   });
 
   it("returns 403 for non-editors", async () => {
-    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
+    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const res = await POST(makeReq({ userId: "u1", serviceId: "s1", confirmed: true }), {
       params: Promise.resolve({ churchId: "c1" }),
     });

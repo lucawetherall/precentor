@@ -17,13 +17,13 @@ describe("GET /api/churches/[churchId]/roles", () => {
   it("returns 403 when not a member", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({
       error: new Response("Forbidden", { status: 403 }),
-    });
+    } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const res = await GET(new Request("http://x"), { params: Promise.resolve({ churchId: "c1" }) });
     expect(res.status).toBe(403);
   });
 
   it("returns catalog with memberCount joined per role", async () => {
-    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const mockRows = [
       { id: "r1", key: "SOPRANO", defaultName: "Soprano", category: "VOICE", rotaEligible: true, institutional: false, defaultExclusive: false, defaultMinCount: 1, defaultMaxCount: null, displayOrder: 100, memberCount: 3 },
     ];

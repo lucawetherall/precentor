@@ -34,7 +34,7 @@ describe("POST availability", () => {
       user: { id: "u1" },
       membership: { role: "MEMBER" },
       error: null,
-    });
+    } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
   });
 
   it("returns 400 when serviceId is missing", async () => {

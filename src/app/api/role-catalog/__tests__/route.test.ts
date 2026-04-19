@@ -18,13 +18,13 @@ describe("GET /api/role-catalog", () => {
     vi.mocked(requireAuth).mockResolvedValue({
       user: null,
       error: new Response("Unauthorized", { status: 401 }),
-    });
+    } as unknown as Awaited<ReturnType<typeof requireAuth>>);
     const res = await GET();
     expect(res.status).toBe(401);
   });
 
   it("returns the catalog ordered by displayOrder when authenticated", async () => {
-    vi.mocked(requireAuth).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireAuth).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireAuth>>);
     const createdAt = new Date().toISOString();
     const mockRows = [
       { id: "r1", key: "SOPRANO", defaultName: "Soprano", category: "VOICE", rotaEligible: true, institutional: false, defaultExclusive: false, defaultMinCount: 1, defaultMaxCount: null, displayOrder: 100, createdAt },

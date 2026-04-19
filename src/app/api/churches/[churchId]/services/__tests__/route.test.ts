@@ -30,15 +30,16 @@ describe("POST /api/churches/[churchId]/services", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 403 for non-editors", async () => {
-    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
+    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const res = await POST(makeReq({ liturgicalDayId: "d1", serviceType: "SUNG_EUCHARIST" }), { params: Promise.resolve({ churchId: "c1" }) });
     expect(res.status).toBe(403);
   });
 
   it("creates a service without presetId and returns 201", async () => {
-    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const created = { id: "svc1", churchId: "c1", liturgicalDayId: "d1", serviceType: "SUNG_EUCHARIST" };
-    vi.mocked(db.transaction).mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(db.transaction).mockImplementation(async (fn: any) => {
       const tx = {
         insert: vi.fn().mockReturnValue({
           values: () => ({ returning: () => Promise.resolve([created]) }),
@@ -53,13 +54,14 @@ describe("POST /api/churches/[churchId]/services", () => {
   });
 
   it("snapshots preset slots when presetId is provided", async () => {
-    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const created = { id: "svc1", churchId: "c1", liturgicalDayId: "d1", serviceType: "SUNG_EUCHARIST", presetId: "p1" };
     const insertMock = vi.fn();
     const presetSlots = [
       { id: "psl1", catalogRoleId: "r1", minCount: 1, maxCount: 4, exclusive: false, displayOrder: 0 },
     ];
-    vi.mocked(db.transaction).mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(db.transaction).mockImplementation(async (fn: any) => {
       const tx = {
         insert: insertMock.mockReturnValue({
           values: vi.fn().mockReturnValue({ returning: () => Promise.resolve([created]) }),

@@ -22,7 +22,7 @@ describe("requireSuperAdmin", () => {
     vi.mocked(requireAuth).mockResolvedValue({
       user: null,
       error: new Response("Unauthorized", { status: 401 }),
-    });
+    } as unknown as Awaited<ReturnType<typeof requireAuth>>);
     const result = await requireSuperAdmin();
     expect(result.error).toBeTruthy();
     expect((result.error as Response).status).toBe(401);
@@ -33,7 +33,7 @@ describe("requireSuperAdmin", () => {
     vi.mocked(requireAuth).mockResolvedValue({
       user: { id: "u1", email: "user@example.com" },
       error: null,
-    });
+    } as unknown as Awaited<ReturnType<typeof requireAuth>>);
     const result = await requireSuperAdmin();
     expect(result.error).toBeTruthy();
     expect((result.error as Response).status).toBe(403);
@@ -44,7 +44,7 @@ describe("requireSuperAdmin", () => {
     vi.mocked(requireAuth).mockResolvedValue({
       user: { id: "u1", email: "notadmin@example.com" },
       error: null,
-    });
+    } as unknown as Awaited<ReturnType<typeof requireAuth>>);
     const result = await requireSuperAdmin();
     expect(result.error).toBeTruthy();
     expect((result.error as Response).status).toBe(403);
@@ -53,7 +53,7 @@ describe("requireSuperAdmin", () => {
   it("returns user when email is in allowlist", async () => {
     process.env.SUPER_ADMIN_EMAILS = "admin@example.com,other@example.com";
     const user = { id: "u1", email: "admin@example.com" };
-    vi.mocked(requireAuth).mockResolvedValue({ user, error: null });
+    vi.mocked(requireAuth).mockResolvedValue({ user, error: null } as unknown as Awaited<ReturnType<typeof requireAuth>>);
     const result = await requireSuperAdmin();
     expect(result.error).toBeNull();
     expect(result.user).toEqual(user);
@@ -62,7 +62,7 @@ describe("requireSuperAdmin", () => {
   it("trims whitespace from allowlist entries", async () => {
     process.env.SUPER_ADMIN_EMAILS = " admin@example.com , other@example.com ";
     const user = { id: "u1", email: "admin@example.com" };
-    vi.mocked(requireAuth).mockResolvedValue({ user, error: null });
+    vi.mocked(requireAuth).mockResolvedValue({ user, error: null } as unknown as Awaited<ReturnType<typeof requireAuth>>);
     const result = await requireSuperAdmin();
     expect(result.error).toBeNull();
   });

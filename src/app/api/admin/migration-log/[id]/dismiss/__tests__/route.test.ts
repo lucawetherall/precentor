@@ -14,13 +14,13 @@ describe("POST /api/admin/migration-log/[id]/dismiss", () => {
     vi.mocked(requireSuperAdmin).mockResolvedValue({
       user: null,
       error: new Response(JSON.stringify({ error: "Super-admin only", code: "FORBIDDEN" }), { status: 403 }),
-    });
+    } as unknown as Awaited<ReturnType<typeof requireSuperAdmin>>);
     const res = await POST(new Request("http://x"), { params: Promise.resolve({ id: "log1" }) });
     expect(res.status).toBe(403);
   });
 
   it("returns 404 when log entry not found", async () => {
-    vi.mocked(requireSuperAdmin).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null });
+    vi.mocked(requireSuperAdmin).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null } as unknown as Awaited<ReturnType<typeof requireSuperAdmin>>);
     vi.mocked(db.update).mockReturnValue({
       set: () => ({ where: () => ({ returning: () => Promise.resolve([]) }) }),
     } as unknown as ReturnType<typeof db.update>);
@@ -29,7 +29,7 @@ describe("POST /api/admin/migration-log/[id]/dismiss", () => {
   });
 
   it("dismisses log entry and returns 200", async () => {
-    vi.mocked(requireSuperAdmin).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null });
+    vi.mocked(requireSuperAdmin).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null } as unknown as Awaited<ReturnType<typeof requireSuperAdmin>>);
     const updated = { id: "log1", dismissedAt: new Date().toISOString() };
     vi.mocked(db.update).mockReturnValue({
       set: () => ({ where: () => ({ returning: () => Promise.resolve([updated]) }) }),

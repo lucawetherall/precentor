@@ -14,7 +14,7 @@ describe("GET /api/admin/migration-log", () => {
     vi.mocked(requireSuperAdmin).mockResolvedValue({
       user: null,
       error: new Response(JSON.stringify({ error: "Super-admin only", code: "FORBIDDEN" }), { status: 403 }),
-    });
+    } as unknown as Awaited<ReturnType<typeof requireSuperAdmin>>);
     const res = await GET(new Request("http://x/api/admin/migration-log"));
     expect(res.status).toBe(403);
   });
@@ -23,13 +23,13 @@ describe("GET /api/admin/migration-log", () => {
     vi.mocked(requireSuperAdmin).mockResolvedValue({
       user: null,
       error: new Response(JSON.stringify({ error: "Super-admin only", code: "FORBIDDEN" }), { status: 403 }),
-    });
+    } as unknown as Awaited<ReturnType<typeof requireSuperAdmin>>);
     const res = await GET(new Request("http://x/api/admin/migration-log"));
     expect(res.status).toBe(403);
   });
 
   it("returns 200 with log rows when super-admin", async () => {
-    vi.mocked(requireSuperAdmin).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null });
+    vi.mocked(requireSuperAdmin).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null } as unknown as Awaited<ReturnType<typeof requireSuperAdmin>>);
     const rows = [{ id: "l1", severity: "WARN", code: "MEMBER_NO_VOICE_PART" }];
     vi.mocked(db.select).mockReturnValue({
       from: () => ({
@@ -44,7 +44,7 @@ describe("GET /api/admin/migration-log", () => {
   });
 
   it("passes filters as query params", async () => {
-    vi.mocked(requireSuperAdmin).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null });
+    vi.mocked(requireSuperAdmin).mockResolvedValue({ user: { id: "u1", email: "admin@example.com" }, error: null } as unknown as Awaited<ReturnType<typeof requireSuperAdmin>>);
     vi.mocked(db.select).mockReturnValue({
       from: () => ({
         where: () => ({ orderBy: () => Promise.resolve([]) }),

@@ -17,13 +17,13 @@ describe("GET /api/churches/[churchId]/migration-issues", () => {
   it("returns 403 for non-admins", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({
       error: new Response("Forbidden", { status: 403 }),
-    });
+    } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const res = await GET(new Request("http://x"), { params: Promise.resolve({ churchId: "c1" }) });
     expect(res.status).toBe(403);
   });
 
   it("returns counts and entries for admin", async () => {
-    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const mockEntries = [
       { id: "e1", phase: "B", churchId: "c1", severity: "WARN", code: "PRESET_TIME_AMBIGUOUS", details: {}, dismissedAt: null, createdAt: new Date() },
       { id: "e2", phase: "B", churchId: "c1", severity: "ERROR", code: "ROTA_ENTRY_UNCLASSIFIED", details: {}, dismissedAt: null, createdAt: new Date() },
@@ -39,7 +39,7 @@ describe("GET /api/churches/[churchId]/migration-issues", () => {
   });
 
   it("returns zero counts when no issues", async () => {
-    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     vi.mocked(db.select).mockReturnValue({
       from: () => ({ where: () => Promise.resolve([]) }),
     } as unknown as ReturnType<typeof db.select>);

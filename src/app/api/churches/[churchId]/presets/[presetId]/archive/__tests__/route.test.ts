@@ -11,13 +11,13 @@ describe("POST /api/churches/[churchId]/presets/[presetId]/archive", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 403 for non-admins", async () => {
-    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
+    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const res = await POST(new Request("http://x"), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
     expect(res.status).toBe(403);
   });
 
   it("archives the preset", async () => {
-    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const archived = { id: "p1", archivedAt: new Date().toISOString() };
     vi.mocked(db.update).mockReturnValue({
       set: () => ({ where: () => ({ returning: () => Promise.resolve([archived]) }) }),
