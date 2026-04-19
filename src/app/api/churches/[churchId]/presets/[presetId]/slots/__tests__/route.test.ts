@@ -13,33 +13,33 @@ describe("POST /api/churches/[churchId]/presets/[presetId]/slots", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 403 for non-admins", async () => {
-    (requireChurchRole as any).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
+    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const res = await POST(new Request("http://x", { method: "POST", body: JSON.stringify(validSlotBody), headers: { "content-type": "application/json" } }), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
     expect(res.status).toBe(403);
   });
 
   it("returns 400 on invalid body", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const res = await POST(new Request("http://x", { method: "POST", body: JSON.stringify({ catalogRoleId: "bad" }), headers: { "content-type": "application/json" } }), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when role is not rota-eligible", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     // preset found, role not rota-eligible
-    (db.select as any)
-      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "p1" }]) }) }) })
-      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ rotaEligible: false, category: "CLERGY_PARISH" }]) }) }) });
+    vi.mocked(db.select)
+      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "p1" }]) }) }) } as unknown as ReturnType<typeof db.select>)
+      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ rotaEligible: false, category: "CLERGY_PARISH" }]) }) }) } as unknown as ReturnType<typeof db.select>);
     const res = await POST(new Request("http://x", { method: "POST", body: JSON.stringify(validSlotBody), headers: { "content-type": "application/json" } }), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
     expect(res.status).toBe(400);
     expect((await res.json()).code).toBe("ROLE_NOT_ROTA_ELIGIBLE");
   });
 
   it("returns 400 when voice role is exclusive", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
-    (db.select as any)
-      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "p1" }]) }) }) })
-      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ rotaEligible: true, category: "VOICE" }]) }) }) });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    vi.mocked(db.select)
+      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "p1" }]) }) }) } as unknown as ReturnType<typeof db.select>)
+      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ rotaEligible: true, category: "VOICE" }]) }) }) } as unknown as ReturnType<typeof db.select>);
     const exclusiveBody = { ...validSlotBody, exclusive: true, maxCount: 1 };
     const res = await POST(new Request("http://x", { method: "POST", body: JSON.stringify(exclusiveBody), headers: { "content-type": "application/json" } }), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
     expect(res.status).toBe(400);
@@ -47,14 +47,14 @@ describe("POST /api/churches/[churchId]/presets/[presetId]/slots", () => {
   });
 
   it("creates slot and returns 201", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
-    (db.select as any)
-      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "p1" }]) }) }) })
-      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ rotaEligible: true, category: "VOICE" }]) }) }) });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    vi.mocked(db.select)
+      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "p1" }]) }) }) } as unknown as ReturnType<typeof db.select>)
+      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ rotaEligible: true, category: "VOICE" }]) }) }) } as unknown as ReturnType<typeof db.select>);
     const created = { id: "sl1" };
-    (db.insert as any).mockReturnValue({
+    vi.mocked(db.insert).mockReturnValue({
       values: () => ({ returning: () => Promise.resolve([created]) }),
-    });
+    } as unknown as ReturnType<typeof db.insert>);
     const res = await POST(new Request("http://x", { method: "POST", body: JSON.stringify(validSlotBody), headers: { "content-type": "application/json" } }), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
     expect(res.status).toBe(201);
   });

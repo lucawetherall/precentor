@@ -27,11 +27,11 @@ function makeReq(body: unknown) {
 describe("POST rota", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "editor1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "editor1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
   });
 
   it("returns 403 for non-editors", async () => {
-    (requireChurchRole as any).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
+    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const res = await POST(makeReq({ userId: "u1", serviceId: "s1", confirmed: true }), {
       params: Promise.resolve({ churchId: "c1" }),
     });
@@ -55,10 +55,10 @@ describe("POST rota", () => {
   });
 
   it("returns 403 USER_LACKS_ROLE when member doesn't hold the role", async () => {
-    (db.select as any)
+    vi.mocked(db.select)
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }),
-      });
+      } as unknown as ReturnType<typeof db.select>);
     const res = await POST(makeReq({ userId: "u1", serviceId: "s1", confirmed: true, catalogRoleId: "r1" }), {
       params: Promise.resolve({ churchId: "c1" }),
     });
@@ -68,15 +68,15 @@ describe("POST rota", () => {
   });
 
   it("returns 404 SLOT_NOT_ON_SERVICE when slot doesn't exist for service", async () => {
-    (db.select as any)
+    vi.mocked(db.select)
       // memberRole found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // slot not found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }),
-      });
+      } as unknown as ReturnType<typeof db.select>);
     const res = await POST(makeReq({ userId: "u1", serviceId: "s1", confirmed: true, catalogRoleId: "r1" }), {
       params: Promise.resolve({ churchId: "c1" }),
     });
@@ -86,19 +86,19 @@ describe("POST rota", () => {
   });
 
   it("returns 409 SLOT_ALREADY_FILLED for exclusive slot that is occupied", async () => {
-    (db.select as any)
+    vi.mocked(db.select)
       // memberRole found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // slot found: exclusive, maxCount null
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "sl1", exclusive: true, maxCount: null }]) }) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // existing entries: one exists
       .mockReturnValueOnce({
         from: () => ({ where: () => Promise.resolve([{ id: "re1" }]) }),
-      });
+      } as unknown as ReturnType<typeof db.select>);
     const res = await POST(makeReq({ userId: "u1", serviceId: "s1", confirmed: true, catalogRoleId: "r1" }), {
       params: Promise.resolve({ churchId: "c1" }),
     });
@@ -108,19 +108,19 @@ describe("POST rota", () => {
   });
 
   it("returns 409 SLOT_AT_CAPACITY when maxCount reached", async () => {
-    (db.select as any)
+    vi.mocked(db.select)
       // memberRole found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // slot found: not exclusive, maxCount=2
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "sl1", exclusive: false, maxCount: 2 }]) }) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // existing entries: 2 exist
       .mockReturnValueOnce({
         from: () => ({ where: () => Promise.resolve([{ id: "re1" }, { id: "re2" }]) }),
-      });
+      } as unknown as ReturnType<typeof db.select>);
     const res = await POST(makeReq({ userId: "u1", serviceId: "s1", confirmed: true, catalogRoleId: "r1" }), {
       params: Promise.resolve({ churchId: "c1" }),
     });
@@ -131,26 +131,26 @@ describe("POST rota", () => {
 
   it("returns 201 with warnings:[] on first assignment", async () => {
     const insertMock = vi.fn().mockResolvedValue(undefined);
-    (db.select as any)
+    vi.mocked(db.select)
       // memberRole found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // slot found: not exclusive, no maxCount
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "sl1", exclusive: false, maxCount: null }]) }) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // existing entries for capacity check: empty
       .mockReturnValueOnce({
         from: () => ({ where: () => Promise.resolve([]) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // allSlots for DUAL_ROLE check: only one (the new one)
       .mockReturnValueOnce({
         from: () => ({ where: () => Promise.resolve([{ id: "re-new", catalogRoleId: "r1" }]) }),
-      });
-    (db.insert as any).mockReturnValue({
+      } as unknown as ReturnType<typeof db.select>);
+    vi.mocked(db.insert).mockReturnValue({
       values: insertMock,
-    });
+    } as unknown as ReturnType<typeof db.insert>);
     const res = await POST(makeReq({ userId: "u1", serviceId: "s1", confirmed: true, catalogRoleId: "r1" }), {
       params: Promise.resolve({ churchId: "c1" }),
     });
@@ -162,19 +162,19 @@ describe("POST rota", () => {
 
   it("returns 201 with DUAL_ROLE warning when user already on service in another role", async () => {
     const insertMock = vi.fn().mockResolvedValue(undefined);
-    (db.select as any)
+    vi.mocked(db.select)
       // memberRole found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // slot found: not exclusive, no maxCount
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "sl1", exclusive: false, maxCount: null }]) }) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // existing entries for capacity check: empty
       .mockReturnValueOnce({
         from: () => ({ where: () => Promise.resolve([]) }),
-      })
+      } as unknown as ReturnType<typeof db.select>)
       // allSlots for DUAL_ROLE check: two entries (user already had one other role)
       .mockReturnValueOnce({
         from: () => ({
@@ -183,10 +183,10 @@ describe("POST rota", () => {
             { id: "re-new", catalogRoleId: "r1" },
           ]),
         }),
-      });
-    (db.insert as any).mockReturnValue({
+      } as unknown as ReturnType<typeof db.select>);
+    vi.mocked(db.insert).mockReturnValue({
       values: insertMock,
-    });
+    } as unknown as ReturnType<typeof db.insert>);
     const res = await POST(makeReq({ userId: "u1", serviceId: "s1", confirmed: true, catalogRoleId: "r1" }), {
       params: Promise.resolve({ churchId: "c1" }),
     });

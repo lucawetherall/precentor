@@ -11,27 +11,27 @@ describe("GET /api/churches/[churchId]/presets/[presetId]", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 403 for non-members", async () => {
-    (requireChurchRole as any).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) });
+    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const res = await GET(new Request("http://x"), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
     expect(res.status).toBe(403);
   });
 
   it("returns 404 when not found", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
-    (db.select as any).mockReturnValue({
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    vi.mocked(db.select).mockReturnValue({
       from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }),
-    });
+    } as unknown as ReturnType<typeof db.select>);
     const res = await GET(new Request("http://x"), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
     expect(res.status).toBe(404);
   });
 
   it("returns preset with slots on 200", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const preset = { id: "p1", name: "Choral" };
     const slots = [{ id: "s1" }];
-    (db.select as any)
-      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([preset]) }) }) })
-      .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve(slots) }) });
+    vi.mocked(db.select)
+      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([preset]) }) }) } as unknown as ReturnType<typeof db.select>)
+      .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve(slots) }) } as unknown as ReturnType<typeof db.select>);
     const res = await GET(new Request("http://x"), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
     const json = await res.json();
     expect(res.status).toBe(200);
@@ -43,11 +43,11 @@ describe("PATCH /api/churches/[churchId]/presets/[presetId]", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("updates and returns 200", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     const updated = { id: "p1", name: "Updated" };
-    (db.update as any).mockReturnValue({
+    vi.mocked(db.update).mockReturnValue({
       set: () => ({ where: () => ({ returning: () => Promise.resolve([updated]) }) }),
-    });
+    } as unknown as ReturnType<typeof db.update>);
     const res = await PATCH(
       new Request("http://x", { method: "PATCH", body: JSON.stringify({ name: "Updated" }), headers: { "content-type": "application/json" } }),
       { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) },
@@ -61,23 +61,23 @@ describe("DELETE /api/churches/[churchId]/presets/[presetId]", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 409 when referenced by services", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     // First select (patterns) returns count 1
-    (db.select as any)
-      .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 1 }]) }) })
-      .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 0 }]) }) });
+    vi.mocked(db.select)
+      .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 1 }]) }) } as unknown as ReturnType<typeof db.select>)
+      .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 0 }]) }) } as unknown as ReturnType<typeof db.select>);
     const res = await DELETE(new Request("http://x"), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
     expect(res.status).toBe(409);
   });
 
   it("deletes when not referenced", async () => {
-    (requireChurchRole as any).mockResolvedValue({ user: { id: "u1" }, error: null });
-    (db.select as any)
-      .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 0 }]) }) })
-      .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 0 }]) }) });
-    (db.delete as any).mockReturnValue({
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    vi.mocked(db.select)
+      .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 0 }]) }) } as unknown as ReturnType<typeof db.select>)
+      .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 0 }]) }) } as unknown as ReturnType<typeof db.select>);
+    vi.mocked(db.delete).mockReturnValue({
       where: () => ({ returning: () => Promise.resolve([{ id: "p1" }]) }),
-    });
+    } as unknown as ReturnType<typeof db.delete>);
     const res = await DELETE(new Request("http://x"), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
     expect(res.status).toBe(200);
   });

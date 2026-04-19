@@ -2,7 +2,6 @@ import "dotenv/config";
 import { db } from "../src/lib/db";
 import {
   churches,
-  churchMemberships,
   services,
   rotaEntries,
   churchServicePatterns,
@@ -15,7 +14,7 @@ import {
   migrationAuditLog,
   quarantinedRotaEntries,
 } from "../src/lib/db/schema";
-import { eq, and, isNotNull, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import {
   mapServiceTypeAndChoirStatusToPresetKey,
   resolveDefaultTime,

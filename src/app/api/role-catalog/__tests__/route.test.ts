@@ -15,23 +15,23 @@ describe("GET /api/role-catalog", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 401 when unauthenticated", async () => {
-    (requireAuth as any).mockResolvedValue({
+    vi.mocked(requireAuth).mockResolvedValue({
       user: null,
       error: new Response("Unauthorized", { status: 401 }),
-    });
+    } as unknown as Awaited<ReturnType<typeof requireAuth>>);
     const res = await GET();
     expect(res.status).toBe(401);
   });
 
   it("returns the catalog ordered by displayOrder when authenticated", async () => {
-    (requireAuth as any).mockResolvedValue({ user: { id: "u1" }, error: null });
+    vi.mocked(requireAuth).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireAuth>>);
     const createdAt = new Date().toISOString();
     const mockRows = [
       { id: "r1", key: "SOPRANO", defaultName: "Soprano", category: "VOICE", rotaEligible: true, institutional: false, defaultExclusive: false, defaultMinCount: 1, defaultMaxCount: null, displayOrder: 100, createdAt },
     ];
-    (db.select as any).mockReturnValue({
+    vi.mocked(db.select).mockReturnValue({
       from: () => ({ orderBy: () => Promise.resolve(mockRows) }),
-    });
+    } as unknown as ReturnType<typeof db.select>);
     const res = await GET();
     const json = await res.json();
     expect(res.status).toBe(200);
