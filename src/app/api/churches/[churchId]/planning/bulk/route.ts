@@ -69,6 +69,7 @@ export async function POST(
                 eq(services.serviceType, change.ghost.serviceType as typeof services.$inferInsert.serviceType),
               ))
               .limit(1);
+            if (!existing) throw new Error(`service for ghost ${change.ghost.date}:${change.ghost.serviceType} not found after conflict`);
             serviceId = existing.id;
             serviceType = existing.serviceType;
           }

@@ -56,6 +56,7 @@ export async function PATCH(
             eq(services.serviceType, body.ghost.serviceType as typeof services.$inferInsert.serviceType),
           ))
           .limit(1);
+        if (!existing) return { status: 404 as const };
         serviceId = existing.id;
         serviceType = existing.serviceType;
       }
