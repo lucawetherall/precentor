@@ -3,7 +3,7 @@ import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { rotaEntries, services, churchMemberships, serviceRoleSlots, churchMemberRoles } from "@/lib/db/schema";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { useRoleSlotsModel } from "@/lib/feature-flags";
 import { apiError, apiSuccess, ErrorCodes } from "@/lib/api-helpers";
 
@@ -96,9 +96,11 @@ export async function POST(
     }
 
     if (confirmed) {
+      // Legacy path: catalogRoleId may not be provided pre-Phase-D. Use body value or a sentinel sql expression.
+      const catalogRoleId = body.catalogRoleId ?? sql`NULL::uuid`;
       await db
         .insert(rotaEntries)
-        .values({ userId, serviceId, confirmed: true })
+        .values({ userId, serviceId, confirmed: true, catalogRoleId: catalogRoleId as any })
         .onConflictDoUpdate({
           target: [rotaEntries.serviceId, rotaEntries.userId],
           set: { confirmed: true },

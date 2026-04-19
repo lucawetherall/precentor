@@ -33,14 +33,18 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body: { dayOfWeek?: unknown; serviceType?: unknown; time?: unknown; enabled?: unknown };
+  let body: { dayOfWeek?: unknown; serviceType?: unknown; time?: unknown; enabled?: unknown; presetId?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { dayOfWeek, serviceType, time, enabled } = body;
+  const { dayOfWeek, serviceType, time, enabled, presetId } = body;
+
+  if (!presetId || typeof presetId !== "string") {
+    return NextResponse.json({ error: "presetId is required" }, { status: 400 });
+  }
 
   if (
     typeof dayOfWeek !== "number" ||
@@ -73,6 +77,7 @@ export async function POST(
         serviceType: serviceType as (typeof serviceTypeEnum.enumValues)[number],
         time: typeof time === "string" ? time : null,
         enabled: typeof enabled === "boolean" ? enabled : true,
+        presetId: presetId as string,
       })
       .returning();
 

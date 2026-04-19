@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, json, jsonb, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, json, jsonb, uniqueIndex, index, check } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // ─── Enums ───────────────────────────────────────────────────
@@ -175,6 +175,7 @@ export const services = pgTable("services", {
   uniqueIndex("service_unique").on(t.churchId, t.liturgicalDayId, t.serviceType),
   index("service_church_idx").on(t.churchId),
   index("service_church_status_idx").on(t.churchId, t.status),
+  check("services_preset_when_active", sql`status = 'ARCHIVED' OR preset_id IS NOT NULL`),
 ]);
 
 export const musicSlots = pgTable("music_slots", {
@@ -303,10 +304,11 @@ export const rotaEntries = pgTable("rota_entries", {
   serviceId: uuid("service_id").notNull().references(() => services.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   confirmed: boolean("confirmed").default(false).notNull(),
-  catalogRoleId: uuid("catalog_role_id").references(() => roleCatalog.id, { onDelete: "restrict" }),
+  // Phase D: becomes NOT NULL after migration script run
+  catalogRoleId: uuid("catalog_role_id").notNull().references(() => roleCatalog.id, { onDelete: "restrict" }),
   quarantinedAt: timestamp("quarantined_at"),
 }, (t) => [
-  uniqueIndex("rota_unique").on(t.serviceId, t.userId),
+  uniqueIndex("rota_unique").on(t.serviceId, t.userId, t.catalogRoleId).where(sql`quarantined_at IS NULL`),
   index("rota_service_idx").on(t.serviceId),
   index("rota_service_active_idx").on(t.serviceId).where(sql`quarantined_at IS NULL`),
 ]);
@@ -344,7 +346,7 @@ export const churchServicePatterns = pgTable("church_service_patterns", {
   serviceType: serviceTypeEnum("service_type").notNull(),
   time: text("time"),  // e.g. "10:00"
   enabled: boolean("enabled").default(true).notNull(),
-  presetId: uuid("preset_id").references(() => churchServicePresets.id, { onDelete: "set null" }),
+  presetId: uuid("preset_id").notNull().references(() => churchServicePresets.id, { onDelete: "restrict" }),
 }, (t) => [
   uniqueIndex("church_service_pattern_unique").on(t.churchId, t.dayOfWeek, t.serviceType),
 ]);
