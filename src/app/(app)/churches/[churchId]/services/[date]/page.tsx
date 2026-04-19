@@ -19,6 +19,7 @@ import { getAdjacentLiturgicalDays } from '@/lib/services/adjacent-liturgical-da
 import { MemberServiceView } from './member-service-view'
 import { ServicePlanner } from './service-planner'
 import { ServiceNav } from './service-nav'
+import { useRoleSlotsModel } from '@/lib/feature-flags'
 
 interface Props {
   params: Promise<{ churchId: string; date: string }>
@@ -178,6 +179,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
           editorSlotsMap={editorSlotsMap}
           readings={dayReadings}
           adjacent={adjacent}
+          roleSlotsEnabled={useRoleSlotsModel()}
         />
       </div>
     )

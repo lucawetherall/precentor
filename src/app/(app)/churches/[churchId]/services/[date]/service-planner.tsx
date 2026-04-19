@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
 import { SectionEditor } from "./section-editor";
@@ -67,6 +67,8 @@ interface Service {
 }
 
 
+interface Preset { id: string; name: string; serviceType: string; }
+
 export function ServicePlanner({
   churchId,
   liturgicalDayId,
@@ -76,6 +78,7 @@ export function ServicePlanner({
   editorSlotsMap = {},
   readings = [],
   adjacent,
+  roleSlotsEnabled = false,
 }: {
   churchId: string;
   liturgicalDayId: string;
@@ -85,6 +88,7 @@ export function ServicePlanner({
   editorSlotsMap?: Record<string, MusicSlot[]>;
   readings?: Reading[];
   adjacent: AdjacentDayLinks;
+  roleSlotsEnabled?: boolean;
 }) {
   const [services, setServices] = useState<Service[]>(existingServices);
   const [activeTab, setActiveTab] = useState<string>(services[0]?.id || "");
@@ -95,6 +99,8 @@ export function ServicePlanner({
   const [deleting, setDeleting] = useState(false);
   const [newType, setNewType] = useState<ServiceType>("SUNG_EUCHARIST");
   const [newTime, setNewTime] = useState("10:00");
+  const [newPresetId, setNewPresetId] = useState<string>("");
+  const [presets, setPresets] = useState<Preset[]>([]);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -102,17 +108,32 @@ export function ServicePlanner({
   const pdfBlobUrlRef = useRef<string | null>(null);
   const { addToast } = useToast();
 
+  useEffect(() => {
+    if (!roleSlotsEnabled) return;
+    fetch(`/api/churches/${churchId}/presets`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => {
+        if (Array.isArray(data)) setPresets(data);
+        else if (data?.data && Array.isArray(data.data)) setPresets(data.data);
+      })
+      .catch(() => {});
+  }, [churchId, roleSlotsEnabled]);
+
   const handleCreateService = async () => {
     setCreating(true);
     try {
+      const body: Record<string, unknown> = {
+        liturgicalDayId,
+        serviceType: newType,
+        time: newTime,
+      };
+      if (roleSlotsEnabled && newPresetId) {
+        body.presetId = newPresetId;
+      }
       const res = await fetch(`/api/churches/${churchId}/services`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          liturgicalDayId,
-          serviceType: newType,
-          time: newTime,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
@@ -281,6 +302,22 @@ export function ServicePlanner({
             onChange={(e) => setNewTime(e.target.value)}
             className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
+          {roleSlotsEnabled && presets.length > 0 && (
+            <>
+              <label htmlFor="new-service-preset" className="sr-only">Preset</label>
+              <select
+                id="new-service-preset"
+                value={newPresetId}
+                onChange={(e) => setNewPresetId(e.target.value)}
+                className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">No preset</option>
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </>
+          )}
           <Button onClick={handleCreateService} disabled={creating} size="sm">
             {creating ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <Plus className="h-3 w-3" strokeWidth={1.5} />}
             Add
