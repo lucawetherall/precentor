@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { musicSlots, services } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { musicSlots, services, hymns } from "@/lib/db/schema";
+import { and, eq, inArray } from "drizzle-orm";
 
 export type GridColumn =
   | "introit" | "hymns" | "setting" | "psalm" | "chant"
@@ -39,14 +39,30 @@ export async function writeCell(
     const tokens = raw.includes(",")
       ? raw.split(",").map((t) => t.trim()).filter(Boolean)
       : raw.split(/\s+/).map((t) => t.trim()).filter(Boolean);
-    await Promise.all(tokens.map((token, idx) =>
-      tx.insert(musicSlots).values({
+
+    // Resolve numeric tokens to hymnId by number (default book: NEH for v1)
+    const numericTokens = tokens
+      .map((t, i) => ({ t, i, n: /^\d+$/.test(t) ? parseInt(t, 10) : null }))
+      .filter((x): x is { t: string; i: number; n: number } => x.n !== null);
+
+    const lookups = numericTokens.length === 0 ? [] : await tx
+      .select({ id: hymns.id, number: hymns.number })
+      .from(hymns)
+      .where(and(eq(hymns.book, "NEH"), inArray(hymns.number, numericTokens.map((x) => x.n))));
+
+    const idByNumber = new Map(lookups.map((l) => [l.number, l.id]));
+
+    await Promise.all(tokens.map((token, idx) => {
+      const n = /^\d+$/.test(token) ? parseInt(token, 10) : null;
+      const hymnId = n !== null ? (idByNumber.get(n) ?? null) : null;
+      return tx.insert(musicSlots).values({
         serviceId,
         slotType: "HYMN",
         positionOrder: 10 + idx,
-        freeText: token,
-      })
-    ));
+        hymnId,
+        freeText: hymnId ? null : token,
+      });
+    }));
     return;
   }
 
