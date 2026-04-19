@@ -37,3 +37,65 @@ export function parseHymnList(input: string): ParsedHymnEntry[] {
     return { raw, number: Number.isFinite(n) ? n : null };
   });
 }
+
+// ─── Psalm parser ─────────────────────────────────────────────
+
+export interface ParsedPsalm {
+  raw: string;
+  number: number | null;
+  valid: boolean;
+}
+
+export function parsePsalm(input: string): ParsedPsalm {
+  const raw = input.trim();
+  if (/^\d+$/.test(raw)) {
+    const n = parseInt(raw, 10);
+    if (n >= 1 && n <= 150) return { raw, number: n, valid: true };
+    return { raw, number: null, valid: false };
+  }
+  return { raw, number: null, valid: false };
+}
+
+// ─── Service-type alias resolver ──────────────────────────────
+
+// Values mirror the serviceTypeEnum in schema-base.ts exactly.
+type ServiceType =
+  | "SUNG_EUCHARIST"
+  | "CHORAL_EVENSONG"
+  | "SAID_EUCHARIST"
+  | "CHORAL_MATINS"
+  | "FAMILY_SERVICE"
+  | "COMPLINE"
+  | "CUSTOM";
+
+const SERVICE_TYPE_VALUES: ServiceType[] = [
+  "SUNG_EUCHARIST",
+  "CHORAL_EVENSONG",
+  "SAID_EUCHARIST",
+  "CHORAL_MATINS",
+  "FAMILY_SERVICE",
+  "COMPLINE",
+  "CUSTOM",
+];
+
+const SERVICE_TYPE_ALIASES: Record<string, ServiceType> = {
+  "sung eucharist": "SUNG_EUCHARIST",
+  "said eucharist": "SAID_EUCHARIST",
+  "choral evensong": "CHORAL_EVENSONG",
+  evensong: "CHORAL_EVENSONG",
+  "choral matins": "CHORAL_MATINS",
+  mattins: "CHORAL_MATINS",
+  matins: "CHORAL_MATINS",
+  "family service": "FAMILY_SERVICE",
+  compline: "COMPLINE",
+  custom: "CUSTOM",
+};
+
+export function resolveServiceType(input: string): ServiceType | null {
+  const s = input.trim();
+  if (s.length === 0) return null;
+  const upper = s.toUpperCase().replace(/[\s-]+/g, "_");
+  if ((SERVICE_TYPE_VALUES as string[]).includes(upper)) return upper as ServiceType;
+  const lower = s.toLowerCase();
+  return SERVICE_TYPE_ALIASES[lower] ?? null;
+}
