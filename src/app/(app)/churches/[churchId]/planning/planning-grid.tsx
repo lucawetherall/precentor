@@ -341,6 +341,7 @@ export function PlanningGrid({ churchId, from, to }: Props) {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
+  const [noPatterns, setNoPatterns] = useState(false);
 
   const { state, dispatch, getCell } = usePlanningGrid([]);
 
@@ -356,6 +357,7 @@ export function PlanningGrid({ churchId, from, to }: Props) {
         return res.json() as Promise<ApiResponse>;
       })
       .then((data) => {
+        setNoPatterns(data.patterns.length === 0 && data.services.length === 0);
         dispatch({ type: "SET_ROWS", rows: buildRowsFromApi(data, from, to) });
         setLoading(false);
       })
@@ -534,6 +536,20 @@ export function PlanningGrid({ churchId, from, to }: Props) {
       <>
         <DateRangeControls from={from} to={to} />
         <p className="text-sm text-destructive">Error: {fetchError}</p>
+      </>
+    );
+  }
+
+  if (noPatterns) {
+    return (
+      <>
+        <DateRangeControls from={from} to={to} />
+        <div className="text-center p-12 border rounded">
+          <p className="text-muted-foreground mb-2">No service patterns configured for this church.</p>
+          <a className="text-primary underline" href={`/churches/${churchId}/settings/service-patterns`}>
+            Configure service patterns
+          </a>
+        </div>
       </>
     );
   }
