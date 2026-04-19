@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { services, liturgicalDays, availability, rotaEntries, churchMemberships, users } from "@/lib/db/schema";
+import { services, liturgicalDays, availability, rotaEntries, churchMemberships, users, churchMemberRoles, roleCatalog, serviceRoleSlots } from "@/lib/db/schema";
 import { eq, and, gte, asc, inArray } from "drizzle-orm";
 import { format } from "date-fns";
 import { RotaGrid } from "./rota-grid";
+import { RotaGridV2 } from "./rota-grid-v2";
+import { useRoleSlotsModel } from "@/lib/feature-flags";
 
 interface Props {
   params: Promise<{ churchId: string }>;
@@ -26,6 +28,9 @@ export default async function RotaPage({ params }: Props) {
   let members: MemberRow[] = [];
   let availabilityData: AvailabilityRow[] = [];
   let rotaData: RotaRow[] = [];
+
+  let memberRolesData: { userId: string; id: string; catalogRoleId: string; catalogRoleKey: string; catalogRoleName: string; isPrimary: boolean }[] = [];
+  let serviceSlots: { serviceId: string; catalogRoleId: string; catalogRoleKey: string }[] = [];
 
   try {
     upcomingServices = await db
@@ -65,19 +70,60 @@ export default async function RotaPage({ params }: Props) {
         .select()
         .from(rotaEntries)
         .where(inArray(rotaEntries.serviceId, serviceIds));
+
+      if (useRoleSlotsModel()) {
+        memberRolesData = await db
+          .select({
+            userId: churchMemberRoles.userId,
+            id: churchMemberRoles.id,
+            catalogRoleId: churchMemberRoles.catalogRoleId,
+            catalogRoleKey: roleCatalog.key,
+            catalogRoleName: roleCatalog.defaultName,
+            isPrimary: churchMemberRoles.isPrimary,
+          })
+          .from(churchMemberRoles)
+          .innerJoin(roleCatalog, eq(roleCatalog.id, churchMemberRoles.catalogRoleId))
+          .where(eq(churchMemberRoles.churchId, churchId));
+
+        serviceSlots = await db
+          .select({
+            serviceId: serviceRoleSlots.serviceId,
+            catalogRoleId: serviceRoleSlots.catalogRoleId,
+            catalogRoleKey: roleCatalog.key,
+          })
+          .from(serviceRoleSlots)
+          .innerJoin(roleCatalog, eq(roleCatalog.id, serviceRoleSlots.catalogRoleId))
+          .where(inArray(serviceRoleSlots.serviceId, serviceIds));
+      }
     }
   } catch (err) { console.error("Failed to load data:", err); }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <h1 className="text-3xl font-heading font-semibold mb-6">Choir Rota</h1>
-      <RotaGrid
-        churchId={churchId}
-        services={upcomingServices}
-        members={members}
-        availabilityData={availabilityData}
-        rotaData={rotaData}
-      />
+      {useRoleSlotsModel() ? (
+        <RotaGridV2
+          churchId={churchId}
+          services={upcomingServices.map((s) => ({
+            ...s,
+            slots: serviceSlots.filter((sl) => sl.serviceId === s.serviceId),
+          }))}
+          members={members.map((m) => ({
+            ...m,
+            roles: memberRolesData.filter((r) => r.userId === m.userId),
+          }))}
+          availabilityData={availabilityData}
+          rotaData={rotaData}
+        />
+      ) : (
+        <RotaGrid
+          churchId={churchId}
+          services={upcomingServices}
+          members={members}
+          availabilityData={availabilityData}
+          rotaData={rotaData}
+        />
+      )}
     </div>
   );
 }
