@@ -32,13 +32,4 @@ export interface PlanningRow {
   readings: ReadingsDisplay[];
 }
 
-export type GridColumn =
-  | "introit"
-  | "hymns"
-  | "setting"
-  | "psalm"
-  | "chant"
-  | "respAccl"
-  | "anthem"
-  | "voluntary"
-  | "info";
+export { COLUMN_ORDER, type GridColumn } from "@/lib/planning/columns";

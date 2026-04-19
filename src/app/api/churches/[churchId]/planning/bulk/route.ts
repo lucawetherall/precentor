@@ -4,7 +4,8 @@ import { requireChurchRole } from "@/lib/auth/permissions";
 import { services } from "@/lib/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { ensureLiturgicalDay } from "@/lib/db/queries/liturgical-days";
-import { writeCell, type GridColumn, type CellValue } from "../_write-cell";
+import { writeCell, type CellValue } from "../_write-cell";
+import type { GridColumn } from "@/lib/planning/columns";
 
 interface Change {
   serviceId?: string;

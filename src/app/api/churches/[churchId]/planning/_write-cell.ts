@@ -1,10 +1,7 @@
 import { db } from "@/lib/db";
 import { musicSlots, services, hymns } from "@/lib/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
-
-export type GridColumn =
-  | "introit" | "hymns" | "setting" | "psalm" | "chant"
-  | "respAccl" | "anthem" | "voluntary" | "info";
+import type { GridColumn } from "@/lib/planning/columns";
 
 export interface CellValue {
   refId?: string | null;
