@@ -9,6 +9,7 @@ import type {
   CellDisplay,
   ReadingsDisplay,
 } from "./types";
+import { DateRangeControls } from "./date-range-controls";
 
 // ─── API response types ───────────────────────────────────────
 
@@ -359,23 +360,37 @@ export function PlanningGrid({ churchId, from, to }: Props) {
   }, [churchId, from, to]);
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground">Loading grid…</p>;
+    return (
+      <>
+        <DateRangeControls from={from} to={to} />
+        <p className="text-sm text-muted-foreground">Loading grid…</p>
+      </>
+    );
   }
 
   if (fetchError) {
-    return <p className="text-sm text-destructive">Error: {fetchError}</p>;
+    return (
+      <>
+        <DateRangeControls from={from} to={to} />
+        <p className="text-sm text-destructive">Error: {fetchError}</p>
+      </>
+    );
   }
 
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        No services found for this period.
-      </p>
+      <>
+        <DateRangeControls from={from} to={to} />
+        <p className="text-sm text-muted-foreground">
+          No services found for this period.
+        </p>
+      </>
     );
   }
 
   return (
     <div className="overflow-x-auto">
+      <DateRangeControls from={from} to={to} />
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b border-border">
