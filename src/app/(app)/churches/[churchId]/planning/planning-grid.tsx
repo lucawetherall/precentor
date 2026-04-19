@@ -7,9 +7,12 @@ import type { PatternInput, ExistingServiceRef } from "./ghost-rows";
 import type {
   PlanningRow,
   CellDisplay,
+  GridColumn,
   ReadingsDisplay,
 } from "./types";
 import { DateRangeControls } from "./date-range-controls";
+import { usePlanningGrid, rowKey } from "./use-planning-grid";
+import { PlanningCell } from "./planning-cell";
 
 // ─── API response types ───────────────────────────────────────
 
@@ -247,6 +250,22 @@ function rowSortKey(row: PlanningRow): string {
   return `${row.date}T${time}`;
 }
 
+// ─── Column order ─────────────────────────────────────────────
+
+const COLUMNS = [
+  { key: "introit" as GridColumn, label: "Introit" },
+  { key: "hymns" as GridColumn, label: "Hymns" },
+  { key: "setting" as GridColumn, label: "Setting" },
+  { key: "psalm" as GridColumn, label: "Psalm" },
+  { key: "chant" as GridColumn, label: "Chant" },
+  { key: "respAccl" as GridColumn, label: "Resp/Accl" },
+  { key: "anthem" as GridColumn, label: "Anthem" },
+  { key: "voluntary" as GridColumn, label: "Voluntary" },
+  { key: "info" as GridColumn, label: "Info" },
+];
+
+export const COLUMN_ORDER: GridColumn[] = COLUMNS.map((c) => c.key);
+
 // ─── Component ───────────────────────────────────────────────
 
 interface Props {
@@ -255,22 +274,13 @@ interface Props {
   to: string;
 }
 
-const COLUMNS = [
-  { key: "introit", label: "Introit" },
-  { key: "hymns", label: "Hymns" },
-  { key: "setting", label: "Setting" },
-  { key: "psalm", label: "Psalm" },
-  { key: "chant", label: "Chant" },
-  { key: "respAccl", label: "Resp/Accl" },
-  { key: "anthem", label: "Anthem" },
-  { key: "voluntary", label: "Voluntary" },
-  { key: "info", label: "Info" },
-] as const;
-
 export function PlanningGrid({ churchId, from, to }: Props) {
-  const [rows, setRows] = useState<PlanningRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const { state, dispatch, getCell } = usePlanningGrid([]);
+
+  // ─── Fetch rows ────────────────────────────────────────────
 
   useEffect(() => {
     setLoading(true);
@@ -282,10 +292,8 @@ export function PlanningGrid({ churchId, from, to }: Props) {
         return res.json() as Promise<ApiResponse>;
       })
       .then((data) => {
-        // Index days by id
         const daysById = new Map<string, ApiDay>(data.days.map((d) => [d.id, d]));
 
-        // Index slots by serviceId
         const slotsByService = new Map<string, ApiSlot[]>();
         for (const slot of data.slots) {
           const existing = slotsByService.get(slot.serviceId) ?? [];
@@ -293,7 +301,6 @@ export function PlanningGrid({ churchId, from, to }: Props) {
           slotsByService.set(slot.serviceId, existing);
         }
 
-        // Index readings by liturgicalDayId
         const readingsByDay = new Map<string, ApiReading[]>();
         for (const reading of data.readings) {
           const existing = readingsByDay.get(reading.liturgicalDayId) ?? [];
@@ -301,7 +308,6 @@ export function PlanningGrid({ churchId, from, to }: Props) {
           readingsByDay.set(reading.liturgicalDayId, existing);
         }
 
-        // Build real rows
         const realRows: PlanningRow[] = [];
         for (const svc of data.services) {
           const day = daysById.get(svc.liturgicalDayId);
@@ -309,7 +315,6 @@ export function PlanningGrid({ churchId, from, to }: Props) {
           realRows.push(buildRealRow(svc, day, slotsByService, readingsByDay));
         }
 
-        // Build ghost rows
         const existingRefs: ExistingServiceRef[] = data.services.map((s) => {
           const day = daysById.get(s.liturgicalDayId);
           return {
@@ -345,19 +350,89 @@ export function PlanningGrid({ churchId, from, to }: Props) {
           readings: [],
         }));
 
-        // Merge and sort
         const allRows = [...realRows, ...ghostRows].sort((a, b) =>
           rowSortKey(a).localeCompare(rowSortKey(b))
         );
 
-        setRows(allRows);
+        dispatch({ type: "SET_ROWS", rows: allRows });
         setLoading(false);
       })
       .catch((err: unknown) => {
         setFetchError(err instanceof Error ? err.message : "Failed to load");
         setLoading(false);
       });
-  }, [churchId, from, to]);
+  }, [churchId, from, to, dispatch]);
+
+  // ─── Persist cell ──────────────────────────────────────────
+
+  async function persistCell(row: PlanningRow, column: GridColumn, value: CellDisplay) {
+    dispatch({ type: "SAVE_STATUS", status: "saving" });
+    const body = row.kind === "real"
+      ? { serviceId: row.serviceId, column, value: { text: value.displayText, refId: value.refId ?? null }, expectedUpdatedAt: row.updatedAt }
+      : { ghost: { date: row.date, serviceType: row.serviceType, time: row.time }, column, value: { text: value.displayText, refId: value.refId ?? null } };
+    try {
+      const res = await fetch(`/api/churches/${churchId}/planning/cell`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const data = await res.json() as { serviceId?: string; updatedAt?: string };
+        if (row.kind === "ghost" && row.ghostId && data.serviceId && data.updatedAt) {
+          dispatch({ type: "REPLACE_ROW_ID", ghostId: row.ghostId, serviceId: data.serviceId, updatedAt: data.updatedAt });
+        }
+        dispatch({ type: "SAVE_STATUS", status: "saved" });
+        setTimeout(() => dispatch({ type: "SAVE_STATUS", status: "idle" }), 1500);
+      } else {
+        dispatch({ type: "SAVE_STATUS", status: "error" });
+      }
+    } catch {
+      dispatch({ type: "SAVE_STATUS", status: "error" });
+    }
+  }
+
+  // ─── Arrow key + undo navigation ──────────────────────────
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      // Undo
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !state.editing) {
+        if (state.lastEdit) {
+          const { rowKey: rk, column, previous } = state.lastEdit;
+          const row = state.rows.find((r) => rowKey(r) === rk);
+          if (row) {
+            e.preventDefault();
+            dispatch({ type: "UNDO" });
+            void persistCell(row, column, previous);
+          }
+        }
+        return;
+      }
+
+      if (state.editing) return;
+      if (!state.focus) return;
+
+      const rowIdx = state.rows.findIndex((r) => rowKey(r) === state.focus!.rowKey);
+      const colIdx = COLUMN_ORDER.indexOf(state.focus.column);
+      if (rowIdx < 0 || colIdx < 0) return;
+
+      let nextRow = rowIdx, nextCol = colIdx;
+      if (e.key === "ArrowRight") nextCol = Math.min(COLUMN_ORDER.length - 1, colIdx + 1);
+      else if (e.key === "ArrowLeft") nextCol = Math.max(0, colIdx - 1);
+      else if (e.key === "ArrowDown") nextRow = Math.min(state.rows.length - 1, rowIdx + 1);
+      else if (e.key === "ArrowUp") nextRow = Math.max(0, rowIdx - 1);
+      else return;
+
+      e.preventDefault();
+      dispatch({ type: "FOCUS", rowKey: rowKey(state.rows[nextRow]), column: COLUMN_ORDER[nextCol] });
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.editing, state.focus, state.rows, state.lastEdit, dispatch]);
+
+  // ─── Render ────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -377,7 +452,7 @@ export function PlanningGrid({ churchId, from, to }: Props) {
     );
   }
 
-  if (rows.length === 0) {
+  if (state.rows.length === 0) {
     return (
       <>
         <DateRangeControls from={from} to={to} />
@@ -391,6 +466,14 @@ export function PlanningGrid({ churchId, from, to }: Props) {
   return (
     <div className="overflow-x-auto">
       <DateRangeControls from={from} to={to} />
+
+      {/* Save status indicator */}
+      <div className="text-xs text-muted-foreground h-5 mb-2">
+        {state.saveStatus === "saving" && "Saving…"}
+        {state.saveStatus === "saved" && "Saved ✓"}
+        {state.saveStatus === "error" && <span className="text-destructive">Error saving</span>}
+      </div>
+
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b border-border">
@@ -408,8 +491,8 @@ export function PlanningGrid({ churchId, from, to }: Props) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => {
-            const rowKey = row.kind === "real" ? row.serviceId! : row.ghostId!;
+          {state.rows.map((row) => {
+            const rk = rowKey(row);
             const isGhost = row.kind === "ghost";
             let dateLabel = row.date;
             try {
@@ -423,7 +506,7 @@ export function PlanningGrid({ churchId, from, to }: Props) {
 
             return (
               <tr
-                key={rowKey}
+                key={rk}
                 className={`border-b border-border hover:bg-muted/40 transition-colors ${
                   isGhost ? "opacity-60" : ""
                 }`}
@@ -435,13 +518,32 @@ export function PlanningGrid({ churchId, from, to }: Props) {
                     {row.time ? ` · ${row.time}` : ""}
                   </span>
                 </td>
-                {COLUMNS.map((col) => (
-                  <td key={col.key} className="p-2 align-top max-w-[200px]">
-                    <span className="block truncate">
-                      {row.cells[col.key].displayText}
-                    </span>
-                  </td>
-                ))}
+                {COLUMNS.map((col) => {
+                  const isFocused = state.focus?.rowKey === rk && state.focus?.column === col.key;
+                  const isEditing = isFocused && state.editing;
+                  const cellValue = getCell(row, col.key);
+                  return (
+                    <PlanningCell
+                      key={col.key}
+                      column={col.key}
+                      value={cellValue}
+                      focused={isFocused}
+                      editing={isEditing}
+                      serviceType={row.serviceType}
+                      onFocus={() => dispatch({ type: "FOCUS", rowKey: rk, column: col.key })}
+                      onEnterEdit={() => {
+                        dispatch({ type: "FOCUS", rowKey: rk, column: col.key });
+                        dispatch({ type: "ENTER_EDIT" });
+                      }}
+                      onCancelEdit={() => dispatch({ type: "CANCEL_EDIT" })}
+                      onCommit={(next) => {
+                        const previous = cellValue;
+                        dispatch({ type: "COMMIT_CELL", rowKey: rk, column: col.key, value: next, previous });
+                        void persistCell(row, col.key, next);
+                      }}
+                    />
+                  );
+                })}
                 <td className="p-2 align-top max-w-[200px]">
                   <span className="block truncate text-xs text-muted-foreground">
                     {readingsText}
