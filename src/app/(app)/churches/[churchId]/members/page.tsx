@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { churchMemberships, users } from "@/lib/db/schema";
+import { churchMemberships, users, churchMemberRoles, roleCatalog } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { InviteMemberForm } from "./invite-form";
 import { MembersTable } from "./members-table";
 import { hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
+import { useRoleSlotsModel } from "@/lib/feature-flags";
 import type { MemberRole } from "@/types";
 
 interface Props {
@@ -18,9 +19,18 @@ export default async function MembersPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  interface MemberRow { id: string; role: string; voicePart: string | null; joinedAt: Date; userName: string | null; userEmail: string; }
+  interface MemberRow {
+    id: string;
+    role: string;
+    voicePart: string | null;
+    joinedAt: Date;
+    userName: string | null;
+    userEmail: string;
+    roles?: { id: string; catalogRoleId: string; name: string; isPrimary: boolean }[];
+  }
   let members: MemberRow[] = [];
   let userRole: MemberRole = "MEMBER";
+  const roleSlotsEnabled = useRoleSlotsModel();
 
   try {
     const dbUser = await db
@@ -46,7 +56,7 @@ export default async function MembersPage({ params }: Props) {
       }
     }
 
-    members = await db
+    const baseMembers = await db
       .select({
         id: churchMemberships.id,
         role: churchMemberships.role,
@@ -54,10 +64,46 @@ export default async function MembersPage({ params }: Props) {
         joinedAt: churchMemberships.joinedAt,
         userName: users.name,
         userEmail: users.email,
+        userId: churchMemberships.userId,
       })
       .from(churchMemberships)
       .innerJoin(users, eq(churchMemberships.userId, users.id))
       .where(eq(churchMemberships.churchId, churchId));
+
+    if (roleSlotsEnabled) {
+      const memberRoles = await db
+        .select({
+          membershipId: churchMemberships.id,
+          id: churchMemberRoles.id,
+          catalogRoleId: churchMemberRoles.catalogRoleId,
+          name: roleCatalog.defaultName,
+          isPrimary: churchMemberRoles.isPrimary,
+        })
+        .from(churchMemberRoles)
+        .innerJoin(roleCatalog, eq(roleCatalog.id, churchMemberRoles.catalogRoleId))
+        .innerJoin(churchMemberships, and(
+          eq(churchMemberships.userId, churchMemberRoles.userId),
+          eq(churchMemberships.churchId, churchMemberRoles.churchId),
+        ))
+        .where(eq(churchMemberRoles.churchId, churchId));
+
+      const rolesByMembershipId = memberRoles.reduce<Record<string, typeof memberRoles>>((acc, r) => {
+        (acc[r.membershipId] ??= []).push(r);
+        return acc;
+      }, {});
+
+      members = baseMembers.map(({ userId: _userId, ...m }) => ({
+        ...m,
+        roles: (rolesByMembershipId[m.id] ?? []).map((r) => ({
+          id: r.id,
+          catalogRoleId: r.catalogRoleId,
+          name: r.name,
+          isPrimary: r.isPrimary,
+        })),
+      }));
+    } else {
+      members = baseMembers.map(({ userId: _userId, ...m }) => m);
+    }
   } catch (err) { console.error("Failed to load data:", err); }
 
   const isAdmin = hasMinRole(userRole, "ADMIN");
@@ -72,6 +118,7 @@ export default async function MembersPage({ params }: Props) {
         initialMembers={members}
         churchId={churchId}
         isAdmin={isAdmin}
+        roleSlotsEnabled={roleSlotsEnabled}
       />
     </div>
   );

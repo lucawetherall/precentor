@@ -12,6 +12,7 @@ interface MemberRow {
   joinedAt: Date;
   userName: string | null;
   userEmail: string;
+  roles?: { id: string; catalogRoleId: string; name: string; isPrimary: boolean }[];
 }
 
 const ROLES = ["MEMBER", "EDITOR", "ADMIN"] as const;
@@ -21,10 +22,12 @@ export function MembersTable({
   initialMembers,
   churchId,
   isAdmin,
+  roleSlotsEnabled = false,
 }: {
   initialMembers: MemberRow[];
   churchId: string;
   isAdmin: boolean;
+  roleSlotsEnabled?: boolean;
 }) {
   const [members, setMembers] = useState(initialMembers);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -125,7 +128,15 @@ export function MembersTable({
                 )}
               </td>
               <td className="px-3 py-2">
-                {isAdmin ? (
+                {roleSlotsEnabled ? (
+                  <div className="flex flex-wrap gap-1">
+                    {(m.roles ?? []).map((r) => (
+                      <span key={r.id} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                        {r.name}{r.isPrimary ? " · primary" : ""}
+                      </span>
+                    ))}
+                  </div>
+                ) : isAdmin ? (
                   <select
                     value={m.voicePart || ""}
                     onChange={(e) => updateMember(m.id, "voicePart", e.target.value || null)}
