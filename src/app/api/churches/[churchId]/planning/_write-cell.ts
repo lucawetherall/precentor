@@ -18,8 +18,10 @@ export interface WriteCellInput {
   value: CellValue;
 }
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 export async function writeCell(
-  tx: typeof db,
+  tx: Tx,
   input: WriteCellInput
 ): Promise<void> {
   const { serviceId, serviceType, column, value } = input;
@@ -110,7 +112,7 @@ export async function writeCell(
 }
 
 async function upsertSlot(
-  tx: typeof db,
+  tx: Tx,
   serviceId: string,
   slotType:
     | "INTROIT" | "HYMN" | "PSALM" | "ANTHEM"

@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { liturgicalDays } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
+type DbOrTx = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 interface EnsuredLiturgicalDay {
   id: string;
   date: string;
@@ -14,7 +16,7 @@ interface EnsuredLiturgicalDay {
  * Must be called inside a transaction.
  */
 export async function ensureLiturgicalDay(
-  tx: typeof db,
+  tx: DbOrTx,
   date: string
 ): Promise<EnsuredLiturgicalDay> {
   const existing = await tx
