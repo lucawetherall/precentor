@@ -3,6 +3,40 @@ import { z } from "zod";
 export const uuidSchema = z.string().uuid();
 export const emailSchema = z.string().email();
 
+/**
+ * Accepts only `https://` URLs, up to 2048 chars (RFC-tolerable ceiling). Uses
+ * the WHATWG `URL` parser so values like `javascript:`, `data:`, `file:`,
+ * `mailto:` and malformed strings are rejected.
+ */
+export const httpsUrlSchema = z
+  .string()
+  .trim()
+  .min(1, "URL is required")
+  .max(2048, "URL must be 2048 characters or fewer")
+  .refine((s) => {
+    try {
+      const u = new URL(s);
+      return u.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }, "Must be a valid https:// URL");
+
+/**
+ * Label for the sheet-music-library link rendered on the repertoire page.
+ * Optional — omitted/empty values fall back to a default label at render time.
+ */
+export const sheetMusicLinkSchema = z
+  .object({
+    url: httpsUrlSchema,
+    label: z
+      .string()
+      .trim()
+      .max(60, "Label must be 60 characters or fewer")
+      .optional(),
+  })
+  .strict();
+
 export const serviceUpdateSchema = z.object({
   serviceType: z.enum([
     "SUNG_EUCHARIST", "CHORAL_EVENSONG", "SAID_EUCHARIST",
@@ -50,6 +84,8 @@ export const churchUpdateSchema = z.object({
   address: z.string().max(500).nullable().optional(),
   diocese: z.string().max(200).nullable().optional(),
   ccliNumber: z.string().max(50).nullable().optional(),
+  // `null` clears the existing link; `undefined` leaves it unchanged.
+  sheetMusicLink: sheetMusicLinkSchema.nullable().optional(),
 }).strict();
 
 /** Top-20 most commonly used passwords (NCSC/HIBP deny list guidance). Blocked per ICO guidance. */
