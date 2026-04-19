@@ -46,8 +46,8 @@ export default async function MigrationIssuesPage({ params }: { params: Promise<
                   <span className="font-medium text-sm">{expl?.label ?? e.code}</span>
                 </div>
                 {expl && <p className="mt-1 text-sm text-muted-foreground">{expl.detail}</p>}
-                {e.details && typeof e.details === "object" && (
-                  <pre className="mt-1 rounded bg-muted px-2 py-1 text-xs overflow-auto">{JSON.stringify(e.details, null, 2)}</pre>
+                {e.details != null && typeof e.details === "object" && Object.keys(e.details as Record<string, unknown>).length > 0 && (
+                  <pre className="mt-1 rounded bg-muted px-2 py-1 text-xs overflow-auto">{JSON.stringify(e.details as Record<string, unknown>, null, 2)}</pre>
                 )}
               </li>
             );

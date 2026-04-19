@@ -23,7 +23,7 @@ export default async function RotaPage({ params }: Props) {
   interface ServiceRow { serviceId: string; serviceType: string; time: string | null; date: string; cwName: string; }
   interface MemberRow { userId: string; name: string | null; email: string; voicePart: string | null; role: string; }
   interface AvailabilityRow { id: string; userId: string; serviceId: string; status: string; }
-  interface RotaRow { id: string; serviceId: string; userId: string; confirmed: boolean; }
+  interface RotaRow { id: string; serviceId: string; userId: string; confirmed: boolean; catalogRoleId: string | null; }
   let upcomingServices: ServiceRow[] = [];
   let members: MemberRow[] = [];
   let availabilityData: AvailabilityRow[] = [];
@@ -67,7 +67,13 @@ export default async function RotaPage({ params }: Props) {
         .where(inArray(availability.serviceId, serviceIds));
 
       rotaData = await db
-        .select()
+        .select({
+          id: rotaEntries.id,
+          serviceId: rotaEntries.serviceId,
+          userId: rotaEntries.userId,
+          confirmed: rotaEntries.confirmed,
+          catalogRoleId: rotaEntries.catalogRoleId,
+        })
         .from(rotaEntries)
         .where(inArray(rotaEntries.serviceId, serviceIds));
 
