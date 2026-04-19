@@ -15,6 +15,7 @@ import { usePlanningGrid, rowKey } from "./use-planning-grid";
 import { PlanningCell } from "./planning-cell";
 import { getColumnSearch } from "./column-search";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { CsvImportModal } from "./csv-import-modal";
 
 // ─── API response types ───────────────────────────────────────
@@ -596,10 +597,6 @@ export function PlanningGrid({ churchId, from, to }: Props) {
             } catch {
               // keep raw
             }
-            const readingsText = row.readings
-              .map((r) => (r.text ? `${r.ref} (${r.text})` : r.ref))
-              .join("; ");
-
             return (
               <tr
                 key={rk}
@@ -642,10 +639,23 @@ export function PlanningGrid({ churchId, from, to }: Props) {
                     />
                   );
                 })}
-                <td className="p-2 align-top max-w-[200px]">
-                  <span className="block truncate text-xs text-muted-foreground">
-                    {readingsText}
-                  </span>
+                <td className="px-3 py-2 border-t align-top text-xs">
+                  <Popover>
+                    <PopoverTrigger className="cursor-pointer text-muted-foreground hover:text-foreground text-xs">
+                      {row.readings.length > 0 ? `${row.readings.length} readings` : "—"}
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="min-w-[200px] max-w-[280px] p-2 text-xs">
+                      {row.readings.length === 0 ? (
+                        <p className="text-muted-foreground">No readings.</p>
+                      ) : (
+                        row.readings.map((r, i) => (
+                          <div key={i} className="mb-0.5">
+                            {r.text && <strong>{r.text}: </strong>}{r.ref}
+                          </div>
+                        ))
+                      )}
+                    </PopoverContent>
+                  </Popover>
                 </td>
               </tr>
             );
