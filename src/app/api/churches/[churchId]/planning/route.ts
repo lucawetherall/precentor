@@ -32,8 +32,19 @@ export async function GET(
   const dayIds = days.map((d) => d.id);
 
   // 2. Services for this church in that window
+  // Select only columns that are guaranteed to exist in the DB (some schema
+  // columns like presetId, collectId etc. were added to Drizzle schema but
+  // not yet migrated to the live database).
   const serviceRows = dayIds.length === 0 ? [] : await db
-    .select()
+    .select({
+      id: services.id,
+      churchId: services.churchId,
+      liturgicalDayId: services.liturgicalDayId,
+      serviceType: services.serviceType,
+      time: services.time,
+      status: services.status,
+      notes: services.notes,
+    })
     .from(services)
     .where(and(eq(services.churchId, churchId), inArray(services.liturgicalDayId, dayIds)));
 
