@@ -94,18 +94,17 @@ export async function GET(
   // The DB table still has the old schema (service_type, time columns) rather
   // than the newer preset_id reference. Select explicitly to avoid Drizzle
   // generating a query for columns that don't exist in the DB yet.
-  const patternRows = await db.execute(sql`
-    SELECT id, day_of_week AS "dayOfWeek", service_type AS "serviceType", time, enabled
-    FROM church_service_patterns
-    WHERE church_id = ${churchId}
-  `);
-  const patterns = patternRows.rows as Array<{
+  const patterns = await db.execute<{
     id: string;
     dayOfWeek: number;
     serviceType: string;
     time: string | null;
     enabled: boolean;
-  }>;
+  }>(sql`
+    SELECT id, day_of_week AS "dayOfWeek", service_type AS "serviceType", time, enabled
+    FROM church_service_patterns
+    WHERE church_id = ${churchId}
+  `);
 
   return NextResponse.json({
     days,
