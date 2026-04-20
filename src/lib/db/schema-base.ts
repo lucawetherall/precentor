@@ -21,7 +21,7 @@ export const serviceTypeEnum = pgEnum("service_type", [
 ]);
 export const serviceStatusEnum = pgEnum("service_status", ["DRAFT", "PUBLISHED", "ARCHIVED"]);
 export const musicSlotTypeEnum = pgEnum("music_slot_type", [
-  "HYMN", "PSALM", "ANTHEM", "MASS_SETTING_KYRIE", "MASS_SETTING_GLORIA", "MASS_SETTING_SANCTUS",
+  "INTROIT", "HYMN", "PSALM", "ANTHEM", "MASS_SETTING_KYRIE", "MASS_SETTING_GLORIA", "MASS_SETTING_SANCTUS",
   "MASS_SETTING_AGNUS", "MASS_SETTING_GLOBAL", "ORGAN_VOLUNTARY_PRE",
   "ORGAN_VOLUNTARY_POST", "ORGAN_VOLUNTARY_OFFERTORY", "CANTICLE_MAGNIFICAT",
   "CANTICLE_NUNC_DIMITTIS", "RESPONSES", "GOSPEL_ACCLAMATION", "OTHER",
@@ -183,6 +183,7 @@ export const musicSlots = pgTable("music_slots", {
   responsesSettingId: uuid("responses_setting_id").references(() => responsesSettings.id),
   freeText: text("free_text"),
   notes: text("notes"),
+  psalmChant: text("psalm_chant"),  // NEW — populated only on PSALM slots
   verseCount: integer("verse_count"),
   selectedVerses: integer("selected_verses").array(),
 }, (t) => [

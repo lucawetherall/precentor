@@ -11,7 +11,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Home, Calendar, Users, Music, FileText, ScrollText, Settings } from "lucide-react";
+import { Home, Calendar, Users, Music, FileText, Settings, LayoutGrid } from "lucide-react";
 
 const ICON_STROKE = 1.5;
 const SIDEBAR_WIDTH = "w-60";
@@ -34,8 +34,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; strokeWi
   Users,
   Music,
   FileText,
-  ScrollText,
   Settings,
+  LayoutGrid,
 };
 
 function NavGroups({

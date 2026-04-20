@@ -152,6 +152,21 @@ export function musicSlotRowsForService(rows: MusicSlotRow[]): MusicItemRow[] {
         // Internal-only — omit entirely
         break;
 
+      case "INTROIT": {
+        // Dedicated INTROIT slot — treat like an anthem-style introit
+        const introitText = row.freeText ?? "";
+        if (row.anthem) {
+          const parts: string[] = [];
+          if (row.anthem.title) parts.push(row.anthem.title);
+          if (row.anthem.composer) parts.push(row.anthem.composer);
+          introit = { label: "Introit", segments: parseComposerWork(parts.join(" — ")) };
+        } else if (introitText.trim().length > 0) {
+          const segs = parseComposerWork(introitText);
+          if (segs.length > 0) introit = { label: "Introit", segments: segs };
+        }
+        break;
+      }
+
       case "OTHER": {
         const raw = (row.freeText ?? "").trim();
         let label: MusicItemLabel = "Other";
