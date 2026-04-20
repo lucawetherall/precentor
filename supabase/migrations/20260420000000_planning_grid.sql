@@ -1,0 +1,2 @@
+ALTER TYPE "music_slot_type" ADD VALUE IF NOT EXISTS 'INTROIT' BEFORE 'HYMN';
+ALTER TABLE "music_slots" ADD COLUMN IF NOT EXISTS "psalm_chant" text;
