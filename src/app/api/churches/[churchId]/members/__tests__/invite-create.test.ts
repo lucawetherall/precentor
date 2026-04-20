@@ -25,6 +25,8 @@ const mockInsertReturning = vi.fn().mockResolvedValue([{
 
 const mockSelectLimit = vi.fn().mockResolvedValue([{ name: "St John's" }]);
 
+const mockUpdateWhere = vi.fn().mockResolvedValue(undefined);
+
 vi.mock("@/lib/db", () => ({
   db: {
     insert: vi.fn().mockReturnValue({
@@ -37,6 +39,11 @@ vi.mock("@/lib/db", () => ({
         where: vi.fn().mockReturnValue({
           limit: mockSelectLimit,
         }),
+      }),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: mockUpdateWhere,
       }),
     }),
   },

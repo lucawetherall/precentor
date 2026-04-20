@@ -13,13 +13,12 @@ import {
 import { eq, and, asc, inArray } from 'drizzle-orm'
 import type { InferSelectModel } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
-import { requireChurchRole, hasMinRole } from '@/lib/auth/permissions'
-import type { MemberRole } from '@/types'
-import type { PopulatedMusicSlot } from '@/types/service-views'
+import { requireChurchRole, hasMinRole, coerceMemberRole } from '@/lib/auth/permissions'
+import type { AdjacentDayLinks, PopulatedMusicSlot } from '@/types/service-views'
+import { getAdjacentLiturgicalDays } from '@/lib/services/adjacent-liturgical-days'
 import { MemberServiceView } from './member-service-view'
 import { ServicePlanner } from './service-planner'
+import { ServiceNav } from './service-nav'
 
 interface Props {
   params: Promise<{ churchId: string; date: string }>
@@ -34,7 +33,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   if (error) redirect('/login')
 
   const userId = user!.id
-  const role = membership!.role as MemberRole
+  const role = coerceMemberRole(membership!.role)
   const isEditor = hasMinRole(role, 'EDITOR')
   const isEditMode = isEditor && mode === 'edit'
 
@@ -45,17 +44,22 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   let populatedSlots: PopulatedMusicSlot[] = []
   let userAvail: 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null = null
   let confirmedCount = 0
+  let adjacent: AdjacentDayLinks = { prev: null, next: null }
   // Editor data: per-service sections and raw music slots
   const editorSectionsMap: Record<string, InferSelectModel<typeof serviceSections>[]> = {}
   const editorSlotsMap: Record<string, InferSelectModel<typeof musicSlots>[]> = {}
 
   try {
-    const days = await db
-      .select()
-      .from(liturgicalDays)
-      .where(eq(liturgicalDays.date, date))
-      .limit(1)
+    const [days, adjacentResult] = await Promise.all([
+      db
+        .select()
+        .from(liturgicalDays)
+        .where(eq(liturgicalDays.date, date))
+        .limit(1),
+      getAdjacentLiturgicalDays(date),
+    ])
     day = days[0] ?? null
+    adjacent = adjacentResult
 
     if (day) {
       dayReadings = await db
@@ -148,34 +152,23 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
 
   if (!day) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+        <ServiceNav churchId={churchId} adjacent={adjacent} />
         <p className="text-muted-foreground">No liturgical data for {date}.</p>
-        <Link
-          href={`/churches/${churchId}/services`}
-          className="flex items-center gap-1 text-sm text-primary underline mt-2"
-        >
-          <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-          Back to Services
-        </Link>
       </div>
     )
   }
 
   const service = (dayServices[0] as {
-    id: string; serviceType: string; time: string | null; choirStatus: string
+    id: string; serviceType: string; time: string | null;
   } | undefined) ?? null
 
-  // Edit mode: existing planner (editors/admins only)
+  // Edit mode: existing planner (editors/admins only).
+  // ServicePlanner renders its own ServiceNav internally (with "Back to service view"),
+  // so no BackLink at this level — the nav lives next to the planner's prev/next.
   if (isEditMode) {
     return (
-      <div className="p-8 max-w-5xl">
-        <Link
-          href={`/churches/${churchId}/services/${date}`}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-        >
-          <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-          Back to service view
-        </Link>
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
         <ServicePlanner
           churchId={churchId}
           liturgicalDayId={day.id}
@@ -184,6 +177,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
           editorSectionsMap={editorSectionsMap}
           editorSlotsMap={editorSlotsMap}
           readings={dayReadings}
+          adjacent={adjacent}
         />
       </div>
     )
@@ -207,6 +201,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
       role={role}
       confirmedCount={isEditor ? confirmedCount : undefined}
       editUrl={`/churches/${churchId}/services/${date}?mode=edit`}
+      adjacent={adjacent}
     />
   )
 }

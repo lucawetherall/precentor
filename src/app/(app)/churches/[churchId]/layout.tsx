@@ -4,9 +4,9 @@ import { db } from "@/lib/db";
 import { churches, churchMemberships, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
-import { hasMinRole } from "@/lib/auth/permissions";
-import type { MemberRole } from "@/types";
+import { hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 import { ChurchSidebar } from "@/components/church-sidebar";
+import { MigrationBanner } from "@/components/migration-banner";
 
 interface Props {
   children: React.ReactNode;
@@ -51,7 +51,7 @@ export default async function ChurchLayout({ children, params }: Props) {
     redirect("/churches");
   }
 
-  const userRole = membership.role as MemberRole;
+  const userRole = coerceMemberRole(membership.role);
   const isAdmin = hasMinRole(userRole, "ADMIN");
   const canEdit = hasMinRole(userRole, "EDITOR");
 
@@ -80,6 +80,7 @@ export default async function ChurchLayout({ children, params }: Props) {
       items: [
         { href: `/churches/${churchId}/members`, label: "Members", iconName: "Users" },
         { href: `/churches/${churchId}/service-sheets`, label: "Service Sheets", iconName: "FileText" },
+        { href: `/churches/${churchId}/music-list`, label: "Music List", iconName: "ScrollText" },
         { href: `/churches/${churchId}/settings`, label: "Settings", iconName: "Settings" },
       ],
     }] : []),
@@ -94,7 +95,10 @@ export default async function ChurchLayout({ children, params }: Props) {
         userEmail={user.email || ""}
         navGroups={navGroups}
       />
-      <main id="main-content" className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">
+        {isAdmin && <MigrationBanner churchId={churchId} />}
+        {children}
+      </main>
     </div>
   );
 }

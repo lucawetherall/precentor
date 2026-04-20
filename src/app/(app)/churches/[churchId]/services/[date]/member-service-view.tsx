@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
-import { ChevronLeft } from 'lucide-react'
 import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from '@/types'
 import type { LiturgicalColour, MemberRole } from '@/types'
 import { hasMinRole } from '@/lib/auth/permissions'
-import type { PopulatedMusicSlot } from '@/types/service-views'
+import type { AdjacentDayLinks, PopulatedMusicSlot } from '@/types/service-views'
 import { AvailabilityWidget } from '@/components/availability-widget'
 import { ServiceMusicList } from './service-music-list'
 import { ReadingsByLectionary } from './readings-by-lectionary'
-import { CHOIR_STATUS_LABELS, CHOIR_STATUS_PILL_CLASSES } from '../choir-status-constants'
+import { ServiceNav } from './service-nav'
+import { formatLiturgicalDayName } from '@/lib/liturgical-display'
 
 interface Reading {
   id: string
@@ -22,7 +22,6 @@ interface ServiceInfo {
   id: string
   serviceType: string
   time: string | null
-  choirStatus: string
 }
 
 interface MemberServiceViewProps {
@@ -41,6 +40,7 @@ interface MemberServiceViewProps {
   role: MemberRole
   confirmedCount?: number
   editUrl: string
+  adjacent: AdjacentDayLinks
 }
 
 export function MemberServiceView({
@@ -53,20 +53,15 @@ export function MemberServiceView({
   role,
   confirmedCount,
   editUrl,
+  adjacent,
 }: MemberServiceViewProps) {
   const colour = LITURGICAL_COLOURS[day.colour as LiturgicalColour] ?? '#4A6741'
   const isEditor = hasMinRole(role, 'EDITOR')
 
   return (
-    <div className="p-8 max-w-5xl">
-      {/* Back link */}
-      <Link
-        href={`/churches/${churchId}/services`}
-        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-      >
-        <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
-        Back to Services
-      </Link>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+      {/* Nav: Back link + Prev/Next */}
+      <ServiceNav churchId={churchId} adjacent={adjacent} />
 
       {/* Editor notice (EDITOR/ADMIN only) */}
       {isEditor && (
@@ -85,30 +80,21 @@ export function MemberServiceView({
         </div>
       )}
 
-      {/* Choir status badge (all roles, only if service exists and non-default) */}
-      {service && service.choirStatus !== 'CHOIR_REQUIRED' && (
-        <div className="mb-4">
-          <span
-            className={`text-xs font-mono uppercase tracking-wider px-2 py-1 ${CHOIR_STATUS_PILL_CLASSES[service.choirStatus] ?? 'bg-gray-100 text-gray-600 border border-gray-300'}`}
-          >
-            {CHOIR_STATUS_LABELS[service.choirStatus] ?? service.choirStatus}
-          </span>
-        </div>
-      )}
 
       {/* Service header */}
       <div className="flex items-start gap-4 mb-6">
         <span
-          aria-hidden="true"
-          className="w-3 h-12 flex-shrink-0 mt-1"
+          role="img"
+          aria-label={`${day.season.replace(/_/g, ' ').toLowerCase()} — liturgical colour ${day.colour.toLowerCase()}`}
+          className="w-4 h-14 flex-shrink-0 mt-1 rounded-sm"
           style={{ backgroundColor: colour }}
         />
         <div className="flex-1 min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+          <p className="small-caps text-xs text-muted-foreground mb-1">
             {day.season.replace(/_/g, ' ')}
           </p>
-          <h1 className="text-3xl font-heading font-semibold">{day.cwName}</h1>
-          <p className="text-sm text-muted-foreground font-mono mt-1">
+          <h1 className="text-3xl font-heading font-semibold leading-tight text-balance">{formatLiturgicalDayName(day.cwName, day.date)}</h1>
+          <p className="small-caps text-xs text-muted-foreground mt-1">
             {format(parseISO(day.date), 'EEEE d MMMM yyyy')}
             {service &&
               ` · ${SERVICE_TYPE_LABELS[service.serviceType as keyof typeof SERVICE_TYPE_LABELS] ?? service.serviceType}`}
@@ -138,9 +124,9 @@ export function MemberServiceView({
       {/* Readings + Collect */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {readings.length > 0 && (
-          <div className="border border-border bg-card">
+          <div className="border border-border bg-card min-w-0 overflow-hidden">
             <div className="px-4 py-2.5 border-b border-border bg-muted/30">
-              <h2 className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <h2 className="small-caps text-xs text-muted-foreground">
                 Readings
               </h2>
             </div>
@@ -151,7 +137,7 @@ export function MemberServiceView({
         {day.collect && (
           <div className="border border-border bg-card">
             <div className="px-4 py-2.5 border-b border-border bg-muted/30">
-              <h2 className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <h2 className="small-caps text-xs text-muted-foreground">
                 Collect
               </h2>
             </div>
@@ -167,7 +153,7 @@ export function MemberServiceView({
       {/* Music list */}
       <div className="border border-border bg-card">
         <div className="px-4 py-2.5 border-b border-border bg-muted/30 flex items-center justify-between">
-          <h2 className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          <h2 className="small-caps text-xs text-muted-foreground">
             Music
           </h2>
           {service && (

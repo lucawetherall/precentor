@@ -10,6 +10,7 @@ export type ServiceType =
   | "CUSTOM";
 
 export type MusicSlotType =
+  | "INTROIT"
   | "HYMN"
   | "PSALM"
   | "ANTHEM"
@@ -65,6 +66,7 @@ export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
 };
 
 export const MUSIC_SLOT_LABELS: Record<MusicSlotType, string> = {
+  INTROIT: "Introit",
   HYMN: "Hymn",
   PSALM: "Psalm",
   ANTHEM: "Anthem",
@@ -126,6 +128,7 @@ export const POSITION_LABELS: Record<string, string> = {
   OLD_TESTAMENT: "Old Testament",
   PSALM: "Psalm",
   NEW_TESTAMENT: "New Testament",
+  EPISTLE: "New Testament", // backward compat for pre-migration data
   GOSPEL: "Gospel",
   CANTICLE: "Canticle",
 };

@@ -3,18 +3,18 @@
 import { useState } from "react";
 import { Users, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { cn } from "@/lib/utils";
 
 interface MemberRow {
   id: string;
   role: string;
-  voicePart: string | null;
   joinedAt: Date;
   userName: string | null;
   userEmail: string;
+  roles?: { id: string; catalogRoleId: string; name: string; isPrimary: boolean }[];
 }
 
 const ROLES = ["MEMBER", "EDITOR", "ADMIN"] as const;
-const VOICE_PARTS = ["SOPRANO", "ALTO", "TENOR", "BASS"] as const;
 
 export function MembersTable({
   initialMembers,
@@ -30,13 +30,13 @@ export function MembersTable({
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const { addToast } = useToast();
 
-  const updateMember = async (memberId: string, field: "role" | "voicePart", value: string | null) => {
+  const updateMember = async (memberId: string, field: "role", value: string | null) => {
     const prev = members.find((m) => m.id === memberId);
     if (!prev) return;
 
     // Optimistic update
     setMembers((ms) =>
-      ms.map((m) => (m.id === memberId ? { ...m, [field]: value } : m))
+      ms.map((m) => (m.id === memberId ? { ...m, [field]: value ?? m.role } : m))
     );
 
     try {
@@ -46,7 +46,7 @@ export function MembersTable({
         body: JSON.stringify({ [field]: value }),
       });
       if (res.ok) {
-        addToast(`${field === "role" ? "Role" : "Voice part"} updated`, "success");
+        addToast("Role updated", "success");
       } else {
         setMembers((ms) => ms.map((m) => (m.id === memberId ? prev : m)));
         addToast("Failed to update member", "error");
@@ -95,13 +95,13 @@ export function MembersTable({
             <th className="px-3 py-2 text-left font-body font-normal">Name</th>
             <th className="px-3 py-2 text-left font-body font-normal hidden sm:table-cell">Email</th>
             <th className="px-3 py-2 text-left font-body font-normal">Role</th>
-            <th className="px-3 py-2 text-left font-body font-normal">Voice Part</th>
+            <th className="px-3 py-2 text-left font-body font-normal">Roles</th>
             {isAdmin && <th className="px-3 py-2 w-10" aria-label="Actions"></th>}
           </tr>
         </thead>
         <tbody>
           {members.map((m, i) => (
-            <tr key={m.id} className={i % 2 === 0 ? "bg-white" : "bg-background"}>
+            <tr key={m.id} className={cn("transition-colors hover:bg-muted/50", i % 2 === 0 ? "bg-card" : "bg-background")}>
               <td className="px-3 py-2">
                 <div>{m.userName || "—"}</div>
                 <div className="font-mono text-sm text-muted-foreground sm:hidden">{m.userEmail}</div>
@@ -113,7 +113,7 @@ export function MembersTable({
                     value={m.role}
                     onChange={(e) => updateMember(m.id, "role", e.target.value)}
                     aria-label={`Role for ${m.userName || m.userEmail}`}
-                    className="text-xs rounded-md border border-input px-1.5 py-1 bg-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="text-xs rounded-md border border-input px-1.5 py-1 bg-card shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {ROLES.map((r) => (
                       <option key={r} value={r}>{r}</option>
@@ -124,21 +124,14 @@ export function MembersTable({
                 )}
               </td>
               <td className="px-3 py-2">
-                {isAdmin ? (
-                  <select
-                    value={m.voicePart || ""}
-                    onChange={(e) => updateMember(m.id, "voicePart", e.target.value || null)}
-                    aria-label={`Voice part for ${m.userName || m.userEmail}`}
-                    className="text-xs rounded-md border border-input px-1.5 py-1 bg-white shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value="">—</option>
-                    {VOICE_PARTS.map((vp) => (
-                      <option key={vp} value={vp}>{vp}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="text-xs">{m.voicePart || "—"}</span>
-                )}
+                <div className="flex flex-wrap gap-1">
+                  {(m.roles ?? []).map((r) => (
+                    <span key={r.id} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                      {r.name}{r.isPrimary ? " · primary" : ""}
+                    </span>
+                  ))}
+                  {(m.roles ?? []).length === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                </div>
               </td>
               {isAdmin && (
                 <td className="px-2 py-2">
@@ -161,11 +154,11 @@ export function MembersTable({
                   ) : (
                     <button
                       onClick={() => setConfirmRemoveId(m.id)}
-                      className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                      className="w-10 h-10 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       title="Remove member"
                       aria-label={`Remove ${m.userName || m.userEmail}`}
                     >
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                     </button>
                   )}
                 </td>

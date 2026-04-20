@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/form-field";
 
 function LoginForm() {
   const router = useRouter();
@@ -53,29 +54,21 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleLogin} className="space-y-4">
-      <div className="space-y-2">
-        <label htmlFor="email" className="text-sm font-body">
-          Email address
-        </label>
+      <FormField id="email" label="Email address" required error={fieldErrors.email || null}>
         <Input
-          id="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onBlur={() => setFieldErrors((prev) => ({ ...prev, email: validateEmail(email) }))}
           placeholder="director@parish.org.uk"
           required
-          className="bg-white"
         />
-        {fieldErrors.email && (
-          <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
-        )}
-      </div>
+      </FormField>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label htmlFor="password" className="text-sm font-body">Password</label>
-          <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+          <Link href="/forgot-password" className="text-xs text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary">
             Forgot password?
           </Link>
         </div>
@@ -87,10 +80,11 @@ function LoginForm() {
           onBlur={() => setFieldErrors((prev) => ({ ...prev, password: validatePassword(password) }))}
           placeholder="Enter your password"
           required
-          className="bg-white"
+          aria-invalid={fieldErrors.password ? true : undefined}
+          aria-describedby={fieldErrors.password ? "password-error" : undefined}
         />
         {fieldErrors.password && (
-          <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
+          <p id="password-error" role="alert" className="text-xs text-destructive">{fieldErrors.password}</p>
         )}
       </div>
 
@@ -120,7 +114,7 @@ export default function LoginPage() {
 
         <p className="text-sm text-center text-muted-foreground">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-primary hover:underline">Create one</Link>
+          <Link href="/signup" className="text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary">Create one</Link>
         </p>
       </div>
     </main>

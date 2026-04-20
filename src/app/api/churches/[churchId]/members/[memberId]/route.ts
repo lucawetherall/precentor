@@ -6,7 +6,6 @@ import { eq, and, sql } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 
 const VALID_ROLES = ["ADMIN", "EDITOR", "MEMBER"] as const;
-const VALID_VOICE_PARTS = ["SOPRANO", "ALTO", "TENOR", "BASS"] as const;
 
 export async function PATCH(
   request: Request,
@@ -60,13 +59,6 @@ export async function PATCH(
       }
     }
     updates.role = body.role;
-  }
-
-  if ("voicePart" in body) {
-    if (body.voicePart !== null && !VALID_VOICE_PARTS.includes(body.voicePart)) {
-      return NextResponse.json({ error: "Invalid voice part" }, { status: 400 });
-    }
-    updates.voicePart = body.voicePart;
   }
 
   if (Object.keys(updates).length === 0) {

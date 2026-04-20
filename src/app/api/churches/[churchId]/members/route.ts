@@ -18,7 +18,7 @@ export async function POST(
   const { user, error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  const rateLimited = rateLimit(`invite:${user!.id}`, { maxRequests: 10, windowMs: 60_000 });
+  const rateLimited = await rateLimit(`invite:${user!.id}`, { maxRequests: 10, windowMs: 60_000 });
   if (rateLimited) return rateLimited;
 
   let body;
@@ -63,22 +63,49 @@ export async function POST(
       expiresAt,
     }).returning();
 
-    // Send invite email if requested and email is provided
+    // Send invite email if requested and email is provided. Record success
+    // or failure on the invite row so the admin UI can surface "resend" and
+    // so operators can alert on a rising error rate.
+    let emailSendError: string | null = null;
     if (email && sendEmail) {
       try {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         const inviteUrl = `${appUrl}/invite/${token}`;
         await sendInvitation(email, church?.name ?? "a church", user!.name ?? "An administrator", inviteUrl);
+        await db
+          .update(invites)
+          .set({ emailSentAt: new Date(), lastSendError: null })
+          .where(eq(invites.id, invite.id));
       } catch (emailError) {
-        logger.error("Failed to send invite email", emailError);
+        emailSendError = emailError instanceof Error ? emailError.message : String(emailError);
+        logger.error("Failed to send invite email", emailError, {
+          inviteId: invite.id,
+          email,
+        });
+        await db
+          .update(invites)
+          .set({ lastSendError: emailSendError })
+          .where(eq(invites.id, invite.id))
+          .catch(() => {
+            // If we can't record the failure either, nothing more to do — log
+            // line above already raised the primary error.
+          });
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      token,
-      inviteId: invite.id,
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        token,
+        inviteId: invite.id,
+        emailDelivery: email && sendEmail
+          ? emailSendError
+            ? { status: "failed", error: emailSendError }
+            : { status: "sent" }
+          : { status: "skipped" },
+      },
+      { status: 201 },
+    );
   } catch (error) {
     logger.error("Failed to create invite", error);
     return NextResponse.json({ error: "Failed to create invite" }, { status: 500 });

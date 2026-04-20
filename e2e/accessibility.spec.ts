@@ -5,7 +5,7 @@ test.describe("Accessibility", () => {
     await page.goto("/");
     const h1s = page.locator("h1");
     await expect(h1s).toHaveCount(1);
-    await expect(h1s.first()).toContainText("Precentor");
+    await expect(h1s.first()).toContainText("Sunday");
   });
 
   test("landing page has lang attribute on html", async ({ page }) => {
@@ -42,8 +42,8 @@ test.describe("Accessibility", () => {
     // Fill in mismatched passwords to trigger client-side error
     await page.locator("#name").fill("Test User");
     await page.locator("#email").fill("test@example.com");
-    await page.locator("#password").fill("password123");
-    await page.locator("#confirm-password").fill("different123");
+    await page.locator("#password").fill("CorrectHorseBattery1");
+    await page.locator("#confirm-password").fill("CorrectHorseBattery2");
     await page.getByRole("button", { name: /create account/i }).click();
 
     // Error message should appear with role="alert"
@@ -55,8 +55,8 @@ test.describe("Accessibility", () => {
   test("buttons have proper disabled styling", async ({ page }) => {
     await page.goto("/login");
     const button = page.getByRole("button", { name: /sign in/i });
-    // Button should have cursor-not-allowed when disabled class is applied
+    // Button should have proper disabled styling (pointer-events-none + opacity)
     const classes = await button.getAttribute("class");
-    expect(classes).toContain("disabled:cursor-not-allowed");
+    expect(classes).toContain("disabled:opacity-50");
   });
 });

@@ -1,8 +1,9 @@
-import { pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, json, jsonb, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, uuid, text, integer, boolean, timestamp, date, json, jsonb, uniqueIndex, index, check } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // ─── Enums ───────────────────────────────────────────────────
 export const memberRoleEnum = pgEnum("member_role", ["ADMIN", "EDITOR", "MEMBER"]);
-export const voicePartEnum = pgEnum("voice_part", ["SOPRANO", "ALTO", "TENOR", "BASS"]);
+// voicePartEnum removed in Phase D — replaced by churchMemberRoles
 export const liturgicalSeasonEnum = pgEnum("liturgical_season", [
   "ADVENT", "CHRISTMAS", "EPIPHANY", "LENT", "HOLY_WEEK", "EASTER",
   "ASCENSION", "PENTECOST", "TRINITY", "ORDINARY", "KINGDOM",
@@ -33,11 +34,24 @@ export const canticleTypeEnum = pgEnum("canticle_type", [
 export const availabilityStatusEnum = pgEnum("availability_status", [
   "AVAILABLE", "UNAVAILABLE", "TENTATIVE",
 ]);
-export const choirStatusEnum = pgEnum("choir_status", [
-  "CHOIR_REQUIRED",
-  "NO_CHOIR_NEEDED",
-  "SAID_SERVICE_ONLY",
-  "NO_SERVICE",
+// choirStatusEnum removed in Phase D — superseded by serviceRoleSlots
+export const roleCategoryEnum = pgEnum("role_category", [
+  "VOICE",
+  "MUSIC_DIRECTION",
+  "MUSIC_INSTRUMENT",
+  "CLERGY_PARISH",
+  "CLERGY_CATHEDRAL",
+  "LAY_MINISTRY",
+]);
+export const choirRequirementEnum = pgEnum("choir_requirement", [
+  "FULL_CHOIR",
+  "ORGANIST_ONLY",
+  "SAID",
+]);
+export const musicListFieldSetEnum = pgEnum("music_list_field_set", [
+  "CHORAL",
+  "HYMNS_ONLY",
+  "READINGS_ONLY",
 ]);
 
 // ─── Users & Churches ────────────────────────────────────────
@@ -67,12 +81,12 @@ export const churchMemberships = pgTable("church_memberships", {
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
   role: memberRoleEnum("role").default("MEMBER").notNull(),
-  voicePart: voicePartEnum("voice_part"),
   permissions: json("permissions").default({}).$type<Record<string, boolean>>(),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
 }, (t) => [
   uniqueIndex("membership_unique").on(t.userId, t.churchId),
   index("membership_user_idx").on(t.userId),
+  index("membership_church_role_idx").on(t.churchId, t.role),
 ]);
 
 // ─── Liturgical Calendar ─────────────────────────────────────
@@ -146,13 +160,15 @@ export const services = pgTable("services", {
   includeReadingText: boolean("include_reading_text").default(true).notNull(),
   sheetMode: text("sheet_mode").default("summary").notNull(),
   liturgicalOverrides: json("liturgical_overrides").default({}).$type<Record<string, string>>(),
-  choirStatus: choirStatusEnum("choir_status").default("CHOIR_REQUIRED").notNull(),
+  presetId: uuid("preset_id").references(() => churchServicePresets.id, { onDelete: "set null" }),
   defaultMassSettingId: uuid("default_mass_setting_id").references(() => massSettings.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [
   uniqueIndex("service_unique").on(t.churchId, t.liturgicalDayId, t.serviceType),
   index("service_church_idx").on(t.churchId),
+  index("service_church_status_idx").on(t.churchId, t.status),
+  check("services_preset_when_active", sql`status = 'ARCHIVED' OR preset_id IS NOT NULL`),
 ]);
 
 export const musicSlots = pgTable("music_slots", {
@@ -255,8 +271,16 @@ export const invites = pgTable("invites", {
   invitedBy: uuid("invited_by").notNull().references(() => users.id, { onDelete: "cascade" }),
   expiresAt: timestamp("expires_at").notNull(),
   acceptedAt: timestamp("accepted_at"),
+  // Last error string from the transactional email send, if any. Admins can
+  // surface "email didn't send — resend?" in the UI without needing to grep
+  // server logs. Null = email never attempted (open invite) or sent OK.
+  lastSendError: text("last_send_error"),
+  emailSentAt: timestamp("email_sent_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("invite_church_idx").on(t.churchId),
+  index("invite_email_idx").on(t.email),
+]);
 
 // ─── Rota & Availability ─────────────────────────────────────
 export const availability = pgTable("availability", {
@@ -274,9 +298,13 @@ export const rotaEntries = pgTable("rota_entries", {
   serviceId: uuid("service_id").notNull().references(() => services.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   confirmed: boolean("confirmed").default(false).notNull(),
+  // Phase D: becomes NOT NULL after migration script run
+  catalogRoleId: uuid("catalog_role_id").notNull().references(() => roleCatalog.id, { onDelete: "restrict" }),
+  quarantinedAt: timestamp("quarantined_at"),
 }, (t) => [
-  uniqueIndex("rota_unique").on(t.serviceId, t.userId),
+  uniqueIndex("rota_unique").on(t.serviceId, t.userId, t.catalogRoleId).where(sql`quarantined_at IS NULL`),
   index("rota_service_idx").on(t.serviceId),
+  index("rota_service_active_idx").on(t.serviceId).where(sql`quarantined_at IS NULL`),
 ]);
 
 // ─── Performance Log ─────────────────────────────────────────
@@ -309,9 +337,173 @@ export const churchServicePatterns = pgTable("church_service_patterns", {
   id: uuid("id").primaryKey().defaultRandom(),
   churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
   dayOfWeek: integer("day_of_week").notNull(),  // 0=Sun, 6=Sat
-  serviceType: serviceTypeEnum("service_type").notNull(),
-  time: text("time"),  // e.g. "10:00"
   enabled: boolean("enabled").default(true).notNull(),
+  presetId: uuid("preset_id").notNull().references(() => churchServicePresets.id, { onDelete: "restrict" }),
 }, (t) => [
-  uniqueIndex("church_service_pattern_unique").on(t.churchId, t.dayOfWeek, t.serviceType),
+  uniqueIndex("church_service_pattern_unique").on(t.churchId, t.dayOfWeek, t.presetId),
+]);
+
+// ─── Operational: AI usage quota ─────────────────────────────
+// One row per (churchId, date). Counter is incremented atomically on every
+// Gemini suggestion call. A daily cap stops a compromised or abusive account
+// from running up unlimited spend.
+export const aiUsageDaily = pgTable("ai_usage_daily", {
+  churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  day: date("day").notNull(),
+  count: integer("count").default(0).notNull(),
+}, (t) => [
+  uniqueIndex("ai_usage_daily_pk").on(t.churchId, t.day),
+]);
+
+// ─── Operational: User deletion audit ────────────────────────
+// Written immediately before a hard-delete so we retain an auditable record
+// of who had access to what, without retaining PII beyond necessity.
+// Redacted of email/name — we keep only structural metadata.
+export const userDeletions = pgTable("user_deletions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  // The user's UUID at delete-time. Not an FK — the user row is gone after delete.
+  deletedUserId: uuid("deleted_user_id").notNull(),
+  churchIds: uuid("church_ids").array().notNull(),
+  deletedAt: timestamp("deleted_at").defaultNow().notNull(),
+  reason: text("reason"),
+});
+
+// ─── Operational: Rate limit buckets ─────────────────────────
+// Durable counterpart of lib/rate-limit.ts. Serverless environments spin up
+// many instances — an in-memory Map gives each instance its own limit, which
+// collapses the effective rate limit to (limit × instanceCount). A single row
+// per (key, window_start) gives us a shared counter with millisecond
+// granularity that costs one UPSERT per request.
+export const rateLimitBuckets = pgTable("rate_limit_buckets", {
+  key: text("key").notNull(),
+  // Start of the current window (millisecond epoch). Old rows are swept
+  // periodically by the cleanup job — see /api/cron/sweep-rate-limits.
+  windowStart: timestamp("window_start").notNull(),
+  count: integer("count").default(0).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+}, (t) => [
+  uniqueIndex("rate_limit_bucket_pk").on(t.key, t.windowStart),
+  index("rate_limit_expires_idx").on(t.expiresAt),
+]);
+
+// ─── Role catalog (global, seeded) ───────────────────────────
+export const roleCatalog = pgTable("role_catalog", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(),
+  defaultName: text("default_name").notNull(),
+  category: roleCategoryEnum("category").notNull(),
+  rotaEligible: boolean("rota_eligible").default(false).notNull(),
+  institutional: boolean("institutional").default(false).notNull(),
+  defaultExclusive: boolean("default_exclusive").default(true).notNull(),
+  defaultMinCount: integer("default_min_count").default(1).notNull(),
+  defaultMaxCount: integer("default_max_count"),
+  displayOrder: integer("display_order").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("role_catalog_category_idx").on(t.category),
+  index("role_catalog_display_idx").on(t.displayOrder),
+]);
+
+// ─── Church member roles (replaces voicePart column) ─────────
+export const churchMemberRoles = pgTable("church_member_roles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  catalogRoleId: uuid("catalog_role_id").notNull().references(() => roleCatalog.id, { onDelete: "restrict" }),
+  isPrimary: boolean("is_primary").default(false).notNull(),
+  displayOrder: integer("display_order").default(0).notNull(),
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("cmr_unique").on(t.userId, t.churchId, t.catalogRoleId),
+  index("cmr_church_role_idx").on(t.churchId, t.catalogRoleId),
+  index("cmr_user_church_idx").on(t.userId, t.churchId),
+]);
+
+// ─── Church service presets ──────────────────────────────────
+export const churchServicePresets = pgTable("church_service_presets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  churchId: uuid("church_id").notNull().references(() => churches.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  serviceType: serviceTypeEnum("service_type").notNull(),
+  defaultTime: text("default_time"),
+  choirRequirement: choirRequirementEnum("choir_requirement").notNull(),
+  liturgicalTemplateId: uuid("liturgical_template_id"),
+  musicListFieldSet: musicListFieldSetEnum("music_list_field_set").notNull(),
+  liturgicalSeasonTags: text("liturgical_season_tags").array().default([]).notNull(),
+  archivedAt: timestamp("archived_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("preset_name_unique").on(t.churchId, t.name).where(sql`archived_at IS NULL`),
+  index("preset_church_idx").on(t.churchId),
+  index("preset_church_archived_idx").on(t.churchId, t.archivedAt),
+]);
+
+// ─── Preset role slots ───────────────────────────────────────
+export const presetRoleSlots = pgTable("preset_role_slots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  presetId: uuid("preset_id").notNull().references(() => churchServicePresets.id, { onDelete: "cascade" }),
+  catalogRoleId: uuid("catalog_role_id").notNull().references(() => roleCatalog.id, { onDelete: "restrict" }),
+  minCount: integer("min_count").default(0).notNull(),
+  maxCount: integer("max_count"),
+  exclusive: boolean("exclusive").notNull(),
+  displayOrder: integer("display_order").notNull(),
+}, (t) => [
+  uniqueIndex("preset_slot_unique").on(t.presetId, t.catalogRoleId),
+  index("preset_slot_preset_idx").on(t.presetId),
+]);
+
+// ─── Service role slots (per-service snapshot) ────────────────
+export const serviceRoleSlots = pgTable("service_role_slots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  serviceId: uuid("service_id").notNull().references(() => services.id, { onDelete: "cascade" }),
+  catalogRoleId: uuid("catalog_role_id").notNull().references(() => roleCatalog.id, { onDelete: "restrict" }),
+  minCount: integer("min_count").default(0).notNull(),
+  maxCount: integer("max_count"),
+  exclusive: boolean("exclusive").notNull(),
+  displayOrder: integer("display_order").notNull(),
+}, (t) => [
+  uniqueIndex("service_slot_unique").on(t.serviceId, t.catalogRoleId),
+  index("service_slot_service_idx").on(t.serviceId),
+]);
+
+// ─── Migration operational tables ────────────────────────────
+export const migrationPhaseEnum = pgEnum("migration_phase", ["A", "B", "D"]);
+export const migrationSeverityEnum = pgEnum("migration_severity", ["INFO", "WARN", "ERROR"]);
+
+export const migrationPhaseState = pgTable("migration_phase_state", {
+  phase: migrationPhaseEnum("phase").primaryKey(),
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+});
+
+export const migrationAuditLog = pgTable("migration_audit_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  phase: migrationPhaseEnum("phase").notNull(),
+  churchId: uuid("church_id").references(() => churches.id, { onDelete: "cascade" }),
+  severity: migrationSeverityEnum("severity").notNull(),
+  code: text("code").notNull(),
+  details: jsonb("details").default({}).notNull(),
+  dismissedAt: timestamp("dismissed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("mal_church_idx").on(t.churchId),
+  index("mal_code_idx").on(t.code),
+  index("mal_dismissed_idx").on(t.dismissedAt),
+]);
+
+export const quarantinedRotaEntries = pgTable("quarantined_rota_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  // These columns intentionally have NO foreign keys: quarantined rows must
+  // survive deletion of the original service, user, or rota entry so the
+  // diagnostic history is preserved. Integrity is therefore best-effort,
+  // and readers must handle missing referents at display time.
+  originalEntryId: uuid("original_entry_id").notNull(),
+  serviceId: uuid("service_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  confirmed: boolean("confirmed").notNull(),
+  quarantineReason: text("quarantine_reason").notNull(),
+  quarantinedAt: timestamp("quarantined_at").defaultNow().notNull(),
+}, (t) => [
+  index("qre_service_idx").on(t.serviceId),
+  index("qre_user_idx").on(t.userId),
 ]);

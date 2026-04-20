@@ -8,20 +8,18 @@ export default function GlobalError({
 }) {
   return (
     <html>
-      <body>
-        <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ textAlign: "center" }}>
-            <h1 style={{ fontSize: "1.5rem", fontWeight: 600 }}>Something went wrong</h1>
-            <p style={{ marginTop: "0.5rem", color: "#666" }}>
-              An unexpected error occurred.
-            </p>
-            <button
-              onClick={reset}
-              style={{ marginTop: "1.5rem", padding: "0.5rem 1rem", borderRadius: "0.375rem", backgroundColor: "#000", color: "#fff", border: "none", cursor: "pointer" }}
-            >
-              Try again
-            </button>
-          </div>
+      <body className="min-h-screen flex items-center justify-center p-4 bg-background text-foreground font-body">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold">Something went wrong</h1>
+          <p className="mt-2 text-muted-foreground">
+            An unexpected error occurred.
+          </p>
+          <button
+            onClick={reset}
+            className="mt-6 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-hover transition-colors"
+          >
+            Try again
+          </button>
         </div>
       </body>
     </html>

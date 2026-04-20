@@ -11,6 +11,8 @@ interface AvailabilityWidgetProps {
   churchId: string
   currentStatus: AvailabilityStatus
   size?: 'sm' | 'md' | 'lg'
+  eligible?: boolean
+  eligibleReason?: 'SAID' | 'NO_ROLE'
 }
 
 interface BtnConfig {
@@ -21,9 +23,9 @@ interface BtnConfig {
 }
 
 const BUTTONS: BtnConfig[] = [
-  { status: 'AVAILABLE',   label: 'Available',   symbol: '✓', activeClass: 'bg-green-600 border-green-600 text-white' },
-  { status: 'TENTATIVE',   label: 'Maybe',       symbol: '?', activeClass: 'bg-amber-500 border-amber-500 text-white' },
-  { status: 'UNAVAILABLE', label: 'Unavailable', symbol: '✗', activeClass: 'bg-red-600 border-red-600 text-white' },
+  { status: 'AVAILABLE',   label: 'Available',   symbol: '✓', activeClass: 'bg-success border-success text-success-foreground' },
+  { status: 'TENTATIVE',   label: 'Maybe',       symbol: '?', activeClass: 'bg-warning border-warning text-warning-foreground' },
+  { status: 'UNAVAILABLE', label: 'Unavailable', symbol: '✗', activeClass: 'bg-destructive border-destructive text-destructive-foreground' },
 ]
 
 export function AvailabilityWidget({
@@ -31,9 +33,18 @@ export function AvailabilityWidget({
   churchId,
   currentStatus,
   size = 'md',
+  eligible,
+  eligibleReason,
 }: AvailabilityWidgetProps) {
   const [status, setStatus] = useState<AvailabilityStatus>(currentStatus)
   const { addToast } = useToast()
+
+  if (eligible === false) {
+    const tooltip = eligibleReason === 'NO_ROLE'
+      ? "You don't have a role required for this service"
+      : "Not required for this service";
+    return <span title={tooltip} className="text-muted-foreground select-none">—</span>;
+  }
 
   async function handleClick(clicked: Exclude<AvailabilityStatus, null>) {
     const previous = status
@@ -62,8 +73,8 @@ export function AvailabilityWidget({
   }
 
   const sizeClasses = {
-    sm: 'h-5 w-5 text-[9px] font-bold',
-    md: 'h-8 w-8 text-xs font-bold',
+    sm: 'h-8 w-8 md:h-6 md:w-6 text-[10px] font-bold',
+    md: 'h-11 w-11 md:h-9 md:w-9 text-xs font-bold',
     lg: 'h-12 w-24 flex-col gap-1 text-xs font-bold',
   }
 
@@ -87,7 +98,7 @@ export function AvailabilityWidget({
           >
             <span>{symbol}</span>
             {size === 'lg' && (
-              <span className="text-[10px] uppercase tracking-wider leading-none">{label}</span>
+              <span className="small-caps text-xs leading-none">{label}</span>
             )}
           </button>
         )

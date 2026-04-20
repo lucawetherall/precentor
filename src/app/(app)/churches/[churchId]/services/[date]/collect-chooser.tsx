@@ -173,7 +173,7 @@ export function CollectChooser({
           <Loader2 className="h-3 w-3 animate-spin text-muted-foreground flex-shrink-0" strokeWidth={1.5} />
         )}
         {saved && !saving && (
-          <span className="flex items-center gap-0.5 text-xs text-green-600 flex-shrink-0">
+          <span className="flex items-center gap-0.5 text-xs text-success flex-shrink-0">
             <Check className="h-3 w-3" strokeWidth={2} />
             Saved
           </span>

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/form-field";
 
 const SERVICE_LABELS: Record<string, string> = {
   SUNG_EUCHARIST: "Sung Eucharist",
@@ -17,6 +19,7 @@ export default function NewChurchPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<
     Record<string, { enabled: boolean; time: string }>
   >({
@@ -32,12 +35,13 @@ export default function NewChurchPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setNameError(null);
 
     const formData = new FormData(e.currentTarget);
     const name = (formData.get("name") as string)?.trim();
 
     if (!name) {
-      setError("Church name is required.");
+      setNameError("Church name is required.");
       setLoading(false);
       return;
     }
@@ -77,51 +81,45 @@ export default function NewChurchPage() {
       <h1 className="text-3xl font-heading font-semibold mb-6">Add Church</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1">
-          <label htmlFor="name" className="text-sm font-body">Church Name *</label>
-          <input
-            id="name"
+        <FormField id="name" label="Church Name" required error={nameError}>
+          <Input
             name="name"
             required
             autoComplete="organization"
             placeholder="St Mary's, Anytown"
-            className="w-full h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="diocese" className="text-sm font-body">Diocese</label>
-          <input
-            id="diocese"
+        </FormField>
+
+        <FormField id="diocese" label="Diocese">
+          <Input
             name="diocese"
             autoComplete="off"
             placeholder="Diocese of Oxford"
-            className="w-full h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="address" className="text-sm font-body">Address</label>
+        </FormField>
+
+        <div className="space-y-2">
+          <label htmlFor="address" className="text-sm font-medium leading-none">Address</label>
           <textarea
             id="address"
             name="address"
             rows={2}
             autoComplete="street-address"
-            className="w-full rounded-md px-3 py-2 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
+            className="flex w-full rounded-md border border-input bg-card text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 px-3 py-2 resize-y"
           />
         </div>
-        <div className="space-y-1">
-          <label htmlFor="ccliNumber" className="text-sm font-body">CCLI Number</label>
-          <input
-            id="ccliNumber"
+
+        <FormField id="ccliNumber" label="CCLI Number">
+          <Input
             name="ccliNumber"
             autoComplete="off"
             inputMode="numeric"
             placeholder="123456"
-            className="w-full h-9 rounded-md px-3 py-1 text-sm border border-input bg-white shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
-        </div>
+        </FormField>
 
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-body font-semibold">Regular Services</legend>
+        <fieldset className="space-y-2 rounded-md border border-border p-4">
+          <legend className="small-caps px-1 text-xs text-muted-foreground">Regular Services</legend>
           <p className="text-xs text-muted-foreground">
             Select the services your church holds each Sunday. These will be created
             automatically for every upcoming date.
@@ -138,7 +136,7 @@ export default function NewChurchPage() {
                     [type]: { ...prev[type], enabled: e.target.checked },
                   }))
                 }
-                className="accent-primary"
+                className="accent-primary h-4 w-4"
               />
               <label htmlFor={`svc-${type}`} className="text-sm flex-1">
                 {label}
@@ -153,7 +151,7 @@ export default function NewChurchPage() {
                       [type]: { ...prev[type], time: e.target.value },
                     }))
                   }
-                  className="text-sm border border-border px-2 py-1 bg-white"
+                  className="rounded-md border border-input bg-card text-sm px-2 py-1 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
               )}
             </div>

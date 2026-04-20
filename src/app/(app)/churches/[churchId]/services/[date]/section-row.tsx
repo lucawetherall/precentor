@@ -4,13 +4,16 @@ import { useState } from "react";
 import { GripVertical, Eye, EyeOff, Trash2, Music, BookOpen, FileText, AlignLeft, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SectionInlineControl } from "./section-inline-control";
+import { MUSIC_SLOT_LABELS } from "@/types";
+import type { MusicSlotType } from "@/types";
 
 function formatSlotLabel(raw: string): string {
-  return raw
-    .replace(/_/g, " ")
-    .replace(/-/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return (MUSIC_SLOT_LABELS[raw as MusicSlotType] ??
+    raw
+      .replace(/_/g, " ")
+      .replace(/-/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase()));
 }
 
 export interface ServiceSection {
@@ -73,7 +76,7 @@ function getSectionTypeInfo(section: ServiceSection): {
   if (section.placeholderType) {
     return {
       icon: <FileText className="h-4 w-4" strokeWidth={1.5} />,
-      colorClass: "text-amber-700",
+      colorClass: "text-warning-foreground",
     };
   }
   if (section.textOverride) {
@@ -209,7 +212,7 @@ export function SectionRow({
         {statusDot && (
           <span
             className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${
-              statusDot === "green" ? "bg-green-500" : "bg-amber-500"
+              statusDot === "green" ? "bg-success" : "bg-warning"
             }`}
             aria-hidden
           />
@@ -282,7 +285,7 @@ export function SectionRow({
 
       {/* Expandable inline controls panel */}
       <div
-        className={`overflow-y-auto transition-all duration-200 ${isExpanded ? "max-h-[500px]" : "max-h-0"}`}
+        className={`overflow-y-auto transition-all duration-200 ${isExpanded ? "max-h-[800px]" : "max-h-0"}`}
       >
         <div className="px-10 pb-3 pt-1 border-t border-border/40 bg-muted/20">
           <SectionInlineControl section={section} churchId={churchId} />
