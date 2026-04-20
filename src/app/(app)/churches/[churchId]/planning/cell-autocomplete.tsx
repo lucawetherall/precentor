@@ -28,16 +28,19 @@ export function CellAutocomplete({ value, searchUrl, mapResponse, onCommit, onCa
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (draft.trim().length === 0) { setOptions([]); return; }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(searchUrl(draft));
-        if (!res.ok) return;
-        const data = await res.json() as unknown;
-        setOptions(mapResponse(data).slice(0, 8));
-        setHighlight(0);
-      } catch { /* ignore */ }
-    }, 200);
+    if (draft.trim().length === 0) {
+      debounceRef.current = setTimeout(() => setOptions([]), 0);
+    } else {
+      debounceRef.current = setTimeout(async () => {
+        try {
+          const res = await fetch(searchUrl(draft));
+          if (!res.ok) return;
+          const data = await res.json() as unknown;
+          setOptions(mapResponse(data).slice(0, 8));
+          setHighlight(0);
+        } catch { /* ignore */ }
+      }, 200);
+    }
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [draft, searchUrl, mapResponse]);
 

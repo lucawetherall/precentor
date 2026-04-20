@@ -28,7 +28,7 @@ export function PlanningCell({
 
   useEffect(() => {
     if (editing) {
-      setDraft(value.displayText);
+      setTimeout(() => setDraft(value.displayText), 0);
       inputRef.current?.focus();
       inputRef.current?.select();
     }

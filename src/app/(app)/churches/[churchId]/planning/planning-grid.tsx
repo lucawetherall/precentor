@@ -517,7 +517,6 @@ export function PlanningGrid({ churchId, from, to }: Props) {
     }
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.editing, state.focus, state.rows, churchId, from, to, dispatch, getCell]);
 
   // ─── Render ────────────────────────────────────────────────
