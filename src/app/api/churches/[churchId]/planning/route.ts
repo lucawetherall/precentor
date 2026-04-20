@@ -3,9 +3,9 @@ import { db } from "@/lib/db";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import {
   services, musicSlots, hymns, anthems, massSettings, canticleSettings,
-  responsesSettings, liturgicalDays, churchServicePatterns, readings,
+  responsesSettings, liturgicalDays, readings,
 } from "@/lib/db/schema";
-import { and, eq, gte, lte, inArray, asc } from "drizzle-orm";
+import { and, eq, gte, lte, inArray, asc, sql } from "drizzle-orm";
 
 export async function GET(
   req: NextRequest,
@@ -80,10 +80,21 @@ export async function GET(
     .where(inArray(readings.liturgicalDayId, dayIds));
 
   // 5. Patterns (for client-side ghost computation)
-  const patterns = await db
-    .select()
-    .from(churchServicePatterns)
-    .where(eq(churchServicePatterns.churchId, churchId));
+  // The DB table still has the old schema (service_type, time columns) rather
+  // than the newer preset_id reference. Select explicitly to avoid Drizzle
+  // generating a query for columns that don't exist in the DB yet.
+  const patternRows = await db.execute(sql`
+    SELECT id, day_of_week AS "dayOfWeek", service_type AS "serviceType", time, enabled
+    FROM church_service_patterns
+    WHERE church_id = ${churchId}
+  `);
+  const patterns = patternRows.rows as Array<{
+    id: string;
+    dayOfWeek: number;
+    serviceType: string;
+    time: string | null;
+    enabled: boolean;
+  }>;
 
   return NextResponse.json({
     days,
