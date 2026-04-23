@@ -1,40 +1,31 @@
 "use client";
-
-import { useState, Fragment } from "react";
-import { Check, X, Minus, UserCheck, Users } from "lucide-react";
-import { useToast } from "@/components/ui/toast";
+import React, { useState } from "react";
+import { AvailabilityWidget } from "@/components/availability-widget";
+import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
-import { formatLiturgicalDayName } from "@/lib/liturgical-display";
-import { EmptyState } from "@/components/empty-state";
+import { SERVICE_TYPE_LABELS } from "@/types";
+import type { ServiceType } from "@/types";
 
-interface Service {
+interface ServiceV2 {
   serviceId: string;
   serviceType: string;
   time: string | null;
   date: string;
   cwName: string;
+  slots: { catalogRoleId: string; catalogRoleKey: string }[];
 }
 
-interface Member {
+interface MemberV2 {
   userId: string;
   name: string | null;
   email: string;
-  voicePart: string | null;
-  role: string;
+  roles: { id: string; catalogRoleId: string; catalogRoleKey: string; catalogRoleName: string; isPrimary: boolean }[];
 }
 
 interface AvailabilityEntry { id: string; userId: string; serviceId: string; status: string; }
-interface RotaEntry { id: string; serviceId: string; userId: string; confirmed: boolean; }
+interface RotaEntry { id: string; serviceId: string; userId: string; confirmed: boolean; catalogRoleId: string | null; }
 
-type AvailabilityStatus = "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE";
-
-const AVAIL_LABEL: Record<AvailabilityStatus, string> = {
-  AVAILABLE: "Available",
-  UNAVAILABLE: "Unavailable",
-  TENTATIVE: "Tentative",
-};
-
-export function RotaGrid({
+export function RotaGridV2({
   churchId,
   services,
   members,
@@ -42,263 +33,183 @@ export function RotaGrid({
   rotaData,
 }: {
   churchId: string;
-  services: Service[];
-  members: Member[];
+  services: ServiceV2[];
+  members: MemberV2[];
   availabilityData: AvailabilityEntry[];
   rotaData: RotaEntry[];
 }) {
-  const [avail, setAvail] = useState<Record<string, AvailabilityStatus>>(() => {
-    const initial: Record<string, AvailabilityStatus> = {};
-    for (const a of availabilityData) {
-      initial[`${a.userId}-${a.serviceId}`] = a.status as AvailabilityStatus;
-    }
-    return initial;
-  });
-  const [rota, setRota] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    for (const r of rotaData) {
-      initial[`${r.userId}-${r.serviceId}`] = r.confirmed;
-    }
-    return initial;
-  });
-  const { addToast } = useToast();
-  const getAvailKey = (userId: string, serviceId: string) => `${userId}-${serviceId}`;
+  const [viewMode, setViewMode] = useState<"member" | "role">("member");
 
-  const cycleAvailability = async (userId: string, serviceId: string) => {
-    const key = getAvailKey(userId, serviceId);
-    const current = avail[key] || "AVAILABLE";
-    const next: AvailabilityStatus =
-      current === "AVAILABLE" ? "UNAVAILABLE" :
-      current === "UNAVAILABLE" ? "TENTATIVE" : "AVAILABLE";
+  // Build availability lookup: userId-serviceId → status
+  const availLookup: Record<string, string | null> = {};
+  for (const a of availabilityData) {
+    availLookup[`${a.userId}-${a.serviceId}`] = a.status;
+  }
 
-    setAvail((prev) => ({ ...prev, [key]: next }));
+  // Build rota lookup: userId-serviceId → RotaEntry[]
+  const rotaLookup: Record<string, RotaEntry[]> = {};
+  for (const r of rotaData) {
+    const key = `${r.userId}-${r.serviceId}`;
+    (rotaLookup[key] ??= []).push(r);
+  }
 
-    try {
-      const res = await fetch(`/api/churches/${churchId}/availability`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, serviceId, status: next }),
-      });
-      if (!res.ok) {
-        setAvail((prev) => ({ ...prev, [key]: current }));
-        addToast("Failed to update availability", "error");
-      }
-    } catch {
-      setAvail((prev) => ({ ...prev, [key]: current }));
-      addToast("Network error — could not update availability", "error");
-    }
-  };
+  function isEligible(member: MemberV2, service: ServiceV2): boolean {
+    const memberRoleIds = new Set(member.roles.map((r) => r.catalogRoleId));
+    return service.slots.some((s) => memberRoleIds.has(s.catalogRoleId));
+  }
 
-  const toggleRota = async (userId: string, serviceId: string) => {
-    const key = getAvailKey(userId, serviceId);
-    const current = rota[key] || false;
-    setRota((prev) => ({ ...prev, [key]: !current }));
-
-    try {
-      const res = await fetch(`/api/churches/${churchId}/rota`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, serviceId, confirmed: !current }),
-      });
-      if (!res.ok) {
-        setRota((prev) => ({ ...prev, [key]: current }));
-        addToast("Failed to update rota", "error");
-      }
-    } catch {
-      setRota((prev) => ({ ...prev, [key]: current }));
-      addToast("Network error — could not update rota", "error");
-    }
-  };
-
-  // Group members by voice part
-  const grouped: Record<string, Member[]> = {};
-  for (const m of members) {
-    const part = m.voicePart || "Unassigned";
-    if (!grouped[part]) grouped[part] = [];
-    grouped[part].push(m);
+  function getRosterLabel(member: MemberV2, service: ServiceV2): string | null {
+    const entries = rotaLookup[`${member.userId}-${service.serviceId}`];
+    if (!entries || entries.length === 0) return null;
+    // Find matching role name(s)
+    const roleNames = entries.flatMap((entry) => {
+      if (!entry.catalogRoleId) return [];
+      const role = member.roles.find((r) => r.catalogRoleId === entry.catalogRoleId);
+      return role ? [role.catalogRoleName] : [];
+    });
+    const confirmed = entries.some((e) => e.confirmed);
+    const label = roleNames.length > 0 ? roleNames.join(", ") : "Rostered";
+    return confirmed ? `${label} ✓` : label;
   }
 
   if (services.length === 0) {
-    return (
-      <EmptyState
-        icon={Users}
-        title="No upcoming services"
-        description="Create services from the Services page first to build a rota."
-      />
-    );
+    return <p className="text-muted-foreground">No upcoming services.</p>;
   }
+
+  const serviceTypeLabel = (type: string) =>
+    SERVICE_TYPE_LABELS[type as ServiceType] ?? type.replace(/_/g, " ");
 
   return (
     <div>
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 mb-4 text-xs text-muted-foreground" aria-label="Legend">
-        <span className="font-heading font-semibold text-foreground text-sm" aria-hidden="true">Legend:</span>
-        <span className="flex items-center gap-1">
-          <span className="w-5 h-5 flex items-center justify-center border border-success text-success" aria-hidden="true">
-            <Check className="h-3 w-3" strokeWidth={2} />
-          </span>
-          Available
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-5 h-5 flex items-center justify-center border border-destructive text-destructive" aria-hidden="true">
-            <X className="h-3 w-3" strokeWidth={2} />
-          </span>
-          Unavailable
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-5 h-5 flex items-center justify-center border border-warning text-warning" aria-hidden="true">
-            <Minus className="h-3 w-3" strokeWidth={2} />
-          </span>
-          Tentative
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-5 h-5 flex items-center justify-center bg-primary text-primary-foreground border border-primary" aria-hidden="true">
-            <UserCheck className="h-3 w-3" strokeWidth={2} />
-          </span>
-          On rota
-        </span>
+      <div className="flex gap-2 mb-4">
+        <Button
+          variant={viewMode === "member" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setViewMode("member")}
+        >
+          By member
+        </Button>
+        <Button
+          variant={viewMode === "role" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setViewMode("role")}
+        >
+          By role
+        </Button>
       </div>
 
-      {/* Desktop table view */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-sm border border-border">
-          <thead>
-            <tr className="bg-muted text-foreground">
-              <th className="px-3 py-2 text-left font-body font-normal sticky left-0 bg-muted z-10 min-w-[160px]">Member</th>
+      <div className="overflow-x-auto rounded-md border">
+        <table className="min-w-full text-sm">
+          <thead className="bg-muted/40">
+            <tr>
+              <th className="text-left px-3 py-2 w-48">
+                {viewMode === "member" ? "Member" : "Role / Member"}
+              </th>
               {services.map((s) => (
-                <th key={s.serviceId} className="px-2 py-2 text-center font-body font-normal min-w-[80px]">
-                  <div className="text-xs">{format(parseISO(s.date), "d MMM")}</div>
-                  <div className="small-caps text-xs opacity-80">{s.serviceType.replace(/_/g, " ")}</div>
+                <th key={s.serviceId} className="px-2 py-2 text-center text-xs min-w-[72px]">
+                  <div className="font-semibold">{format(parseISO(s.date), "d MMM")}</div>
+                  <div className="text-muted-foreground font-normal">{serviceTypeLabel(s.serviceType)}</div>
+                  {s.time && <div className="text-muted-foreground font-normal">{s.time}</div>}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
-            {Object.entries(grouped).map(([part, partMembers]) => (
-              <Fragment key={part}>
-                <tr>
-                  <td colSpan={services.length + 1} className="px-3 py-1 text-xs font-heading font-semibold bg-muted">
-                    {part}
+          <tbody className="divide-y">
+            {viewMode === "member" ? (
+              members.map((member) => (
+                <tr key={member.userId} className="hover:bg-muted/20">
+                  <td className="px-3 py-2">
+                    <div className="font-medium text-sm">{member.name ?? member.email}</div>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {member.roles.map((r) => (
+                        <span key={r.id} className="rounded-full bg-muted px-2 py-0.5 text-xs">
+                          {r.catalogRoleName}{r.isPrimary ? " ★" : ""}
+                        </span>
+                      ))}
+                    </div>
                   </td>
-                </tr>
-                {partMembers.map((member, mi) => (
-                  <tr key={member.userId} className={mi % 2 === 0 ? "bg-card" : "bg-background"}>
-                    <td className="px-3 py-1.5 sticky left-0 bg-inherit z-10 border-r border-border">
-                      {member.name || member.email}
-                    </td>
-                    {services.map((s) => {
-                      const key = getAvailKey(member.userId, s.serviceId);
-                      const status = avail[key] || "AVAILABLE";
-                      const onRota = rota[key] || false;
-
-                      return (
-                        <td key={s.serviceId} className="px-1 py-1 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => cycleAvailability(member.userId, s.serviceId)}
-                              title={`${AVAIL_LABEL[status]} — click to change`}
-                              className={`w-8 h-8 flex items-center justify-center border text-xs ${
-                                status === "AVAILABLE"
-                                  ? "border-success text-success"
-                                  : status === "UNAVAILABLE"
-                                  ? "border-destructive text-destructive"
-                                  : "border-warning text-warning"
-                              }`}
-                              aria-label={`${member.name || member.email}: ${AVAIL_LABEL[status]} for ${s.cwName}. Click to change.`}
-                            >
-                              {status === "AVAILABLE" ? (
-                                <Check className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
-                              ) : status === "UNAVAILABLE" ? (
-                                <X className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
-                              ) : (
-                                <Minus className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => toggleRota(member.userId, s.serviceId)}
-                              title={onRota ? "Remove from rota" : "Add to rota"}
-                              className={`w-8 h-8 flex items-center justify-center border ${
-                                onRota
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "border-border text-muted-foreground hover:border-primary hover:text-primary"
-                              }`}
-                              aria-label={`${onRota ? "Remove" : "Add"} ${member.name || member.email} ${onRota ? "from" : "to"} rota for ${s.cwName}`}
-                            >
-                              <UserCheck className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
-                            </button>
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile card view */}
-      <div className="md:hidden space-y-4">
-        {services.map((s) => (
-          <div key={s.serviceId} className="border border-border bg-card shadow-sm">
-            <div className="px-4 py-3 bg-muted text-foreground">
-              <p className="font-heading font-semibold">{format(parseISO(s.date), "EEE d MMM")}</p>
-              <p className="text-xs opacity-80">{formatLiturgicalDayName(s.cwName, s.date)} — {s.serviceType.replace(/_/g, " ")}</p>
-            </div>
-            <div className="divide-y divide-border">
-              {Object.entries(grouped).map(([part, partMembers]) => (
-                <div key={part}>
-                  <div className="px-4 py-1.5 text-xs font-heading font-semibold bg-muted">{part}</div>
-                  {partMembers.map((member) => {
-                    const key = getAvailKey(member.userId, s.serviceId);
-                    const status = avail[key] || "AVAILABLE";
-                    const onRota = rota[key] || false;
-
+                  {services.map((svc) => {
+                    const eligible = isEligible(member, svc);
+                    const rosterLabel = getRosterLabel(member, svc);
                     return (
-                      <div key={member.userId} className="flex items-center justify-between px-4 py-2">
-                        <span className="text-sm truncate flex-1 mr-3">{member.name || member.email}</span>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <button
-                            onClick={() => cycleAvailability(member.userId, s.serviceId)}
-                            className={`px-3 py-2 min-h-10 text-xs border flex items-center gap-1 ${
-                              status === "AVAILABLE"
-                                ? "border-success text-success"
-                                : status === "UNAVAILABLE"
-                                ? "border-destructive text-destructive"
-                                : "border-warning text-warning"
-                            }`}
-                            aria-label={`${member.name || member.email}: ${AVAIL_LABEL[status]}. Click to change.`}
-                          >
-                            {status === "AVAILABLE" ? (
-                              <Check className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
-                            ) : status === "UNAVAILABLE" ? (
-                              <X className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
-                            ) : (
-                              <Minus className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
-                            )}
-                            <span>{AVAIL_LABEL[status]}</span>
-                          </button>
-                          <button
-                            onClick={() => toggleRota(member.userId, s.serviceId)}
-                            className={`w-10 h-10 flex items-center justify-center border ${
-                              onRota
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "border-border text-muted-foreground"
-                            }`}
-                            aria-label={`${onRota ? "Remove" : "Add"} ${member.name || member.email} ${onRota ? "from" : "to"} rota for ${s.cwName}`}
-                          >
-                            <UserCheck className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                          </button>
-                        </div>
-                      </div>
+                      <td key={svc.serviceId} className="px-1 py-2 text-center align-top">
+                        <AvailabilityWidget
+                          serviceId={svc.serviceId}
+                          churchId={churchId}
+                          currentStatus={(availLookup[`${member.userId}-${svc.serviceId}`] as "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE" | null) ?? null}
+                          size="sm"
+                          eligible={eligible}
+                          eligibleReason={eligible ? undefined : "NO_ROLE"}
+                        />
+                        {rosterLabel && (
+                          <div className="mt-0.5 text-xs text-secondary font-medium leading-tight">
+                            {rosterLabel}
+                          </div>
+                        )}
+                      </td>
                     );
                   })}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+                </tr>
+              ))
+            ) : (
+              // Role-grouped view
+              (() => {
+                const allRoleKeys = Array.from(
+                  new Map(members.flatMap((m) => m.roles.map((r) => [r.catalogRoleId, r]))).values()
+                );
+                return allRoleKeys.map((role) => {
+                  const roleMembers = members.filter((m) => m.roles.some((r) => r.catalogRoleId === role.catalogRoleId));
+                  if (roleMembers.length === 0) return null;
+                  return (
+                    <React.Fragment key={role.catalogRoleId}>
+                      <tr className="bg-muted/30">
+                        <td colSpan={services.length + 1} className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {role.catalogRoleName}
+                        </td>
+                      </tr>
+                      {roleMembers.map((member) => {
+                        const otherRoles = member.roles.filter((r) => r.catalogRoleId !== role.catalogRoleId);
+                        return (
+                          <tr key={`${role.catalogRoleId}-${member.userId}`} className="hover:bg-muted/20">
+                            <td className="px-3 py-2 text-sm">
+                              <span className="font-medium">{member.name ?? member.email}</span>
+                              {otherRoles.length > 0 && (
+                                <span className="ml-1.5 text-xs text-muted-foreground">
+                                  also {otherRoles.map((r) => r.catalogRoleName).join(", ")}
+                                </span>
+                              )}
+                            </td>
+                            {services.map((svc) => {
+                              const eligible = isEligible(member, svc);
+                              const rosterLabel = getRosterLabel(member, svc);
+                              return (
+                                <td key={svc.serviceId} className="px-1 py-2 text-center align-top">
+                                  <AvailabilityWidget
+                                    serviceId={svc.serviceId}
+                                    churchId={churchId}
+                                    currentStatus={(availLookup[`${member.userId}-${svc.serviceId}`] as "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE" | null) ?? null}
+                                    size="sm"
+                                    eligible={eligible}
+                                    eligibleReason={eligible ? undefined : "NO_ROLE"}
+                                  />
+                                  {rosterLabel && (
+                                    <div className="mt-0.5 text-xs text-secondary font-medium leading-tight">
+                                      {rosterLabel}
+                                    </div>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                });
+              })()
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

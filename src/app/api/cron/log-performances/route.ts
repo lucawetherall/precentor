@@ -5,6 +5,7 @@ import { services, musicSlots, performanceLogs, liturgicalDays } from "@/lib/db/
 import { eq, and, lt, or, isNotNull, sql } from "drizzle-orm";
 import { format } from "date-fns";
 import { timingSafeEqual } from "crypto";
+import { env } from "@/lib/env";
 
 function verifyBearerToken(authHeader: string | null, secret: string): boolean {
   const expected = `Bearer ${secret}`;
@@ -14,10 +15,18 @@ function verifyBearerToken(authHeader: string | null, secret: string): boolean {
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET) {
+  // env.CRON_SECRET throws in production if unset; in dev it falls back to ""
+  // which makes verifyBearerToken fail safely (no request matches "Bearer ").
+  let secret: string;
+  try {
+    secret = env.CRON_SECRET;
+  } catch {
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
   }
-  if (!verifyBearerToken(authHeader, process.env.CRON_SECRET)) {
+  if (!secret) {
+    return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+  }
+  if (!verifyBearerToken(authHeader, secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

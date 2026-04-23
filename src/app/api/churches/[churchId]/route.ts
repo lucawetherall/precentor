@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { churchUpdateSchema } from "@/lib/validation/schemas";
+import { writeSheetMusicLink } from "@/lib/churches/settings";
 
 export async function PATCH(
   request: Request,
@@ -42,6 +43,17 @@ export async function PATCH(
     if ("diocese" in fields) updates.diocese = fields.diocese || null;
     if ("address" in fields) updates.address = fields.address || null;
     if ("ccliNumber" in fields) updates.ccliNumber = fields.ccliNumber || null;
+
+    // `sheetMusicLink` lives inside the shared `settings` JSON blob. Merge into
+    // the existing settings so we don't clobber unrelated keys.
+    if ("sheetMusicLink" in fields) {
+      const [existing] = await db
+        .select({ settings: churches.settings })
+        .from(churches)
+        .where(eq(churches.id, churchId))
+        .limit(1);
+      updates.settings = writeSheetMusicLink(existing?.settings ?? {}, fields.sheetMusicLink ?? null);
+    }
 
     const [updated] = await db
       .update(churches)

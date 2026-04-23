@@ -91,6 +91,18 @@ export default function PrivacyPage() {
       </section>
 
       <section className="space-y-3">
+        <h2 className="text-xl font-heading font-medium">External links</h2>
+        <p className="text-sm">
+          Your church administrator may add a link to an external sheet-music library (for example a
+          Dropbox, Google Drive, or OneDrive folder) that appears on the Repertoire page. Clicking this
+          link opens the third-party site in a new tab. That site has its own privacy policy and is not
+          controlled by Precentor or the church. We suppress your browser&apos;s referrer header so the
+          third party does not learn which Precentor page you came from, and we do not send your account
+          details. If you have concerns about a particular link, contact your church administrator.
+        </p>
+      </section>
+
+      <section className="space-y-3">
         <h2 className="text-xl font-heading font-medium">Security</h2>
         <p className="text-sm">
           Passwords are hashed using bcrypt and never stored in plain text. All connections use TLS

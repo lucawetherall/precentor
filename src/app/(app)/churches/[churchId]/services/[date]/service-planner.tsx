@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
 import { SectionEditor } from "./section-editor";
@@ -11,6 +11,8 @@ import { SaveStatusIndicator } from "./save-status-indicator";
 import { SectionCountBadge } from "./section-count-badge";
 import type { ServiceSection } from "./section-row";
 import type { MusicSlot } from "./use-service-editor";
+import type { AdjacentDayLinks } from "@/types/service-views";
+import { ServiceNav } from "./service-nav";
 import { Plus, Loader2, Trash2, FileDown, FileText, Eye, BookMarked } from "lucide-react";
 import { POSITION_LABELS } from "@/types";
 import { useToast } from "@/components/ui/toast";
@@ -58,20 +60,23 @@ interface Service {
   eucharisticPrayer: string | null;
   eucharisticPrayerId: string | null;
   includeReadingText: boolean;
-  choirStatus: string;
   defaultMassSettingId: string | null;
   collectId: string | null;
   collectOverride: string | null;
 }
 
 
+interface Preset { id: string; name: string; serviceType: string; }
+
 export function ServicePlanner({
   churchId,
   liturgicalDayId,
+  date,
   existingServices,
   editorSectionsMap = {},
   editorSlotsMap = {},
   readings = [],
+  adjacent,
 }: {
   churchId: string;
   liturgicalDayId: string;
@@ -80,6 +85,7 @@ export function ServicePlanner({
   editorSectionsMap?: Record<string, ServiceSection[]>;
   editorSlotsMap?: Record<string, MusicSlot[]>;
   readings?: Reading[];
+  adjacent: AdjacentDayLinks;
 }) {
   const [services, setServices] = useState<Service[]>(existingServices);
   const [activeTab, setActiveTab] = useState<string>(services[0]?.id || "");
@@ -90,6 +96,8 @@ export function ServicePlanner({
   const [deleting, setDeleting] = useState(false);
   const [newType, setNewType] = useState<ServiceType>("SUNG_EUCHARIST");
   const [newTime, setNewTime] = useState("10:00");
+  const [newPresetId, setNewPresetId] = useState<string>("");
+  const [presets, setPresets] = useState<Preset[]>([]);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -97,17 +105,31 @@ export function ServicePlanner({
   const pdfBlobUrlRef = useRef<string | null>(null);
   const { addToast } = useToast();
 
+  useEffect(() => {
+    fetch(`/api/churches/${churchId}/presets`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => {
+        if (Array.isArray(data)) setPresets(data);
+        else if (data?.data && Array.isArray(data.data)) setPresets(data.data);
+      })
+      .catch(() => {});
+  }, [churchId]);
+
   const handleCreateService = async () => {
     setCreating(true);
     try {
+      const body: Record<string, unknown> = {
+        liturgicalDayId,
+        serviceType: newType,
+        time: newTime,
+      };
+      if (newPresetId) {
+        body.presetId = newPresetId;
+      }
       const res = await fetch(`/api/churches/${churchId}/services`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          liturgicalDayId,
-          serviceType: newType,
-          time: newTime,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
@@ -118,7 +140,6 @@ export function ServicePlanner({
           eucharisticPrayer: service.eucharisticPrayer ?? null,
           eucharisticPrayerId: service.eucharisticPrayerId ?? null,
           includeReadingText: service.includeReadingText ?? true,
-          choirStatus: service.choirStatus ?? "CHOIR_REQUIRED",
           defaultMassSettingId: service.defaultMassSettingId ?? null,
           collectId: service.collectId ?? null,
           collectOverride: service.collectOverride ?? null,
@@ -222,6 +243,15 @@ export function ServicePlanner({
 
   return (
     <div>
+      <ServiceNav
+        churchId={churchId}
+        adjacent={adjacent}
+        preserveEditMode
+        back={{
+          href: `/churches/${churchId}/services/${date}`,
+          label: "Back to service view",
+        }}
+      />
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-xl font-heading font-semibold">Services</h2>
       </div>
@@ -267,6 +297,22 @@ export function ServicePlanner({
             onChange={(e) => setNewTime(e.target.value)}
             className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
+          {presets.length > 0 && (
+            <>
+              <label htmlFor="new-service-preset" className="sr-only">Preset</label>
+              <select
+                id="new-service-preset"
+                value={newPresetId}
+                onChange={(e) => setNewPresetId(e.target.value)}
+                className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">No preset</option>
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </>
+          )}
           <Button onClick={handleCreateService} disabled={creating} size="sm">
             {creating ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <Plus className="h-3 w-3" strokeWidth={1.5} />}
             Add
@@ -313,7 +359,6 @@ export function ServicePlanner({
             eucharisticPrayer: activeService.eucharisticPrayer,
             eucharisticPrayerId: activeService.eucharisticPrayerId,
             includeReadingText: activeService.includeReadingText,
-            choirStatus: activeService.choirStatus,
             defaultMassSettingId: activeService.defaultMassSettingId,
             collectId: activeService.collectId,
             collectOverride: activeService.collectOverride,

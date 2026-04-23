@@ -64,4 +64,28 @@ describe('AvailabilityWidget', () => {
       expect(screen.getByRole('button', { name: 'Available' })).toHaveAttribute('aria-pressed', 'true')
     )
   })
+
+  it("renders em-dash with tooltip when not eligible", () => {
+    render(<AvailabilityWidget serviceId="s1" churchId="c1" currentStatus={null} eligible={false} eligibleReason="SAID" />);
+    expect(screen.queryByRole("button", { name: /available/i })).not.toBeInTheDocument();
+    const dash = screen.getByText("—");
+    expect(dash).toBeInTheDocument();
+    expect(dash.closest("[title]")).toHaveAttribute("title", "Not required for this service");
+  });
+
+  it("renders em-dash with NO_ROLE reason", () => {
+    render(<AvailabilityWidget serviceId="s1" churchId="c1" currentStatus={null} eligible={false} eligibleReason="NO_ROLE" />);
+    const dash = screen.getByText("—");
+    expect(dash.closest("[title]")).toHaveAttribute("title", "You don't have a role required for this service");
+  });
+
+  it("renders buttons when eligible=true", () => {
+    render(<AvailabilityWidget serviceId="s1" churchId="c1" currentStatus={null} eligible={true} />);
+    expect(screen.getByRole("button", { name: "Available" })).toBeInTheDocument();
+  });
+
+  it("renders buttons when eligible is undefined (default)", () => {
+    render(<AvailabilityWidget serviceId="s1" churchId="c1" currentStatus={null} />);
+    expect(screen.getByRole("button", { name: "Available" })).toBeInTheDocument();
+  });
 })

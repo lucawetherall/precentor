@@ -5,7 +5,7 @@ test.describe("Accessibility", () => {
     await page.goto("/");
     const h1s = page.locator("h1");
     await expect(h1s).toHaveCount(1);
-    await expect(h1s.first()).toContainText("Precentor");
+    await expect(h1s.first()).toContainText("Sunday");
   });
 
   test("landing page has lang attribute on html", async ({ page }) => {

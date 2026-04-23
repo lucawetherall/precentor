@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo } from 'react'
 import { format } from 'date-fns'
 import type { MemberRole } from '@/types'
 import type { LiturgicalDayWithService } from '@/types/service-views'
@@ -68,7 +68,7 @@ interface Props {
   role: MemberRole
 }
 
-export function ServicesCalendar({ churchId, days, role }: Props) {
+export const ServicesCalendar = memo(function ServicesCalendar({ churchId, days, role }: Props) {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
@@ -173,4 +173,4 @@ export function ServicesCalendar({ churchId, days, role }: Props) {
       </div>
     </div>
   )
-}
+})

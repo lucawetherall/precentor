@@ -9,7 +9,6 @@ function makeService(overrides: Partial<ServiceSummary> = {}): ServiceSummary {
     serviceType: 'SUNG_EUCHARIST',
     time: '10:00',
     status: 'DRAFT',
-    choirStatus: 'CHOIR_REQUIRED',
     userAvailability: null,
     musicPreview: [],
     musicStatus: 'empty',

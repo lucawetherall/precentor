@@ -1,0 +1,1 @@
+ALTER TABLE "music_slots" ADD COLUMN "psalm_chant" text;

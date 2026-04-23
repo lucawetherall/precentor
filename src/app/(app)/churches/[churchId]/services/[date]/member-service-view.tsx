@@ -1,15 +1,14 @@
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
 import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from '@/types'
-import { BackLink } from '@/components/back-link'
 import type { LiturgicalColour, MemberRole } from '@/types'
 import { hasMinRole } from '@/lib/auth/permissions'
-import type { PopulatedMusicSlot } from '@/types/service-views'
+import type { AdjacentDayLinks, PopulatedMusicSlot } from '@/types/service-views'
 import { AvailabilityWidget } from '@/components/availability-widget'
 import { ServiceMusicList } from './service-music-list'
 import { ReadingsByLectionary } from './readings-by-lectionary'
+import { ServiceNav } from './service-nav'
 import { formatLiturgicalDayName } from '@/lib/liturgical-display'
-import { CHOIR_STATUS_LABELS, CHOIR_STATUS_PILL_CLASSES } from '../choir-status-constants'
 
 interface Reading {
   id: string
@@ -23,7 +22,6 @@ interface ServiceInfo {
   id: string
   serviceType: string
   time: string | null
-  choirStatus: string
 }
 
 interface MemberServiceViewProps {
@@ -42,6 +40,7 @@ interface MemberServiceViewProps {
   role: MemberRole
   confirmedCount?: number
   editUrl: string
+  adjacent: AdjacentDayLinks
 }
 
 export function MemberServiceView({
@@ -54,16 +53,15 @@ export function MemberServiceView({
   role,
   confirmedCount,
   editUrl,
+  adjacent,
 }: MemberServiceViewProps) {
   const colour = LITURGICAL_COLOURS[day.colour as LiturgicalColour] ?? '#4A6741'
   const isEditor = hasMinRole(role, 'EDITOR')
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl">
-      {/* Back link */}
-      <div className="mb-4">
-        <BackLink href={`/churches/${churchId}/services`}>Back to Services</BackLink>
-      </div>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+      {/* Nav: Back link + Prev/Next */}
+      <ServiceNav churchId={churchId} adjacent={adjacent} />
 
       {/* Editor notice (EDITOR/ADMIN only) */}
       {isEditor && (
@@ -82,16 +80,6 @@ export function MemberServiceView({
         </div>
       )}
 
-      {/* Choir status badge (all roles, only if service exists and non-default) */}
-      {service && service.choirStatus !== 'CHOIR_REQUIRED' && (
-        <div className="mb-4">
-          <span
-            className={`small-caps text-xs px-2 py-1 ${CHOIR_STATUS_PILL_CLASSES[service.choirStatus] ?? 'bg-muted text-muted-foreground border border-border'}`}
-          >
-            {CHOIR_STATUS_LABELS[service.choirStatus] ?? service.choirStatus}
-          </span>
-        </div>
-      )}
 
       {/* Service header */}
       <div className="flex items-start gap-4 mb-6">
@@ -136,7 +124,7 @@ export function MemberServiceView({
       {/* Readings + Collect */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {readings.length > 0 && (
-          <div className="border border-border bg-card">
+          <div className="border border-border bg-card min-w-0 overflow-hidden">
             <div className="px-4 py-2.5 border-b border-border bg-muted/30">
               <h2 className="small-caps text-xs text-muted-foreground">
                 Readings

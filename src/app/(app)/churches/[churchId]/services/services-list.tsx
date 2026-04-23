@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
 import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from '@/types'
@@ -5,7 +6,6 @@ import type { LiturgicalColour } from '@/types'
 import type { LiturgicalDayWithService } from '@/types/service-views'
 import { formatLiturgicalDayName } from '@/lib/liturgical-display'
 import { AvailabilityWidget } from '@/components/availability-widget'
-import { CHOIR_STATUS_NOTES } from './choir-status-constants'
 
 interface ServicesListProps {
   churchId: string
@@ -24,7 +24,7 @@ function groupByMonth(
   return Array.from(map.entries())
 }
 
-export function ServicesList({ churchId, days }: ServicesListProps) {
+export const ServicesList = memo(function ServicesList({ churchId, days }: ServicesListProps) {
   if (days.length === 0) {
     return (
       <div className="border border-border bg-card p-8 text-center">
@@ -96,11 +96,6 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
                                 {SERVICE_TYPE_LABELS[service.serviceType as keyof typeof SERVICE_TYPE_LABELS] ?? service.serviceType}
                                 {service.time ? ` · ${service.time}` : ''}
                               </span>
-                              {service.choirStatus !== 'CHOIR_REQUIRED' && CHOIR_STATUS_NOTES[service.choirStatus] && (
-                                <span className="text-xs italic text-muted-foreground/60">
-                                  {CHOIR_STATUS_NOTES[service.choirStatus]}
-                                </span>
-                              )}
                               {service.musicPreview.length > 0 && (
                                 <span className="small-caps text-xs text-muted-foreground/70">
                                   {service.musicPreview.length} music
@@ -152,4 +147,4 @@ export function ServicesList({ churchId, days }: ServicesListProps) {
       ))}
     </div>
   )
-}
+})

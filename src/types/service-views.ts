@@ -14,7 +14,6 @@ export interface ServiceSummary {
   serviceType: string
   time: string | null
   status: string
-  choirStatus: string
   userAvailability: 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null
   musicPreview: MusicSlotPreview[]
   musicStatus: ServiceReadinessStatus
@@ -29,6 +28,11 @@ export interface LiturgicalDayWithService {
   colour: LiturgicalColour
   collect: string | null
   services: ServiceSummary[]
+}
+
+export interface AdjacentDayLinks {
+  prev: string | null
+  next: string | null
 }
 
 export interface PopulatedMusicSlot {

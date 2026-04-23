@@ -11,6 +11,8 @@ interface AvailabilityWidgetProps {
   churchId: string
   currentStatus: AvailabilityStatus
   size?: 'sm' | 'md' | 'lg'
+  eligible?: boolean
+  eligibleReason?: 'SAID' | 'NO_ROLE'
 }
 
 interface BtnConfig {
@@ -31,9 +33,18 @@ export function AvailabilityWidget({
   churchId,
   currentStatus,
   size = 'md',
+  eligible,
+  eligibleReason,
 }: AvailabilityWidgetProps) {
   const [status, setStatus] = useState<AvailabilityStatus>(currentStatus)
   const { addToast } = useToast()
+
+  if (eligible === false) {
+    const tooltip = eligibleReason === 'NO_ROLE'
+      ? "You don't have a role required for this service"
+      : "Not required for this service";
+    return <span title={tooltip} className="text-muted-foreground select-none">—</span>;
+  }
 
   async function handleClick(clicked: Exclude<AvailabilityStatus, null>) {
     const previous = status

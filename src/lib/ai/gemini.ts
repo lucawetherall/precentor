@@ -1,6 +1,20 @@
+import "server-only";
 import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
 import { logger } from "@/lib/logger";
 import type { LLMProvider, SuggestionContext, MusicSuggestion } from "./types";
+
+// Cap Gemini latency — a hung external model should not hang an API request.
+const GEMINI_TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<T>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
 
 const suggestionSchema: Schema = {
   type: SchemaType.ARRAY,
@@ -32,7 +46,11 @@ export class GeminiProvider implements LLMProvider {
     });
 
     const prompt = this.buildPrompt(context);
-    const result = await model.generateContent(prompt);
+    const result = await withTimeout(
+      model.generateContent(prompt),
+      GEMINI_TIMEOUT_MS,
+      "Gemini suggestion request",
+    );
     const text = result.response.text();
 
     try {

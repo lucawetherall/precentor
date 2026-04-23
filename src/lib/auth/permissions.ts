@@ -19,8 +19,8 @@ export function isMemberRole(value: unknown): value is MemberRole {
 
 /**
  * Coerce a DB-returned string to a MemberRole, defaulting to the least
- * privileged role if the value is unexpected. We log so corrupted rows
- * surface in monitoring rather than silently failing open.
+ * privileged role if the value is unexpected. Logs so corrupted rows surface
+ * in monitoring rather than silently failing open via unchecked type coercion.
  */
 export function coerceMemberRole(value: unknown): MemberRole {
   if (isMemberRole(value)) return value;
