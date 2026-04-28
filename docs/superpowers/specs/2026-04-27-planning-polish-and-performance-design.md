@@ -317,3 +317,27 @@ Each is reviewable and revertable.
 - [ ] Verify a Principal Feast on a weekday (e.g. Christmas Day) — fallback row appears, edit promotes to real service, appears on services page.
 
 If any of the pending checks fail, surface a regression — that's a separate fix.
+
+---
+
+## Bundle audit findings (2026-04-28)
+
+Analyzer: `@next/bundle-analyzer` wired in `next.config.ts`. Build toolchain is **Turbopack** (Next.js 16.2.4), which is incompatible with `@next/bundle-analyzer`'s webpack mode. Running `ANALYZE=true npm run build -- --webpack` produced HTML reports (`.next/analyze/client.html`, `nodejs.html`, `edge.html`) but the webpack compilation failed with `UnhandledSchemeError: Reading from "node:async_hooks"` — traced to `lib/logger.ts → lib/request-context.ts → require("node:async_hooks")` being pulled into a client bundle. The Turbopack build (`ANALYZE=true npm run build`) succeeded and produced `.next/static/chunks/` output used for the heuristic checks below.
+
+- **Largest client chunks (Turbopack build, post-fix):**
+  - Shared vendor chunk (`0j9lsf7m_s76v.js`) — 268 KB (zod schema library)
+  - Shared vendor chunk (`0c3wmoo4r_4yz.js`) — 227 KB (Next.js router / app-router internals)
+  - Shared vendor chunk (`0i_tbg~_ax5lo.js`) — 220 KB (React + supabase-js)
+  - Largest route-specific chunk — `/churches/[churchId]/services/[date]` (`0d3lv1njhm4_b.js`) — 68 KB
+
+- **lectionary JSON in client bundles: no** — `grep -rl "first-sunday-of-advent"` returned no hits across all `.next/static/chunks/*.js` files. Both `lectionary-coe.json` (448 KB) and `lectionary-readings-text.json` (2.3 MB) remain server-side only.
+
+- **lucide-react tree-shaking: ok** — only two shared chunks reference `lucide` (the `createLucideIcon` helper chunk at ~22 KB and a small icon-component chunk at ~6.7 KB). No monolithic lucide bundle present.
+
+- **date-fns: ok** — one shared chunk (~22 KB, ~20 functions) carries the named date-fns imports used across the app. Full `date-fns/index` (~200 KB+) is absent. Named imports are tree-shaken correctly.
+
+- **Inline fix applied:** `use-service-editor.ts` imported `logger` from `@/lib/logger`, which transitively pulls `request-context.ts → require("node:async_hooks")` into the client bundle. The single `logger.error(...)` call (line 483, `refreshSections` catch block) was replaced with `console.error(...)` and the import removed. The service-editor chunk dropped from ~81 KB to ~68 KB; `grep` confirms no `requestId`/`AsyncLocalStorage` code in client chunks after the fix.
+
+- **Action items filed:**
+  - [ ] `@next/bundle-analyzer` is not compatible with Turbopack (Next.js 16+). Migrate to `next experimental-analyze` (Turbopack-native) to restore interactive HTML reports. Track as a follow-up chore.
+  - [ ] The `lib/logger.ts` / `lib/request-context.ts` pair should be marked `server-only` (add `import "server-only"` at the top of each) to make future accidental client imports a build-time error rather than a silent bundle bloat. Track as a follow-up hardening item.
