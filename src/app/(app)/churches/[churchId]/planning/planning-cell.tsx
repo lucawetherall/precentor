@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import type { CellDisplay, GridColumn } from "./types";
 import { CellAutocomplete } from "./cell-autocomplete";
 import type { ColumnSearch } from "./column-search";
@@ -19,7 +19,7 @@ interface Props {
   onCommit: (next: CellDisplay) => void;
 }
 
-export function PlanningCell({
+function PlanningCellInner({
   column, value, focused, editing, serviceType, churchId, search,
   onFocus, onEnterEdit, onCancelEdit, onCommit,
 }: Props) {
@@ -98,3 +98,19 @@ export function PlanningCell({
     </td>
   );
 }
+
+function arePropsEqual(prev: Props, next: Props): boolean {
+  return (
+    prev.column === next.column &&
+    prev.focused === next.focused &&
+    prev.editing === next.editing &&
+    prev.serviceType === next.serviceType &&
+    prev.churchId === next.churchId &&
+    prev.search === next.search &&
+    prev.value.displayText === next.value.displayText &&
+    prev.value.refId === next.value.refId &&
+    prev.value.isUnmatched === next.value.isUnmatched
+  );
+}
+
+export const PlanningCell = memo(PlanningCellInner, arePropsEqual);
