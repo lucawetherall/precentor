@@ -341,3 +341,56 @@ Analyzer: `@next/bundle-analyzer` wired in `next.config.ts`. Build toolchain is 
 - **Action items filed:**
   - [ ] `@next/bundle-analyzer` is not compatible with Turbopack (Next.js 16+). Migrate to `next experimental-analyze` (Turbopack-native) to restore interactive HTML reports. Track as a follow-up chore.
   - [ ] The `lib/logger.ts` / `lib/request-context.ts` pair should be marked `server-only` (add `import "server-only"` at the top of each) to make future accidental client imports a build-time error rather than a silent bundle bloat. Track as a follow-up hardening item.
+
+---
+
+## Performance results (post-fix, 2026-04-28)
+
+> **Note:** Lighthouse measurements and manual timings require running the production build in Chrome DevTools. Filled in during user verification.
+
+### Production build
+
+- `npm run build` outcome: **PASS** — compiled successfully with no errors
+- Build time: **12.4 seconds** (compilation + TypeScript + page generation)
+- Warnings: Turbopack root-path warning (non-blocking; related to multiple lockfiles in parent directories)
+
+### Lighthouse (production build, mobile)
+
+| Page | Performance | LCP | TBT | CLS | TTFB |
+|------|-------------|-----|-----|-----|------|
+| /churches | TBD | TBD | TBD | TBD | TBD |
+| /churches/{id} | TBD | TBD | TBD | TBD | TBD |
+| /churches/{id}/planning (with patterns) | TBD | TBD | TBD | TBD | TBD |
+| /churches/{id}/planning (no patterns) | TBD | TBD | TBD | TBD | TBD |
+| /churches/{id}/services | TBD | TBD | TBD | TBD | TBD |
+
+### In-app navigation (warm)
+
+| From → To | Wall-clock (ms) |
+|-----------|-----------------|
+| Overview → Planning | TBD |
+| Planning → Services | TBD |
+| Services → Repertoire | TBD |
+| Switch church via sidebar | TBD |
+
+### Planning grid
+
+| Action | Latency |
+|--------|---------|
+| Cold render (6 weeks) | TBD |
+| Cell edit → Saved ✓ | TBD |
+| Paste 10×9 block from spreadsheet | TBD |
+
+### Notes
+
+- Anything that did *not* improve as expected; theories: <fill in during verification>
+- Follow-up issues filed: <links/titles>
+
+### Targeted-fix summary (delivered in this PR)
+
+- **Auth dedup (`React.cache`):** removed 2 duplicate Supabase auth round-trips and 2 duplicate DB queries on every server-rendered page in the `(app)` route group.
+- **Sidebar query slimming:** `[churchId]/layout.tsx` reduced its `churches` projection to `{ name }` only; the previous joined `churches + memberships` query is split into two cached calls.
+- **Server-render initial planning data:** the `<Loading grid…>` flash is gone for the planning page on cold load.
+- **`PlanningCell` memoization:** unchanged-cell re-renders during edits/keystrokes are now skipped via `React.memo` + custom equality.
+- **Bundle audit:** identified and fixed an accidental client import of `@/lib/logger` (which transitively imported `node:async_hooks`) from `use-service-editor.ts`. Service-editor route chunk shrank ~13 KB.
+- **Link prefetching:** swept `<a href>` to `<Link>` in 4 callsites (account, privacy, invite); Next.js prefetches these on hover.
