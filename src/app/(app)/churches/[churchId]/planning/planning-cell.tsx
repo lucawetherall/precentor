@@ -106,7 +106,6 @@ function arePropsEqual(prev: Props, next: Props): boolean {
     prev.editing === next.editing &&
     prev.serviceType === next.serviceType &&
     prev.churchId === next.churchId &&
-    prev.search === next.search &&
     prev.value.displayText === next.value.displayText &&
     prev.value.refId === next.value.refId &&
     prev.value.isUnmatched === next.value.isUnmatched

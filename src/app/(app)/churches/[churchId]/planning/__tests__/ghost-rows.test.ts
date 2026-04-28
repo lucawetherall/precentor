@@ -115,6 +115,17 @@ describe("computeGhostRows", () => {
     expect(ghosts).toHaveLength(0);
   });
 
+  it("does not emit a fallback when a non-SUNG_EUCHARIST service exists on a qualifying day", () => {
+    const ghosts = computeGhostRows({
+      from: "2026-04-26",
+      to: "2026-04-26",
+      patterns: [],
+      existingServices: [{ date: "2026-04-26", serviceType: "CHORAL_EVENSONG" }],
+      qualifyingDays: [{ date: "2026-04-26", sundayKey: null, section: null }],
+    });
+    expect(ghosts).toHaveLength(0);
+  });
+
   it("does not emit a fallback for a non-qualifying weekday", () => {
     const ghosts = computeGhostRows({
       from: "2026-04-28", // Tue, not Festival, not Principal Feast
