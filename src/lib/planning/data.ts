@@ -58,6 +58,7 @@ async function loadServices(churchId: string, dayIds: string[]) {
       time: services.time,
       status: services.status,
       notes: services.notes,
+      updatedAt: services.updatedAt,
     })
     .from(services)
     .where(and(eq(services.churchId, churchId), inArray(services.liturgicalDayId, dayIds)));

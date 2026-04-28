@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { computeGhostRows } from "./ghost-rows";
@@ -18,6 +18,7 @@ import { getColumnSearch } from "./column-search";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { CsvImportModal } from "./csv-import-modal";
+import type { PlanningDataResponse } from "@/lib/planning/data";
 
 // ─── API response types ───────────────────────────────────────
 
@@ -38,7 +39,7 @@ interface ApiService {
   serviceType: string;
   time: string | null;
   notes: string | null;
-  updatedAt: string;
+  updatedAt: string | Date;
 }
 
 interface ApiSlot {
@@ -234,7 +235,7 @@ function buildRealRow(
     serviceType: svc.serviceType,
     time: svc.time,
     liturgicalDayId: svc.liturgicalDayId,
-    updatedAt: svc.updatedAt,
+    updatedAt: svc.updatedAt instanceof Date ? svc.updatedAt.toISOString() : svc.updatedAt,
     cells: {
       introit: deriveIntroit(slots),
       hymns: deriveHymns(slots),
@@ -350,19 +351,28 @@ interface Props {
   churchId: string;
   from: string;
   to: string;
+  initialData: PlanningDataResponse;
 }
 
-export function PlanningGrid({ churchId, from, to }: Props) {
-  const [loading, setLoading] = useState(true);
+export function PlanningGrid({ churchId, from, to, initialData }: Props) {
+  const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
-  const [hasNoPatterns, setHasNoPatterns] = useState(false);
+  const [hasNoPatterns, setHasNoPatterns] = useState(
+    initialData.patterns.length === 0,
+  );
 
-  const { state, dispatch, getCell } = usePlanningGrid([]);
+  const { state, dispatch, getCell } = usePlanningGrid(
+    buildRowsFromApi(initialData as ApiResponse, from, to),
+  );
 
-  // ─── Fetch rows ────────────────────────────────────────────
+  const isFirstLoad = useRef(true);
 
   useEffect(() => {
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
     setLoading(true);
     setFetchError(null);
 

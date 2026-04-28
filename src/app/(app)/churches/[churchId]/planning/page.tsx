@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 import { format, addWeeks } from "date-fns";
 import { requireChurchRole } from "@/lib/auth/permissions";
+import { getPlanningData } from "@/lib/planning/data";
 import { PlanningGrid } from "./planning-grid";
 
 interface Props {
@@ -20,12 +20,12 @@ export default async function PlanningPage({ params, searchParams }: Props) {
   const from = sp.from ?? today;
   const to = sp.to ?? defaultTo;
 
+  const initialData = await getPlanningData(churchId, from, to);
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Planning</h1>
-      <Suspense fallback={<div>Loading grid…</div>}>
-        <PlanningGrid churchId={churchId} from={from} to={to} />
-      </Suspense>
+      <PlanningGrid churchId={churchId} from={from} to={to} initialData={initialData} />
     </div>
   );
 }
