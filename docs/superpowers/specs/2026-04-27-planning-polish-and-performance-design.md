@@ -298,3 +298,22 @@ Each is reviewable and revertable.
 - Lighthouse Performance scores improve (or do not regress) on `/churches/{id}/planning` and `/churches/{id}` between baseline and post-fix runs.
 - Cold-load wall-clock time on `/churches/{id}/planning` (production build, no cache) drops by a measurable amount; numbers recorded in the spec.
 - All existing vitest + Playwright tests pass.
+
+---
+
+## Integration verification (2026-04-28)
+
+### Desk-checked
+
+- ✅ `services_preset_when_active` check constraint exists in `src/lib/db/schema-base.ts:171` only; no migration applies it. Constraint is dormant in the live DB.
+- ✅ `cell/route.ts` ghost→real promotion does not set `preset_id` (lines 35–44 INSERT into services: only churchId, liturgicalDayId, serviceType, time are set). Production currently works because the constraint is dormant. This change increases the volume of such promotions but introduces no new shape — when (and if) the constraint is migrated, the cell route will need to set a `preset_id` regardless of this PR. Flagged for follow-up.
+- ✅ Latent bug fixed during Task 8: `loadServices` now projects `updatedAt`. The previous omission silently disabled optimistic-concurrency checks in `cell/route.ts` (the `expectedUpdatedAt` was always undefined, so the conflict guard never fired). Post-Task-8, `updatedAt` flows from the DB (Date) → `buildRealRow` (normalized to ISO string) → `persistCell` → `expectedUpdatedAt`. The conflict check at `cell/route.ts:70` now operates as designed.
+
+### Pending (require running dev server + real DB)
+
+- [ ] Promote a fallback ghost via the planning grid (no-patterns church). Confirm: cell save succeeds, row persists across reload, no check-constraint error surfaces.
+- [ ] Verify the newly-created service appears on `/churches/{id}/services` with music preview.
+- [ ] Verify `/churches/{id}/services/{date}` renders without error.
+- [ ] Verify a Principal Feast on a weekday (e.g. Christmas Day) — fallback row appears, edit promotes to real service, appears on services page.
+
+If any of the pending checks fail, surface a regression — that's a separate fix.
