@@ -566,12 +566,13 @@ export function PlanningGrid({ churchId, from, to }: Props) {
 
   return (
     <div className="overflow-x-auto">
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
         <DateRangeControls from={from} to={to} />
-        <Button size="sm" variant="outline" onClick={() => setCsvOpen(true)}>Import CSV</Button>
+        <Button size="sm" variant="outline" onClick={() => setCsvOpen(true)}>
+          Import CSV
+        </Button>
       </div>
 
-      {/* Save status indicator */}
       <div className="text-xs text-muted-foreground h-5 mb-2">
         {state.saveStatus === "saving" && "Saving…"}
         {state.saveStatus === "saved" && "Saved ✓"}
