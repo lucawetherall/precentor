@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -64,12 +65,12 @@ export default function PrivacyPage() {
         <ul className="text-sm space-y-1 list-disc pl-5">
           <li>
             <strong>Access</strong> the personal data we hold about you — use &ldquo;Download my data&rdquo; in{" "}
-            <a href="/account" className="underline hover:no-underline">Account Settings</a>
+            <Link href="/account" className="underline hover:no-underline">Account Settings</Link>
           </li>
           <li><strong>Rectify</strong> inaccurate data — contact your church administrator</li>
           <li>
             <strong>Erasure</strong> (right to be forgotten) — use &ldquo;Delete my account&rdquo; in{" "}
-            <a href="/account" className="underline hover:no-underline">Account Settings</a>
+            <Link href="/account" className="underline hover:no-underline">Account Settings</Link>
           </li>
           <li><strong>Data portability</strong> — export your data as JSON from Account Settings</li>
           <li><strong>Object</strong> to processing — contact your church administrator</li>

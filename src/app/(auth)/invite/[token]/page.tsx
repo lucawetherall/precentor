@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -142,7 +143,7 @@ export default function InviteAcceptPage() {
         <div className="w-full max-w-sm text-center space-y-4">
           <h1 className="text-3xl font-heading font-semibold">Invalid Invite</h1>
           <p role="alert" className="text-sm text-muted-foreground">{pageError}</p>
-          <a href="/login" className="text-sm text-primary underline hover:no-underline">Go to sign in</a>
+          <Link href="/login" className="text-sm text-primary underline hover:no-underline">Go to sign in</Link>
         </div>
       </main>
     );
