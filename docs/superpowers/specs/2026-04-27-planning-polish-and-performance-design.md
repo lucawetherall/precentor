@@ -57,12 +57,9 @@ ascension-day
 day-of-pentecost-whit-sunday
 trinity-sunday
 all-saints-day
-ash-wednesday
-maundy-thursday
-good-friday
 ```
 
-The last three are technically "Principal Holy Days" in the CofE calendar but the user's intent ("all C of E principal services") plainly covers them — they always have a principal-service liturgy.
+Principal Holy Days (Ash Wednesday, Maundy Thursday, Good Friday) are deliberately *not* included. They're a separate CofE liturgical category, the user's brief was "Sundays + Principal Feasts + Festivals," and the SUNG_EUCHARIST fallback is the wrong liturgy for Good Friday and Ash Wednesday. Users who want a row for those days can configure a pattern or create the service manually.
 
 ### Where the logic lives
 
@@ -113,6 +110,19 @@ Pure-function tests in `ghost-rows.test.ts` (file already exists — extend it):
 - Plain Tuesday (not Sunday, not Festival, not Principal Feast) → no row from this rule.
 - Festival sundayKey on a weekday with no pattern → fallback.
 - Existing real service for a Sunday → no fallback (existing service wins).
+
+### Cross-page integration
+
+The change adds new ghost rows in the planning grid only. It does **not** alter the data model and does **not** change how a ghost row gets promoted into a real service: the existing `/api/churches/[churchId]/planning/cell` PATCH endpoint already handles ghost→real promotion (`INSERT INTO services` with `serviceType` and `time` from the ghost), and that path is unchanged.
+
+Knock-on effects on existing pages:
+
+- **Services page (`/churches/{id}/services`).** Lists upcoming `liturgicalDays` plus the church's real services. Today, days without services render "No service planned." That stays. Once a user clicks a fallback ghost row in the planning grid and edits a cell, a real service is inserted and immediately appears on the services page on the next render. Behaviour identical to today's pattern-driven ghost flow.
+- **Service detail page (`/churches/{id}/services/{date}`).** Reads real services from the DB. Unchanged — there are no synthetic/ghost services in the DB.
+- **Rota / availability widgets.** Driven by real `services.id` rows. A fallback ghost has no `services.id` until promoted, so it's invisible to the rota until edited. Same as today.
+- **Service sheets / music list.** Both read the real `services` table. Unchanged.
+
+Pre-existing concern surfaced (out of scope for this PR): the Drizzle schema has `check("services_preset_when_active", sql\`status = 'ARCHIVED' OR preset_id IS NOT NULL\`)` but no migration applies that constraint to the live DB. The cell-promotion route does not set `preset_id`. Today's flow works only because the constraint is dormant. This plan increases the volume of promotions but doesn't change their shape — when (and if) the constraint is migrated, the cell route will need to set a `preset_id`, regardless of this PR. Flagged in the implementation plan's Task 10.
 
 ### Risks / edge cases
 

@@ -19,14 +19,14 @@
 **Modified:**
 - `src/app/(app)/churches/[churchId]/planning/csv-import-modal.tsx` — close button.
 - `src/app/(app)/churches/[churchId]/planning/date-range-controls.tsx` — drop `mb-4`.
-- `src/app/(app)/churches/[churchId]/planning/planning-grid.tsx` — toolbar wrapper, accept `initialData`, memoized cell, callback stability.
-- `src/app/(app)/churches/[churchId]/planning/planning-cell.tsx` — wrap default export in `React.memo`.
+- `src/app/(app)/churches/[churchId]/planning/planning-grid.tsx` — toolbar wrapper, qualifying-day wiring, no-patterns hint banner, accept `initialData`.
+- `src/app/(app)/churches/[churchId]/planning/planning-cell.tsx` — wrap default export in `React.memo` with a custom equality check.
 - `src/app/(app)/churches/[churchId]/planning/page.tsx` — server-side fetch, pass `initialData`.
 - `src/app/(app)/churches/[churchId]/planning/ghost-rows.ts` — fallback row when no pattern covers a qualifying day.
 - `src/app/(app)/churches/[churchId]/planning/__tests__/ghost-rows.test.ts` — extend.
 - `src/app/api/churches/[churchId]/planning/route.ts` — switch to shared fetcher; add `sundayKey`/`section` to days projection.
-- `src/lib/auth/permissions.ts` — wrap `getAuthUser` and a new `getChurchMembership` with `React.cache`.
-- `src/app/(app)/layout.tsx` — call cached `getAuthUser`.
+- `src/lib/auth/permissions.ts` — wrap `getAuthUser` and a new `getChurchMembership` with `React.cache`; add `getSupabaseUser` (just the Supabase auth call, no DB).
+- `src/app/(app)/layout.tsx` — call cached `getSupabaseUser` (preserves prior behaviour: doesn't redirect on a missing DB row, only on a missing Supabase session).
 - `src/app/(app)/churches/[churchId]/layout.tsx` — call cached helpers, slim `select()` projection.
 
 ---
@@ -172,7 +172,7 @@ describe("isQualifyingDay", () => {
     expect(isQualifyingDay("2026-12-25", "christmas-day", "Christmas")).toBe(true);
   });
 
-  it("PRINCIPAL_FEAST_KEYS includes the canonical CofE list", () => {
+  it("PRINCIPAL_FEAST_KEYS includes the seven CofE Principal Feasts", () => {
     expect(PRINCIPAL_FEAST_KEYS.has("christmas-day")).toBe(true);
     expect(PRINCIPAL_FEAST_KEYS.has("easter-day")).toBe(true);
     expect(PRINCIPAL_FEAST_KEYS.has("ascension-day")).toBe(true);
@@ -180,9 +180,15 @@ describe("isQualifyingDay", () => {
     expect(PRINCIPAL_FEAST_KEYS.has("trinity-sunday")).toBe(true);
     expect(PRINCIPAL_FEAST_KEYS.has("all-saints-day")).toBe(true);
     expect(PRINCIPAL_FEAST_KEYS.has("the-epiphany")).toBe(true);
-    expect(PRINCIPAL_FEAST_KEYS.has("ash-wednesday")).toBe(true);
-    expect(PRINCIPAL_FEAST_KEYS.has("maundy-thursday")).toBe(true);
-    expect(PRINCIPAL_FEAST_KEYS.has("good-friday")).toBe(true);
+  });
+
+  it("does not include Principal Holy Days (Ash Wed / Maundy Thu / Good Fri)", () => {
+    // These are a separate CofE liturgical category — the user's brief
+    // covered Sundays + Principal Feasts + Festivals only. SUNG_EUCHARIST
+    // is also the wrong default for Good Friday and Ash Wednesday.
+    expect(PRINCIPAL_FEAST_KEYS.has("ash-wednesday")).toBe(false);
+    expect(PRINCIPAL_FEAST_KEYS.has("maundy-thursday")).toBe(false);
+    expect(PRINCIPAL_FEAST_KEYS.has("good-friday")).toBe(false);
   });
 });
 ```
@@ -200,8 +206,13 @@ Create `src/app/(app)/churches/[churchId]/planning/principal-feasts.ts`:
 import { parseISO, getDay } from "date-fns";
 
 /**
- * Sunday-key slugs for the CofE Principal Feasts and Principal Holy Days.
- * Slugs match the keys used in src/data/lectionary-coe.json.
+ * Sunday-key slugs for the seven CofE Principal Feasts. Slugs match the
+ * keys used in src/data/lectionary-coe.json.
+ *
+ * Principal Holy Days (Ash Wed / Maundy Thu / Good Fri) are deliberately
+ * not included: the user's brief was "Sundays + Principal Feasts +
+ * Festivals" (a different CofE category), and the fallback service type
+ * SUNG_EUCHARIST is the wrong liturgy for Good Friday and Ash Wednesday.
  */
 export const PRINCIPAL_FEAST_KEYS: ReadonlySet<string> = new Set([
   "christmas-day",
@@ -211,9 +222,6 @@ export const PRINCIPAL_FEAST_KEYS: ReadonlySet<string> = new Set([
   "day-of-pentecost-whit-sunday",
   "trinity-sunday",
   "all-saints-day",
-  "ash-wednesday",
-  "maundy-thursday",
-  "good-friday",
 ]);
 
 /**
@@ -465,466 +473,20 @@ git commit -m "feat(planning): emit SUNG_EUCHARIST fallback for qualifying days 
 
 ---
 
-## Task 5: API route — add `sundayKey` and `section` to days projection
+## Task 5: Extract shared planning-data fetcher (with new `sundayKey` + `section` fields)
 
-**Files:**
-- Modify: `src/app/api/churches/[churchId]/planning/route.ts`
-
-- [ ] **Step 1: Verify the lectionary section lookup**
-
-Run: `grep -n "section" src/lib/lectionary/types.ts`
-Expected: `section: string;` on `LectionarySunday`.
-
-- [ ] **Step 2: Update the API route**
-
-In `src/app/api/churches/[churchId]/planning/route.ts`, replace the body of the function with the version below. The change: the days projection includes `sundayKey` (= `icalUid`) and `section` (looked up from the lectionary JSON by sundayKey).
-
-Replace lines 26–32 (the `days` query) with:
-
-```ts
-  // 1. Liturgical days in range — select only the columns the client needs.
-  const dayRows = await db
-    .select({
-      id: liturgicalDays.id,
-      date: liturgicalDays.date,
-      cwName: liturgicalDays.cwName,
-      season: liturgicalDays.season,
-      colour: liturgicalDays.colour,
-      icalUid: liturgicalDays.icalUid,
-    })
-    .from(liturgicalDays)
-    .where(and(gte(liturgicalDays.date, from), lte(liturgicalDays.date, to)))
-    .orderBy(asc(liturgicalDays.date));
-```
-
-Add a new import at the top of the file (after the existing imports):
-
-```ts
-import lectionaryData from "@/data/lectionary-coe.json";
-```
-
-Right after the `dayRows` query, build the projected days:
-
-```ts
-  const sundays = (lectionaryData as { sundays: Record<string, { section: string }> }).sundays;
-  const days = dayRows.map((d) => {
-    const sundayKey = d.icalUid ?? null;
-    const section = sundayKey && sundays[sundayKey] ? sundays[sundayKey].section : null;
-    return {
-      id: d.id,
-      date: d.date,
-      cwName: d.cwName,
-      season: d.season,
-      colour: d.colour,
-      sundayKey,
-      section,
-    };
-  });
-  const dayIds = days.map((d) => d.id);
-```
-
-Delete the existing `const dayIds = days.map(...)` line that follows (now superseded).
-
-The final `return NextResponse.json({ days, services: serviceRows, slots: slotRows, readings: readingRows, patterns })` is unchanged — `days` now includes the new fields automatically.
-
-- [ ] **Step 3: Type-check**
-
-Run: `npm run typecheck`
-Expected: no errors.
-
-- [ ] **Step 4: Sanity-check at runtime**
-
-Run `npm run dev`, open the planning page in a browser. Open DevTools → Network → click on the `planning?from=…` response. Confirm each `days[*]` item has `sundayKey` and `section` fields (most weekdays will have both null; Sundays should have a populated `sundayKey` and a non-Festival section like `"Easter"`).
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/app/api/churches/\[churchId\]/planning/route.ts
-git commit -m "feat(planning-api): include sundayKey and section in days projection"
-```
-
----
-
-## Task 6: Wire the fallback rows into the client grid
-
-**Files:**
-- Modify: `src/app/(app)/churches/[churchId]/planning/planning-grid.tsx`
-
-- [ ] **Step 1: Update `ApiDay` and `buildRowsFromApi`**
-
-In `planning-grid.tsx`, change the `ApiDay` interface (lines 23–29) to:
-
-```tsx
-interface ApiDay {
-  id: string;
-  date: string;
-  cwName: string;
-  season: string;
-  colour: string;
-  sundayKey: string | null;
-  section: string | null;
-}
-```
-
-In `buildRowsFromApi` (around line 291), change the call to `computeGhostRows` to also pass `qualifyingDays`. Replace the existing line:
-
-```tsx
-  const ghosts = computeGhostRows({ from, to, patterns: data.patterns, existingServices: existingRefs });
-```
-
-with:
-
-```tsx
-  const qualifyingDays = data.days.map((d) => ({
-    date: d.date,
-    sundayKey: d.sundayKey,
-    section: d.section,
-  }));
-
-  const ghosts = computeGhostRows({
-    from,
-    to,
-    patterns: data.patterns,
-    existingServices: existingRefs,
-    qualifyingDays,
-  });
-```
-
-- [ ] **Step 2: Remove the `noPatterns` empty-state guard, replace with inline hint**
-
-In `planning-grid.tsx`, delete lines 542–554 (the `if (noPatterns) { return … }` block) entirely.
-
-Change line 344 from:
-
-```tsx
-  const [noPatterns, setNoPatterns] = useState(false);
-```
-
-to:
-
-```tsx
-  const [hasNoPatterns, setHasNoPatterns] = useState(false);
-```
-
-Change line 360 from:
-
-```tsx
-        setNoPatterns(data.patterns.length === 0 && data.services.length === 0);
-```
-
-to:
-
-```tsx
-        setHasNoPatterns(data.patterns.length === 0);
-```
-
-In the render block, immediately after the toolbar (after the `<div className="flex flex-wrap …">…</div>` closing tag added in Task 2, and before the save-status indicator), insert:
-
-```tsx
-      {hasNoPatterns && (
-        <div className="mb-3 p-2 text-xs border rounded bg-muted/40 text-muted-foreground">
-          Showing default Sunday and Festival rows.{" "}
-          <a className="underline" href={`/churches/${churchId}/settings/service-patterns`}>
-            Configure service patterns
-          </a>{" "}
-          to add weekday and additional services.
-        </div>
-      )}
-```
-
-- [ ] **Step 3: Manual verification**
-
-Run `npm run dev`. Two scenarios:
-
-1. **Church with patterns:** Open planning. Behaviour identical to today plus, for any Sunday/Festival not covered by a pattern, you see one extra `Sung Eucharist` row.
-2. **Church with zero patterns:** Open planning. The "Configure service patterns" empty state is gone. The grid shows one `Sung Eucharist` row per Sunday (and per Festival/Principal Feast in range). The inline hint banner appears at the top of the grid linking to settings.
-
-- [ ] **Step 4: Type-check + tests**
-
-Run: `npm run typecheck && npm test`
-Expected: typecheck passes; no test regressions.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/app/\(app\)/churches/\[churchId\]/planning/planning-grid.tsx
-git commit -m "feat(planning): always show Sundays/Feasts/Festivals; replace empty state with hint"
-```
-
----
-
-## Task 7: Auth dedup with `React.cache`
-
-**Files:**
-- Modify: `src/lib/auth/permissions.ts`
-- Modify: `src/app/(app)/layout.tsx`
-- Modify: `src/app/(app)/churches/[churchId]/layout.tsx`
-- Test: `src/lib/auth/__tests__/permissions-cache.test.ts` (create if absent)
-
-- [ ] **Step 1: Add cached helpers to `permissions.ts`**
-
-In `src/lib/auth/permissions.ts`, add `cache` to the React import block and a new export `getChurchMembership`. Replace the file with:
-
-```ts
-import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
-import { db } from "@/lib/db";
-import { users, churchMemberships } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { NextResponse } from "next/server";
-import type { MemberRole } from "@/types";
-
-const ROLE_HIERARCHY: Record<MemberRole, number> = {
-  MEMBER: 0,
-  EDITOR: 1,
-  ADMIN: 2,
-};
-
-export const VALID_MEMBER_ROLES = Object.keys(ROLE_HIERARCHY) as MemberRole[];
-
-export function isMemberRole(value: unknown): value is MemberRole {
-  return typeof value === "string" && value in ROLE_HIERARCHY;
-}
-
-export function coerceMemberRole(value: unknown): MemberRole {
-  if (isMemberRole(value)) return value;
-  console.warn("[permissions] Unexpected role value — defaulting to MEMBER", { value });
-  return "MEMBER";
-}
-
-export function hasMinRole(userRole: MemberRole, minRole: MemberRole): boolean {
-  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[minRole];
-}
-
-/**
- * Wrapped in React.cache so multiple callers within a single server-render
- * request share a single Supabase getUser() round-trip and a single users
- * lookup. Across different requests no caching occurs.
- */
-export const getAuthUser = cache(async () => {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const dbUser = await db
-    .select()
-    .from(users)
-    .where(eq(users.supabaseId, user.id))
-    .limit(1);
-
-  if (dbUser.length === 0) return null;
-  return dbUser[0];
-});
-
-/**
- * Wrapped in React.cache for the same reason. Keyed on (userId, churchId).
- */
-export const getChurchMembership = cache(
-  async (userId: string, churchId: string) => {
-    const rows = await db
-      .select()
-      .from(churchMemberships)
-      .where(
-        and(
-          eq(churchMemberships.userId, userId),
-          eq(churchMemberships.churchId, churchId),
-        ),
-      )
-      .limit(1);
-    return rows[0] ?? null;
-  },
-);
-
-export async function requireAuth() {
-  const user = await getAuthUser();
-  if (!user) {
-    return { user: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-  return { user, error: null };
-}
-
-export async function requireChurchRole(churchId: string, minRole: MemberRole) {
-  const { user, error } = await requireAuth();
-  if (error) return { user: null, membership: null, error };
-
-  const membership = await getChurchMembership(user!.id, churchId);
-
-  if (!membership) {
-    return {
-      user: null,
-      membership: null,
-      error: NextResponse.json({ error: "Not a member of this church" }, { status: 403 }),
-    };
-  }
-
-  if (!hasMinRole(coerceMemberRole(membership.role), minRole)) {
-    return {
-      user: null,
-      membership: null,
-      error: NextResponse.json({ error: "Insufficient permissions" }, { status: 403 }),
-    };
-  }
-
-  return { user: user!, membership, error: null };
-}
-```
-
-- [ ] **Step 2: Update `(app)/layout.tsx` to use the cached helper**
-
-In `src/app/(app)/layout.tsx`, replace the entire file with:
-
-```tsx
-import { redirect } from "next/navigation";
-import { getAuthUser } from "@/lib/auth/permissions";
-import { ErrorBoundary } from "@/components/error-boundary";
-
-export default async function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const user = await getAuthUser();
-  if (!user) redirect("/login");
-
-  return (
-    <div className="min-h-screen">
-      <ErrorBoundary>{children}</ErrorBoundary>
-    </div>
-  );
-}
-```
-
-Note: the previous code redirected when there was no Supabase user; the new code redirects when there's no DB user (which implies no Supabase user, since `getAuthUser` returns null in that case). Behaviour is equivalent for any user that has gone through the normal signup flow.
-
-- [ ] **Step 3: Update `(app)/churches/[churchId]/layout.tsx` to use the cached helpers and a slimmer projection**
-
-In `src/app/(app)/churches/[churchId]/layout.tsx`, replace the entire file with:
-
-```tsx
-import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { churches } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { getAuthUser, getChurchMembership, hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
-import { ChurchSidebar } from "@/components/church-sidebar";
-import { MigrationBanner } from "@/components/migration-banner";
-
-interface Props {
-  children: React.ReactNode;
-  params: Promise<{ churchId: string }>;
-}
-
-export default async function ChurchLayout({ children, params }: Props) {
-  const { churchId } = await params;
-
-  const user = await getAuthUser();
-  if (!user) redirect("/login");
-
-  const membership = await getChurchMembership(user.id, churchId);
-  if (!membership) redirect("/churches");
-
-  const churchRow = await db
-    .select({ name: churches.name })
-    .from(churches)
-    .where(eq(churches.id, churchId))
-    .limit(1);
-
-  if (churchRow.length === 0) redirect("/churches");
-
-  const userRole = coerceMemberRole(membership.role);
-  const isAdmin = hasMinRole(userRole, "ADMIN");
-  const canEdit = hasMinRole(userRole, "EDITOR");
-
-  interface NavGroup {
-    label?: string;
-    items: { href: string; label: string; iconName: string; exactMatch?: boolean }[];
-  }
-
-  const navGroups: NavGroup[] = [
-    {
-      items: [
-        { href: `/churches/${churchId}`, label: "Overview", iconName: "Home", exactMatch: true },
-        { href: `/churches/${churchId}/services`, label: "Services", iconName: "Calendar" },
-        ...(canEdit ? [{ href: `/churches/${churchId}/planning`, label: "Planning", iconName: "LayoutGrid" }] : []),
-        { href: `/churches/${churchId}/rota`, label: "Rota", iconName: "Users" },
-      ],
-    },
-    {
-      label: "More",
-      items: [
-        { href: `/churches/${churchId}/repertoire`, label: "Repertoire", iconName: "Music" },
-      ],
-    },
-    ...(isAdmin ? [{
-      label: "Admin",
-      items: [
-        { href: `/churches/${churchId}/members`, label: "Members", iconName: "Users" },
-        { href: `/churches/${churchId}/service-sheets`, label: "Service Sheets", iconName: "FileText" },
-        { href: `/churches/${churchId}/music-list`, label: "Music List", iconName: "ScrollText" },
-        { href: `/churches/${churchId}/settings`, label: "Settings", iconName: "Settings" },
-      ],
-    }] : []),
-  ];
-
-  return (
-    <div className="flex min-h-screen flex-col md:flex-row">
-      <ChurchSidebar
-        churchId={churchId}
-        churchName={churchRow[0].name}
-        userRole={membership.role}
-        userEmail={user.email}
-        navGroups={navGroups}
-      />
-      <main id="main-content" className="flex-1">
-        {isAdmin && <MigrationBanner churchId={churchId} />}
-        {children}
-      </main>
-    </div>
-  );
-}
-```
-
-Note: the slimmer projection picks only `churches.name`. Whether `users.email` is non-null depends on the schema — verify in step 4.
-
-- [ ] **Step 4: Verify `users.email` exists and is non-nullable**
-
-Run: `grep -n "email" src/lib/db/schema-base.ts | head`
-If `email` is nullable, change `userEmail={user.email}` to `userEmail={user.email ?? ""}` to match the prior `user.email || ""`.
-
-- [ ] **Step 5: Type-check**
-
-Run: `npm run typecheck`
-Expected: no errors. If `db.execute` typings or the `users` row shape have changed in the meantime, fix them now.
-
-- [ ] **Step 6: Manual smoke test**
-
-Run `npm run dev`. Log in. Navigate to `/churches/{your-church}/planning`. Confirm the page renders, the sidebar shows the correct church name and your role, and there are no auth errors. Sign out and confirm you're redirected to `/login`.
-
-- [ ] **Step 7: Run the full test suite**
-
-Run: `npm test`
-Expected: PASS. Any test that mocked `requireChurchRole` or its DB calls should still pass — the public surface is unchanged.
-
-- [ ] **Step 8: Commit**
-
-```bash
-git add src/lib/auth/permissions.ts \
-        src/app/\(app\)/layout.tsx \
-        src/app/\(app\)/churches/\[churchId\]/layout.tsx
-git commit -m "perf(auth): dedup auth + membership lookups with React.cache; slim sidebar query"
-```
-
----
-
-## Task 8: Server-render initial planning data
+This task replaces what would have been two separate edits to the route (one to add fields, one to extract). We do it in one move so the route's pre-existing logic isn't rewritten twice.
 
 **Files:**
 - Create: `src/lib/planning/data.ts`
 - Modify: `src/app/api/churches/[churchId]/planning/route.ts`
-- Modify: `src/app/(app)/churches/[churchId]/planning/page.tsx`
-- Modify: `src/app/(app)/churches/[churchId]/planning/planning-grid.tsx`
 
-- [ ] **Step 1: Extract the fetch into `src/lib/planning/data.ts`**
+- [ ] **Step 1: Verify the lectionary section lookup is available**
+
+Run: `grep -n "section" src/lib/lectionary/types.ts`
+Expected: `section: string;` on `LectionarySunday`.
+
+- [ ] **Step 2: Create the shared fetcher module**
 
 Create `src/lib/planning/data.ts`:
 
@@ -946,20 +508,6 @@ export interface PlanningDayProjection {
   colour: string;
   sundayKey: string | null;
   section: string | null;
-}
-
-export interface PlanningDataResponse {
-  days: PlanningDayProjection[];
-  services: Awaited<ReturnType<typeof loadServices>>;
-  slots: Awaited<ReturnType<typeof loadSlots>>;
-  readings: Awaited<ReturnType<typeof loadReadings>>;
-  patterns: Array<{
-    id: string;
-    dayOfWeek: number;
-    serviceType: string;
-    time: string | null;
-    enabled: boolean;
-  }>;
 }
 
 async function loadDays(from: string, to: string): Promise<PlanningDayProjection[]> {
@@ -1053,6 +601,7 @@ async function loadReadings(dayIds: string[]) {
     .where(inArray(readings.liturgicalDayId, dayIds));
 }
 
+// db.execute<T>(sql) returns T[] directly (see commit 398d419).
 async function loadPatterns(churchId: string) {
   return db.execute<{
     id: string;
@@ -1065,6 +614,14 @@ async function loadPatterns(churchId: string) {
     FROM church_service_patterns
     WHERE church_id = ${churchId}
   `);
+}
+
+export interface PlanningDataResponse {
+  days: PlanningDayProjection[];
+  services: Awaited<ReturnType<typeof loadServices>>;
+  slots: Awaited<ReturnType<typeof loadSlots>>;
+  readings: Awaited<ReturnType<typeof loadReadings>>;
+  patterns: Awaited<ReturnType<typeof loadPatterns>>;
 }
 
 export async function getPlanningData(
@@ -1083,7 +640,7 @@ export async function getPlanningData(
 }
 ```
 
-- [ ] **Step 2: Slim the API route to call the shared fetcher**
+- [ ] **Step 3: Slim the API route to call the shared fetcher**
 
 Replace `src/app/api/churches/[churchId]/planning/route.ts` with:
 
@@ -1112,7 +669,422 @@ export async function GET(
 }
 ```
 
-- [ ] **Step 3: Server-render the initial data in `page.tsx`**
+- [ ] **Step 4: Type-check**
+
+Run: `npm run typecheck`
+Expected: no errors.
+
+- [ ] **Step 5: Sanity-check at runtime**
+
+Run `npm run dev`, open the planning page in a browser. Open DevTools → Network → click on the `planning?from=…` response. Confirm each `days[*]` item has `sundayKey` and `section` fields (most weekdays will have both null; Sundays should have a populated `sundayKey` and a non-Festival section like `"Easter"`). Confirm services, slots, readings, patterns still come through unchanged.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/lib/planning/data.ts \
+        src/app/api/churches/\[churchId\]/planning/route.ts
+git commit -m "refactor(planning): extract shared data fetcher; expose sundayKey/section on days"
+```
+
+---
+
+## Task 6: Wire the fallback rows into the client grid
+
+**Files:**
+- Modify: `src/app/(app)/churches/[churchId]/planning/planning-grid.tsx`
+
+- [ ] **Step 1: Update `ApiDay` and `buildRowsFromApi`**
+
+In `planning-grid.tsx`, change the `ApiDay` interface (lines 23–29) to:
+
+```tsx
+interface ApiDay {
+  id: string;
+  date: string;
+  cwName: string;
+  season: string;
+  colour: string;
+  sundayKey: string | null;
+  section: string | null;
+}
+```
+
+In `buildRowsFromApi` (around line 291), change the call to `computeGhostRows` to also pass `qualifyingDays`. Replace the existing line:
+
+```tsx
+  const ghosts = computeGhostRows({ from, to, patterns: data.patterns, existingServices: existingRefs });
+```
+
+with:
+
+```tsx
+  const qualifyingDays = data.days.map((d) => ({
+    date: d.date,
+    sundayKey: d.sundayKey,
+    section: d.section,
+  }));
+
+  const ghosts = computeGhostRows({
+    from,
+    to,
+    patterns: data.patterns,
+    existingServices: existingRefs,
+    qualifyingDays,
+  });
+```
+
+- [ ] **Step 2: Remove the `noPatterns` empty-state guard, replace with inline hint**
+
+In `planning-grid.tsx`, delete lines 542–554 (the `if (noPatterns) { return … }` block) entirely.
+
+Change line 344 from:
+
+```tsx
+  const [noPatterns, setNoPatterns] = useState(false);
+```
+
+to:
+
+```tsx
+  const [hasNoPatterns, setHasNoPatterns] = useState(false);
+```
+
+Change line 360 from:
+
+```tsx
+        setNoPatterns(data.patterns.length === 0 && data.services.length === 0);
+```
+
+to:
+
+```tsx
+        setHasNoPatterns(data.patterns.length === 0);
+```
+
+Add a `Link` import to the top of `planning-grid.tsx` if not already present:
+
+```tsx
+import Link from "next/link";
+```
+
+In the render block, immediately after the toolbar (after the `<div className="flex flex-wrap …">…</div>` closing tag added in Task 2, and before the save-status indicator), insert:
+
+```tsx
+      {hasNoPatterns && (
+        <div className="mb-3 p-2 text-xs border rounded bg-muted/40 text-muted-foreground">
+          Showing default Sunday and Festival rows.{" "}
+          <Link
+            className="underline"
+            href={`/churches/${churchId}/settings/service-patterns`}
+          >
+            Configure service patterns
+          </Link>{" "}
+          to add weekday and additional services.
+        </div>
+      )}
+```
+
+- [ ] **Step 3: Manual verification**
+
+Run `npm run dev`. Two scenarios:
+
+1. **Church with patterns:** Open planning. Behaviour identical to today plus, for any Sunday/Festival not covered by a pattern, you see one extra `Sung Eucharist` row.
+2. **Church with zero patterns:** Open planning. The "Configure service patterns" empty state is gone. The grid shows one `Sung Eucharist` row per Sunday (and per Festival/Principal Feast in range). The inline hint banner appears at the top of the grid linking to settings.
+
+- [ ] **Step 4: Type-check + tests**
+
+Run: `npm run typecheck && npm test`
+Expected: typecheck passes; no test regressions.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/app/\(app\)/churches/\[churchId\]/planning/planning-grid.tsx
+git commit -m "feat(planning): always show Sundays/Feasts/Festivals; replace empty state with hint"
+```
+
+---
+
+## Task 7: Auth dedup with `React.cache`
+
+**Files:**
+- Modify: `src/lib/auth/permissions.ts`
+- Modify: `src/app/(app)/layout.tsx`
+- Modify: `src/app/(app)/churches/[churchId]/layout.tsx`
+
+- [ ] **Step 1: Add cached helpers to `permissions.ts`**
+
+In `src/lib/auth/permissions.ts`, add three cached helpers: `getSupabaseUser` (just the Supabase auth call), `getAuthUser` (Supabase + DB row), `getChurchMembership` (membership lookup). All three dedupe within a single server-render request via `React.cache`. Replace the file with:
+
+```ts
+import { cache } from "react";
+import { createClient } from "@/lib/supabase/server";
+import { db } from "@/lib/db";
+import { users, churchMemberships } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import type { MemberRole } from "@/types";
+
+const ROLE_HIERARCHY: Record<MemberRole, number> = {
+  MEMBER: 0,
+  EDITOR: 1,
+  ADMIN: 2,
+};
+
+export const VALID_MEMBER_ROLES = Object.keys(ROLE_HIERARCHY) as MemberRole[];
+
+export function isMemberRole(value: unknown): value is MemberRole {
+  return typeof value === "string" && value in ROLE_HIERARCHY;
+}
+
+export function coerceMemberRole(value: unknown): MemberRole {
+  if (isMemberRole(value)) return value;
+  console.warn("[permissions] Unexpected role value — defaulting to MEMBER", { value });
+  return "MEMBER";
+}
+
+export function hasMinRole(userRole: MemberRole, minRole: MemberRole): boolean {
+  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[minRole];
+}
+
+/**
+ * Cheap Supabase-only check. Use in places that only need to know whether
+ * the request is authenticated — no DB row required. Cached per request.
+ *
+ * The `(app)/layout.tsx` uses this so a freshly-signed-up user whose DB
+ * upsert in /auth/callback failed (handled with try/catch there) still
+ * gets past the layout guard and can attempt page-level operations,
+ * matching prior behaviour.
+ */
+export const getSupabaseUser = cache(async () => {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+});
+
+/**
+ * Full auth: Supabase user + matching `users` row. Cached per request,
+ * so combining `getSupabaseUser` + `getAuthUser` in the same render does
+ * not incur duplicate Supabase round-trips.
+ */
+export const getAuthUser = cache(async () => {
+  const user = await getSupabaseUser();
+  if (!user) return null;
+
+  const dbUser = await db
+    .select()
+    .from(users)
+    .where(eq(users.supabaseId, user.id))
+    .limit(1);
+
+  if (dbUser.length === 0) return null;
+  return dbUser[0];
+});
+
+/**
+ * Wrapped in React.cache for the same reason. Keyed on (userId, churchId).
+ */
+export const getChurchMembership = cache(
+  async (userId: string, churchId: string) => {
+    const rows = await db
+      .select()
+      .from(churchMemberships)
+      .where(
+        and(
+          eq(churchMemberships.userId, userId),
+          eq(churchMemberships.churchId, churchId),
+        ),
+      )
+      .limit(1);
+    return rows[0] ?? null;
+  },
+);
+
+export async function requireAuth() {
+  const user = await getAuthUser();
+  if (!user) {
+    return { user: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+  return { user, error: null };
+}
+
+export async function requireChurchRole(churchId: string, minRole: MemberRole) {
+  const { user, error } = await requireAuth();
+  if (error) return { user: null, membership: null, error };
+
+  const membership = await getChurchMembership(user!.id, churchId);
+
+  if (!membership) {
+    return {
+      user: null,
+      membership: null,
+      error: NextResponse.json({ error: "Not a member of this church" }, { status: 403 }),
+    };
+  }
+
+  if (!hasMinRole(coerceMemberRole(membership.role), minRole)) {
+    return {
+      user: null,
+      membership: null,
+      error: NextResponse.json({ error: "Insufficient permissions" }, { status: 403 }),
+    };
+  }
+
+  return { user: user!, membership, error: null };
+}
+```
+
+- [ ] **Step 2: Update `(app)/layout.tsx` to use the cached Supabase helper**
+
+In `src/app/(app)/layout.tsx`, replace the entire file with:
+
+```tsx
+import { redirect } from "next/navigation";
+import { getSupabaseUser } from "@/lib/auth/permissions";
+import { ErrorBoundary } from "@/components/error-boundary";
+
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const user = await getSupabaseUser();
+  if (!user) redirect("/login");
+
+  return (
+    <div className="min-h-screen">
+      <ErrorBoundary>{children}</ErrorBoundary>
+    </div>
+  );
+}
+```
+
+This preserves the prior behaviour exactly (redirect only on no Supabase session) — we use the lighter `getSupabaseUser` here rather than `getAuthUser` so a user whose DB upsert in `/auth/callback` was tolerated (try/catch'd) does not get redirect-looped at the layout. Both helpers share the same Supabase round-trip via `React.cache` when the page below also calls `getAuthUser`.
+
+- [ ] **Step 3: Update `(app)/churches/[churchId]/layout.tsx` to use the cached helpers and a slimmer projection**
+
+In `src/app/(app)/churches/[churchId]/layout.tsx`, replace the entire file with:
+
+```tsx
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { churches } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { getAuthUser, getChurchMembership, hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
+import { ChurchSidebar } from "@/components/church-sidebar";
+import { MigrationBanner } from "@/components/migration-banner";
+
+interface Props {
+  children: React.ReactNode;
+  params: Promise<{ churchId: string }>;
+}
+
+export default async function ChurchLayout({ children, params }: Props) {
+  const { churchId } = await params;
+
+  const user = await getAuthUser();
+  if (!user) redirect("/login");
+
+  const membership = await getChurchMembership(user.id, churchId);
+  if (!membership) redirect("/churches");
+
+  const churchRow = await db
+    .select({ name: churches.name })
+    .from(churches)
+    .where(eq(churches.id, churchId))
+    .limit(1);
+
+  if (churchRow.length === 0) redirect("/churches");
+
+  const userRole = coerceMemberRole(membership.role);
+  const isAdmin = hasMinRole(userRole, "ADMIN");
+  const canEdit = hasMinRole(userRole, "EDITOR");
+
+  interface NavGroup {
+    label?: string;
+    items: { href: string; label: string; iconName: string; exactMatch?: boolean }[];
+  }
+
+  const navGroups: NavGroup[] = [
+    {
+      items: [
+        { href: `/churches/${churchId}`, label: "Overview", iconName: "Home", exactMatch: true },
+        { href: `/churches/${churchId}/services`, label: "Services", iconName: "Calendar" },
+        ...(canEdit ? [{ href: `/churches/${churchId}/planning`, label: "Planning", iconName: "LayoutGrid" }] : []),
+        { href: `/churches/${churchId}/rota`, label: "Rota", iconName: "Users" },
+      ],
+    },
+    {
+      label: "More",
+      items: [
+        { href: `/churches/${churchId}/repertoire`, label: "Repertoire", iconName: "Music" },
+      ],
+    },
+    ...(isAdmin ? [{
+      label: "Admin",
+      items: [
+        { href: `/churches/${churchId}/members`, label: "Members", iconName: "Users" },
+        { href: `/churches/${churchId}/service-sheets`, label: "Service Sheets", iconName: "FileText" },
+        { href: `/churches/${churchId}/music-list`, label: "Music List", iconName: "ScrollText" },
+        { href: `/churches/${churchId}/settings`, label: "Settings", iconName: "Settings" },
+      ],
+    }] : []),
+  ];
+
+  return (
+    <div className="flex min-h-screen flex-col md:flex-row">
+      <ChurchSidebar
+        churchId={churchId}
+        churchName={churchRow[0].name}
+        userRole={membership.role}
+        userEmail={user.email}
+        navGroups={navGroups}
+      />
+      <main id="main-content" className="flex-1">
+        {isAdmin && <MigrationBanner churchId={churchId} />}
+        {children}
+      </main>
+    </div>
+  );
+}
+```
+
+Note: the slimmer projection picks only `churches.name`. `users.email` is `notNull` in the schema (`schema-base.ts:60`), so `userEmail={user.email}` is safe without a fallback.
+
+- [ ] **Step 4: Type-check**
+
+Run: `npm run typecheck`
+Expected: no errors.
+
+- [ ] **Step 5: Manual smoke test**
+
+Run `npm run dev`. Log in. Navigate to `/churches/{your-church}/planning`. Confirm the page renders, the sidebar shows the correct church name and your role, and there are no auth errors. Sign out and confirm you're redirected to `/login`.
+
+- [ ] **Step 6: Run the full test suite**
+
+Run: `npm test`
+Expected: PASS. Any test that mocked `requireChurchRole` or its DB calls should still pass — the public surface is unchanged.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/lib/auth/permissions.ts \
+        src/app/\(app\)/layout.tsx \
+        src/app/\(app\)/churches/\[churchId\]/layout.tsx
+git commit -m "perf(auth): dedup auth + membership lookups with React.cache; slim sidebar query"
+```
+
+---
+
+## Task 8: Server-render initial planning data
+
+The shared fetcher and slimmed route already exist (Task 5). This task wires the page to call the fetcher directly and pass the result into `PlanningGrid` so the client doesn't need a cold round-trip.
+
+**Files:**
+- Modify: `src/app/(app)/churches/[churchId]/planning/page.tsx`
+- Modify: `src/app/(app)/churches/[churchId]/planning/planning-grid.tsx`
+
+- [ ] **Step 1: Server-render the initial data in `page.tsx`**
 
 Replace `src/app/(app)/churches/[churchId]/planning/page.tsx` with:
 
@@ -1150,15 +1122,17 @@ export default async function PlanningPage({ params, searchParams }: Props) {
 }
 ```
 
-- [ ] **Step 4: Accept `initialData` in `PlanningGrid` and skip the cold fetch**
+- [ ] **Step 2: Accept `initialData` in `PlanningGrid` and skip the cold fetch**
 
 In `planning-grid.tsx`:
 
-a. Add an import at the top, near the existing type imports:
+a. Add the type import at the top, near the existing type imports:
 
 ```tsx
 import type { PlanningDataResponse } from "@/lib/planning/data";
 ```
+
+Add `useRef` to the existing React import block at the top of the file (it's not currently imported).
 
 b. Change the `Props` interface (around line 333) to:
 
@@ -1171,7 +1145,7 @@ interface Props {
 }
 ```
 
-c. Change the function signature and the loading state (around line 340–346):
+c. Replace the component's opening (function signature + initial state hooks + fetch effect, lines 340–368) with:
 
 ```tsx
 export function PlanningGrid({ churchId, from, to, initialData }: Props) {
@@ -1185,27 +1159,7 @@ export function PlanningGrid({ churchId, from, to, initialData }: Props) {
   const { state, dispatch, getCell } = usePlanningGrid(
     buildRowsFromApi(initialData as ApiResponse, from, to),
   );
-```
 
-The `usePlanningGrid` hook currently takes `[]` and is updated by `dispatch({ type: "SET_ROWS", … })`. Pre-seeding via the constructor avoids the initial empty render. If `usePlanningGrid` does not accept an initial-rows arg, see step 4d.
-
-d. **Verify `usePlanningGrid` accepts initial rows.** If `usePlanningGrid([])` is the only signature, leave the hook call as `usePlanningGrid([])` and instead seed via a synchronous `useState`-style effect:
-
-```tsx
-  // Initial seed: hydrate rows from server-rendered data on first render.
-  useEffect(() => {
-    dispatch({ type: "SET_ROWS", rows: buildRowsFromApi(initialData as ApiResponse, from, to) });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-```
-
-Run: `grep -n "export function usePlanningGrid" src/app/\(app\)/churches/\[churchId\]/planning/use-planning-grid.ts`
-
-If the hook signature shows it accepts `(initialRows: PlanningRow[])`, use option (c). Otherwise use option (d).
-
-e. Replace the existing fetch effect (lines 350–368) so it only runs when `from`/`to` change *after* mount. Track the first mount:
-
-```tsx
   const isFirstLoad = useRef(true);
 
   useEffect(() => {
@@ -1233,36 +1187,33 @@ e. Replace the existing fetch effect (lines 350–368) so it only runs when `fro
   }, [churchId, from, to, dispatch]);
 ```
 
-Add `useRef` to the React imports if it's not already imported.
+The cast `initialData as ApiResponse` works because `PlanningDataResponse` and `ApiResponse` describe the same JSON shape — the local `ApiResponse` interface in `planning-grid.tsx` was just declared independently. `usePlanningGrid` already accepts `initialRows` (verified in `use-planning-grid.ts:69`), so seeding via the constructor avoids the empty-then-populated render.
 
-f. The `if (loading) { return … }` block (lines 524–531) now only fires on date-range changes. Leave it in place — it's still a valid loading state for refetches.
+d. The `if (loading) { return … }` block lower down now only fires on date-range refetches, which is the right behaviour — leave it in place.
 
-- [ ] **Step 5: Type-check + tests**
+- [ ] **Step 3: Type-check + tests**
 
 Run: `npm run typecheck && npm test`
 Expected: typecheck passes, tests pass.
 
-- [ ] **Step 6: Manual verification**
+- [ ] **Step 4: Manual verification**
 
 Run `npm run dev`. Open `/churches/{id}/planning`. The grid renders **without** a "Loading grid…" flash. Change the date range (click "12 weeks") — that path still does a client fetch and shows "Loading grid…" briefly. Edit a cell — save still works (calls the unchanged `/cell` endpoint). Paste a 3×2 block from a spreadsheet — paste still works.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add src/lib/planning/data.ts \
-        src/app/api/churches/\[churchId\]/planning/route.ts \
-        src/app/\(app\)/churches/\[churchId\]/planning/page.tsx \
+git add src/app/\(app\)/churches/\[churchId\]/planning/page.tsx \
         src/app/\(app\)/churches/\[churchId\]/planning/planning-grid.tsx
 git commit -m "perf(planning): server-render initial grid data; eliminate cold-load fetch"
 ```
 
 ---
 
-## Task 9: Memoize `PlanningCell` and stabilize callbacks
+## Task 9: Memoize `PlanningCell`
 
 **Files:**
 - Modify: `src/app/(app)/churches/[churchId]/planning/planning-cell.tsx`
-- Modify: `src/app/(app)/churches/[churchId]/planning/planning-grid.tsx`
 
 - [ ] **Step 1: Wrap `PlanningCell` in `React.memo`**
 
@@ -1289,84 +1240,107 @@ function arePropsEqual(prev: Props, next: Props): boolean {
     prev.search === next.search &&
     prev.value.displayText === next.value.displayText &&
     prev.value.refId === next.value.refId &&
-    prev.value.isUnmatched === next.value.isUnmatched &&
-    prev.onFocus === next.onFocus &&
-    prev.onEnterEdit === next.onEnterEdit &&
-    prev.onCancelEdit === next.onCancelEdit &&
-    prev.onCommit === next.onCommit
+    prev.value.isUnmatched === next.value.isUnmatched
   );
 }
 
 export const PlanningCell = memo(PlanningCellInner, arePropsEqual);
 ```
 
-The custom equality is necessary because `value` is an object reference: a shallow `===` would say two cells with the same `displayText` are different.
+**Note on the callback props (`onFocus`, `onEnterEdit`, `onCancelEdit`, `onCommit`):** they are deliberately **not** included in the equality check. The grid creates them as inline arrows (e.g. `() => handleFocus(rk, col.key)`) per render, so reference equality would always fail and memoization would always bail out. The cell only ever invokes the callbacks during user interaction; by the time it runs, React has already rendered with the latest closures, so even a "stale" closure from the prior render is fine — the dispatch and state inside the closures are themselves stable (`dispatch` from `useReducer` is identity-stable). Skipping the comparison is what gives memoization its win for the common case (cells whose displayed value didn't change).
 
-- [ ] **Step 2: Stabilize the inline callbacks in `planning-grid.tsx`**
+The value-object comparison is necessary because `value` is a fresh object literal per render: a shallow `===` would say two cells with the same `displayText` are different.
 
-The four `onFocus` / `onEnterEdit` / `onCancelEdit` / `onCommit` callbacks in the current `<PlanningCell …>` JSX (around lines 643–653) are recreated on every render. Replace them with stable handlers that close over `(rk, col.key)` via a single shared dispatcher.
+No `planning-grid.tsx` callback refactor is needed here — since `arePropsEqual` doesn't compare the callback props, the inline arrow callbacks at the call site can stay as-is. (Stabilizing them via `useCallback` would be churn that doesn't change behaviour.)
 
-Above the `return (` of `PlanningGrid`, add:
-
-```tsx
-  const handleFocus = useCallback((rk: string, column: GridColumn) => {
-    dispatch({ type: "FOCUS", rowKey: rk, column });
-  }, [dispatch]);
-
-  const handleEnterEdit = useCallback((rk: string, column: GridColumn) => {
-    dispatch({ type: "FOCUS", rowKey: rk, column });
-    dispatch({ type: "ENTER_EDIT" });
-  }, [dispatch]);
-
-  const handleCancelEdit = useCallback(() => {
-    dispatch({ type: "CANCEL_EDIT" });
-  }, [dispatch]);
-
-  const handleCommit = useCallback(
-    (row: PlanningRow, column: GridColumn, previous: CellDisplay, next: CellDisplay) => {
-      const rk = rowKey(row);
-      dispatch({ type: "COMMIT_CELL", rowKey: rk, column, value: next, previous });
-      void persistCell(row, column, next);
-    },
-    // persistCell is defined inside the component but isn't a hook-stable
-    // reference; passing dispatch is enough — persistCell is closed over.
-    [dispatch],
-  );
-```
-
-Add `useCallback` to the React import block at the top of the file if not present.
-
-In the JSX where `<PlanningCell …>` is rendered (lines 633–654), replace the four handler props with:
-
-```tsx
-                      onFocus={() => handleFocus(rk, col.key)}
-                      onEnterEdit={() => handleEnterEdit(rk, col.key)}
-                      onCancelEdit={handleCancelEdit}
-                      onCommit={(next) => handleCommit(row, col.key, cellValue, next)}
-```
-
-The first two are still per-render arrow functions, but they're tiny and the equality function compares the cell's own props for memoization fairness. To make memoization fully effective, we'd need to refactor `PlanningCell` to accept `rowKey` + `column` and call back via a single shared handler. That refactor is out of scope here. Step 1 alone gives most of the win for cells whose `value` doesn't change: they bail out early on the `value`/`focused`/`editing` checks.
-
-- [ ] **Step 3: Type-check + tests**
+- [ ] **Step 2: Type-check + tests**
 
 Run: `npm run typecheck && npm test`
 Expected: PASS.
 
-- [ ] **Step 4: Sanity-check at runtime**
+- [ ] **Step 3: Sanity-check at runtime**
 
 Run `npm run dev`. Edit a cell — confirm the save-status indicator goes "Saving… → Saved ✓" and the cell shows the new value. Use arrow keys to move focus across cells — the grid stays responsive. Cmd-Z to undo — works as before.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add src/app/\(app\)/churches/\[churchId\]/planning/planning-cell.tsx \
-        src/app/\(app\)/churches/\[churchId\]/planning/planning-grid.tsx
-git commit -m "perf(planning): memoize PlanningCell; stabilize grid callbacks"
+git add src/app/\(app\)/churches/\[churchId\]/planning/planning-cell.tsx
+git commit -m "perf(planning): memoize PlanningCell"
 ```
 
 ---
 
-## Task 10: Bundle audit
+## Task 10: Cross-page integration check
+
+The new fallback rows go through the same ghost→real promotion path as today's pattern-driven ghosts (`/api/churches/[churchId]/planning/cell` → `INSERT INTO services`). This task verifies the end-to-end integration with the services page, the service detail page, and the rota — i.e. that a service born from a fallback row behaves exactly like one created by any other path.
+
+It also surfaces (without fixing) one pre-existing concern: the Drizzle schema declares a `services_preset_when_active` check constraint requiring `preset_id IS NOT NULL`, but no migration applies that constraint to the live DB, and `cell/route.ts` does not set `preset_id` when promoting a ghost. The current production path works only because the constraint is dormant. Our change increases the *volume* of these promotions but introduces no new shape — we just need to confirm the existing path is still healthy.
+
+**Files:**
+- (Verification only; no code changes unless a regression is found.)
+
+- [ ] **Step 1: Confirm the check constraint is not in any migration**
+
+Run:
+
+```bash
+grep -rn "services_preset_when_active" drizzle src
+```
+
+Expected: only matches in `src/lib/db/schema-base.ts` (the Drizzle definition). No SQL migration applies it. Note this finding in the integration report (step 6) — flag it for follow-up but do not block on it.
+
+- [ ] **Step 2: Promote a fallback ghost via the planning grid**
+
+Local dev. Choose a church with no patterns configured (or create one). Open `/churches/{id}/planning`. The grid shows fallback `Sung Eucharist` rows for upcoming Sundays.
+
+Click into one Sunday's `Hymns` cell and type `100`. Observe:
+
+- The save status indicator goes "Saving… → Saved ✓".
+- No error alert.
+- Reloading the page: the row is still there with `100` filled in (now a real service, not a ghost — note the row has lost the `opacity-60` ghost styling).
+
+If the save fails with a check-constraint error, the dormant constraint has been activated. Stop and surface to the user — that's a separate fix.
+
+- [ ] **Step 3: Verify the service appears on `/services`**
+
+Navigate to `/churches/{id}/services`. The Sunday you edited now shows a `SUNG_EUCHARIST` row with the music preview reflecting hymn 100. The "No service planned" state is gone for that day.
+
+- [ ] **Step 4: Verify the service detail page**
+
+Click through to `/churches/{id}/services/{date}`. The service detail page renders without error, shows the hymn, and the rota/availability widgets appear (empty is fine).
+
+- [ ] **Step 5: Verify a Principal Feast on a weekday**
+
+Navigate the planning date range to include Christmas Day (or any other Principal Feast). Confirm a fallback row appears. Edit a cell. Confirm the service appears on the services page on that date.
+
+- [ ] **Step 6: Record findings**
+
+Append to the spec at `docs/superpowers/specs/2026-04-27-planning-polish-and-performance-design.md`:
+
+```md
+## Integration verification (run on YYYY-MM-DD)
+
+- Ghost→real promotion via planning grid: ok / regressed — <details>
+- Newly created service appears on /services: ok / regressed — <details>
+- Service detail page renders: ok / regressed — <details>
+- Principal Feast (weekday) flow: ok / regressed — <details>
+- Pre-existing concern flagged: services_preset_when_active is in
+  src/lib/db/schema-base.ts but not in any migration; ghost→real
+  promotion in cell/route.ts does not set preset_id. Document only —
+  out of scope for this PR.
+```
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add docs/superpowers/specs/2026-04-27-planning-polish-and-performance-design.md
+git commit -m "docs: record integration verification for fallback ghost rows"
+```
+
+---
+
+## Task 11: Bundle audit
 
 **Files:**
 - Modify: `next.config.ts` (if `@next/bundle-analyzer` not yet wired)
@@ -1379,7 +1353,7 @@ If missing, install it as a dev dep: `npm install --save-dev @next/bundle-analyz
 
 - [ ] **Step 2: Wire the analyzer**
 
-Replace `next.config.ts` top section to wrap the export with the analyzer (preserve the existing `headers()` and other config — only the wrapping changes):
+Replace `next.config.ts` with:
 
 ```ts
 import type { NextConfig } from "next";
@@ -1391,16 +1365,63 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 const isDev = process.env.NODE_ENV === "development";
 
-// … existing csp, scriptSrc constants stay unchanged …
+// Development needs unsafe-eval for React fast-refresh and DevTools.
+// Production builds do not use eval — removing it reduces XSS attack surface.
+const scriptSrc = isDev
+  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+  : "script-src 'self' 'unsafe-inline'";
+
+const csp = [
+  "default-src 'self'",
+  scriptSrc,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com",
+  "frame-ancestors 'none'",
+].join("; ");
 
 const nextConfig: NextConfig = {
-  // … existing async headers() body unchanged …
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: csp,
+          },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+        ],
+      },
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default withBundleAnalyzer(nextConfig);
 ```
 
-(Keep the `csp` / `scriptSrc` constants and the `headers()` body exactly as they are today.)
+The only differences from the current file: the two new lines at the top (`import bundleAnalyzer …` and `const withBundleAnalyzer = …`) and the wrapping of the default export.
 
 - [ ] **Step 3: Build with the analyzer enabled**
 
@@ -1455,7 +1476,7 @@ If step 6 made code changes, include them in this commit.
 
 ---
 
-## Task 11: Link prefetching sanity check
+## Task 12: Link prefetching sanity check
 
 **Files:**
 - (Audit only; modifications only if `<a>` tags are found where `<Link>` should be.)
@@ -1486,13 +1507,7 @@ import Link from "next/link";
 <Link href="/some/internal/path">…</Link>
 ```
 
-The known callsite worth checking is the inline hint banner introduced in Task 6 (`<a className="underline" href={...service-patterns}>Configure service patterns</a>`). If keeping it as `<a>`, the sweep will flag it — promote to `<Link>`:
-
-```tsx
-<Link className="underline" href={`/churches/${churchId}/settings/service-patterns`}>
-  Configure service patterns
-</Link>
-```
+The hint banner introduced in Task 6 already uses `<Link>`, so the most likely outcome of this sweep is "no further changes needed." Capture the result either way.
 
 - [ ] **Step 3: Type-check**
 
@@ -1510,7 +1525,7 @@ If no fixes were needed, skip the commit and note it in the doc.
 
 ---
 
-## Task 12: Re-measure baseline and record results
+## Task 13: Re-measure baseline and record results
 
 **Files:**
 - Modify: `docs/superpowers/specs/2026-04-27-planning-polish-and-performance-design.md`
@@ -1601,10 +1616,21 @@ git commit -m "docs: record post-fix performance baseline"
 
 Run before declaring the plan complete:
 
-- All 12 tasks have explicit code (no placeholder text where code is needed).
+- All 13 tasks have explicit code (no placeholder text where code is needed).
 - Each task ends with a commit step.
 - Type names referenced across tasks match: `PlanningDataResponse`, `PlanningRow`, `PlanningDayProjection`, `QualifyingDayInput`, `GhostRow`, `PatternInput`, `ExistingServiceRef`.
-- The hook-name check in Task 8 step 4d covers the case where `usePlanningGrid` doesn't accept initial rows.
 - Tests are added for new pure logic (`isQualifyingDay`, `computeGhostRows` fallback). UI changes are verified manually + via existing tests.
 - The fallback row's `serviceType` (`SUNG_EUCHARIST`) is consistent everywhere it's referenced.
+- `PRINCIPAL_FEAST_KEYS` contains exactly the seven CofE Principal Feasts; Principal Holy Days are excluded (different category, wrong default service type).
+- Auth helpers split into `getSupabaseUser` (cheap, used by `(app)/layout.tsx`) and `getAuthUser` (Supabase + DB, used by guarded routes); both share the same Supabase round-trip via `React.cache`.
+- `PlanningCell` memoization equality function does **not** compare callback props — those are inline arrows by necessity, and including them defeats memoization entirely.
+- Cross-page integration is explicitly verified (Task 10) before declaring the change complete.
 - No task introduces a feature flag, backwards-compat shim, or comments narrating intent that the code already shows.
+
+## Out-of-scope concerns surfaced during planning
+
+These are not addressed by this plan but worth knowing about:
+
+- **`services_preset_when_active` check constraint is in Drizzle schema but not in any migration.** The current ghost→real promotion in `cell/route.ts` does not set `preset_id` and works fine in production because the constraint is dormant. If/when that migration ships, the route will need to choose a `preset_id` (or the constraint needs to be dropped). Flagged in Task 10.
+- **Default service type is `SUNG_EUCHARIST`.** For Principal Feasts that aren't a "morning Eucharist" service in some traditions (e.g. Pentecost evening at certain churches), a user can either edit the row's service type or configure a pattern. We could later replace the hard-coded fallback with a per-church default, but that's beyond the user's brief.
+- **The services page's "future days without services" view is unchanged by this plan.** Planning shows fallback ghost rows; services page shows "No service planned" until a real service exists. These are deliberately different views — planning is for editors, services is for members. Task 10 verifies they don't conflict.
