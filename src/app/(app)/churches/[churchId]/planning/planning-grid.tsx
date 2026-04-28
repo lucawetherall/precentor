@@ -524,7 +524,9 @@ export function PlanningGrid({ churchId, from, to }: Props) {
   if (loading) {
     return (
       <>
-        <DateRangeControls from={from} to={to} />
+        <div className="mb-4">
+          <DateRangeControls from={from} to={to} />
+        </div>
         <p className="text-sm text-muted-foreground">Loading grid…</p>
       </>
     );
@@ -533,7 +535,9 @@ export function PlanningGrid({ churchId, from, to }: Props) {
   if (fetchError) {
     return (
       <>
-        <DateRangeControls from={from} to={to} />
+        <div className="mb-4">
+          <DateRangeControls from={from} to={to} />
+        </div>
         <p className="text-sm text-destructive">Error: {fetchError}</p>
       </>
     );
@@ -542,7 +546,9 @@ export function PlanningGrid({ churchId, from, to }: Props) {
   if (noPatterns) {
     return (
       <>
-        <DateRangeControls from={from} to={to} />
+        <div className="mb-4">
+          <DateRangeControls from={from} to={to} />
+        </div>
         <div className="text-center p-12 border rounded">
           <p className="text-muted-foreground mb-2">No service patterns configured for this church.</p>
           <a className="text-primary underline" href={`/churches/${churchId}/settings/service-patterns`}>
@@ -556,7 +562,9 @@ export function PlanningGrid({ churchId, from, to }: Props) {
   if (state.rows.length === 0) {
     return (
       <>
-        <DateRangeControls from={from} to={to} />
+        <div className="mb-4">
+          <DateRangeControls from={from} to={to} />
+        </div>
         <p className="text-sm text-muted-foreground">
           No services found for this period.
         </p>
