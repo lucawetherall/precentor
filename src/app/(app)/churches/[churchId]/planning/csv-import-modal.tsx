@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import { parseCsvToRows, type CsvParsedRow } from "./csv-parse";
 import { downloadCsvTemplate } from "./csv-template";
 
@@ -55,9 +56,17 @@ export function CsvImportModal({ churchId, onClose, onImported }: Props) {
   return (
     <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50">
       <div className="bg-background border rounded shadow-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-auto">
-        <div className="flex justify-between mb-4">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Import CSV</h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>×</Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            <X aria-hidden="true" className="h-4 w-4" />
+          </Button>
         </div>
         {!rows && (
           <div className="space-y-3">

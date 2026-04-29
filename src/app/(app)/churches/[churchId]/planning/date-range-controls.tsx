@@ -21,7 +21,7 @@ export function DateRangeControls({ from, to }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-2 mb-4">
+    <div className="flex items-center gap-2">
       <input type="date" value={from} onChange={(e) => push(e.target.value, to)}
         className="h-9 px-2 border rounded text-sm" />
       <span className="text-muted-foreground">→</span>

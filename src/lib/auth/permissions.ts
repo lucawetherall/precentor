@@ -1,3 +1,6 @@
+import "server-only";
+
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { users, churchMemberships } from "@/lib/db/schema";
@@ -17,11 +20,6 @@ export function isMemberRole(value: unknown): value is MemberRole {
   return typeof value === "string" && value in ROLE_HIERARCHY;
 }
 
-/**
- * Coerce a DB-returned string to a MemberRole, defaulting to the least
- * privileged role if the value is unexpected. Logs so corrupted rows surface
- * in monitoring rather than silently failing open via unchecked type coercion.
- */
 export function coerceMemberRole(value: unknown): MemberRole {
   if (isMemberRole(value)) return value;
   console.warn("[permissions] Unexpected role value — defaulting to MEMBER", { value });
@@ -32,9 +30,28 @@ export function hasMinRole(userRole: MemberRole, minRole: MemberRole): boolean {
   return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[minRole];
 }
 
-export async function getAuthUser() {
+/**
+ * Cheap Supabase-only check. Use in places that only need to know whether
+ * the request is authenticated — no DB row required. Cached per request.
+ *
+ * The `(app)/layout.tsx` uses this so a freshly-signed-up user whose DB
+ * upsert in /auth/callback failed (handled with try/catch there) still
+ * gets past the layout guard and can attempt page-level operations,
+ * matching prior behaviour.
+ */
+export const getSupabaseUser = cache(async () => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  return user;
+});
+
+/**
+ * Full auth: Supabase user + matching `users` row. Cached per request,
+ * so combining `getSupabaseUser` + `getAuthUser` in the same render does
+ * not incur duplicate Supabase round-trips.
+ */
+export const getAuthUser = cache(async () => {
+  const user = await getSupabaseUser();
   if (!user) return null;
 
   const dbUser = await db
@@ -45,7 +62,26 @@ export async function getAuthUser() {
 
   if (dbUser.length === 0) return null;
   return dbUser[0];
-}
+});
+
+/**
+ * Wrapped in React.cache for the same reason. Keyed on (userId, churchId).
+ */
+export const getChurchMembership = cache(
+  async (userId: string, churchId: string) => {
+    const rows = await db
+      .select()
+      .from(churchMemberships)
+      .where(
+        and(
+          eq(churchMemberships.userId, userId),
+          eq(churchMemberships.churchId, churchId),
+        ),
+      )
+      .limit(1);
+    return rows[0] ?? null;
+  },
+);
 
 export async function requireAuth() {
   const user = await getAuthUser();
@@ -59,18 +95,9 @@ export async function requireChurchRole(churchId: string, minRole: MemberRole) {
   const { user, error } = await requireAuth();
   if (error) return { user: null, membership: null, error };
 
-  const membership = await db
-    .select()
-    .from(churchMemberships)
-    .where(
-      and(
-        eq(churchMemberships.userId, user!.id),
-        eq(churchMemberships.churchId, churchId)
-      )
-    )
-    .limit(1);
+  const membership = await getChurchMembership(user!.id, churchId);
 
-  if (membership.length === 0) {
+  if (!membership) {
     return {
       user: null,
       membership: null,
@@ -78,7 +105,7 @@ export async function requireChurchRole(churchId: string, minRole: MemberRole) {
     };
   }
 
-  if (!hasMinRole(coerceMemberRole(membership[0].role), minRole)) {
+  if (!hasMinRole(coerceMemberRole(membership.role), minRole)) {
     return {
       user: null,
       membership: null,
@@ -86,5 +113,5 @@ export async function requireChurchRole(churchId: string, minRole: MemberRole) {
     };
   }
 
-  return { user: user!, membership: membership[0], error: null };
+  return { user: user!, membership, error: null };
 }

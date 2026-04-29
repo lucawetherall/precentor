@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getSupabaseUser } from "@/lib/auth/permissions";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 export default async function AppLayout({
@@ -7,14 +7,8 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const user = await getSupabaseUser();
+  if (!user) redirect("/login");
 
   return (
     <div className="min-h-screen">

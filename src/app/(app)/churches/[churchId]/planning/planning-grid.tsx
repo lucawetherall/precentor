@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { computeGhostRows } from "./ghost-rows";
 import type { PatternInput, ExistingServiceRef } from "./ghost-rows";
@@ -17,6 +18,7 @@ import { getColumnSearch } from "./column-search";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { CsvImportModal } from "./csv-import-modal";
+import type { PlanningDataResponse } from "@/lib/planning/data";
 
 // ─── API response types ───────────────────────────────────────
 
@@ -26,6 +28,8 @@ interface ApiDay {
   cwName: string;
   season: string;
   colour: string;
+  sundayKey: string | null;
+  section: string | null;
 }
 
 interface ApiService {
@@ -35,7 +39,7 @@ interface ApiService {
   serviceType: string;
   time: string | null;
   notes: string | null;
-  updatedAt: string;
+  updatedAt: string | Date;
 }
 
 interface ApiSlot {
@@ -231,7 +235,7 @@ function buildRealRow(
     serviceType: svc.serviceType,
     time: svc.time,
     liturgicalDayId: svc.liturgicalDayId,
-    updatedAt: svc.updatedAt,
+    updatedAt: svc.updatedAt instanceof Date ? svc.updatedAt.toISOString() : svc.updatedAt,
     cells: {
       introit: deriveIntroit(slots),
       hymns: deriveHymns(slots),
@@ -288,7 +292,19 @@ function buildRowsFromApi(data: ApiResponse, from: string, to: string): Planning
     };
   }).filter((r) => r.date !== "");
 
-  const ghosts = computeGhostRows({ from, to, patterns: data.patterns, existingServices: existingRefs });
+  const qualifyingDays = data.days.map((d) => ({
+    date: d.date,
+    sundayKey: d.sundayKey,
+    section: d.section,
+  }));
+
+  const ghosts = computeGhostRows({
+    from,
+    to,
+    patterns: data.patterns,
+    existingServices: existingRefs,
+    qualifyingDays,
+  });
 
   const ghostRows: PlanningRow[] = ghosts.map((g) => ({
     kind: "ghost",
@@ -335,19 +351,28 @@ interface Props {
   churchId: string;
   from: string;
   to: string;
+  initialData: PlanningDataResponse;
 }
 
-export function PlanningGrid({ churchId, from, to }: Props) {
-  const [loading, setLoading] = useState(true);
+export function PlanningGrid({ churchId, from, to, initialData }: Props) {
+  const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
-  const [noPatterns, setNoPatterns] = useState(false);
+  const [hasNoPatterns, setHasNoPatterns] = useState(
+    initialData.patterns.length === 0,
+  );
 
-  const { state, dispatch, getCell } = usePlanningGrid([]);
+  const { state, dispatch, getCell } = usePlanningGrid(
+    buildRowsFromApi(initialData as ApiResponse, from, to),
+  );
 
-  // ─── Fetch rows ────────────────────────────────────────────
+  const isFirstLoad = useRef(true);
 
   useEffect(() => {
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
     setLoading(true);
     setFetchError(null);
 
@@ -357,7 +382,7 @@ export function PlanningGrid({ churchId, from, to }: Props) {
         return res.json() as Promise<ApiResponse>;
       })
       .then((data) => {
-        setNoPatterns(data.patterns.length === 0 && data.services.length === 0);
+        setHasNoPatterns(data.patterns.length === 0);
         dispatch({ type: "SET_ROWS", rows: buildRowsFromApi(data, from, to) });
         setLoading(false);
       })
@@ -524,7 +549,9 @@ export function PlanningGrid({ churchId, from, to }: Props) {
   if (loading) {
     return (
       <>
-        <DateRangeControls from={from} to={to} />
+        <div className="mb-4">
+          <DateRangeControls from={from} to={to} />
+        </div>
         <p className="text-sm text-muted-foreground">Loading grid…</p>
       </>
     );
@@ -533,22 +560,10 @@ export function PlanningGrid({ churchId, from, to }: Props) {
   if (fetchError) {
     return (
       <>
-        <DateRangeControls from={from} to={to} />
-        <p className="text-sm text-destructive">Error: {fetchError}</p>
-      </>
-    );
-  }
-
-  if (noPatterns) {
-    return (
-      <>
-        <DateRangeControls from={from} to={to} />
-        <div className="text-center p-12 border rounded">
-          <p className="text-muted-foreground mb-2">No service patterns configured for this church.</p>
-          <a className="text-primary underline" href={`/churches/${churchId}/settings/service-patterns`}>
-            Configure service patterns
-          </a>
+        <div className="mb-4">
+          <DateRangeControls from={from} to={to} />
         </div>
+        <p className="text-sm text-destructive">Error: {fetchError}</p>
       </>
     );
   }
@@ -556,7 +571,9 @@ export function PlanningGrid({ churchId, from, to }: Props) {
   if (state.rows.length === 0) {
     return (
       <>
-        <DateRangeControls from={from} to={to} />
+        <div className="mb-4">
+          <DateRangeControls from={from} to={to} />
+        </div>
         <p className="text-sm text-muted-foreground">
           No services found for this period.
         </p>
@@ -566,12 +583,26 @@ export function PlanningGrid({ churchId, from, to }: Props) {
 
   return (
     <div className="overflow-x-auto">
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
         <DateRangeControls from={from} to={to} />
-        <Button size="sm" variant="outline" onClick={() => setCsvOpen(true)}>Import CSV</Button>
+        <Button size="sm" variant="outline" onClick={() => setCsvOpen(true)}>
+          Import CSV
+        </Button>
       </div>
 
-      {/* Save status indicator */}
+      {hasNoPatterns && (
+        <div className="mb-3 p-2 text-xs border rounded bg-muted/40 text-muted-foreground">
+          Showing default Sunday and Festival rows.{" "}
+          <Link
+            className="underline"
+            href={`/churches/${churchId}/settings/service-patterns`}
+          >
+            Configure service patterns
+          </Link>{" "}
+          to add weekday and additional services.
+        </div>
+      )}
+
       <div className="text-xs text-muted-foreground h-5 mb-2">
         {state.saveStatus === "saving" && "Saving…"}
         {state.saveStatus === "saved" && "Saved ✓"}
