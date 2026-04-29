@@ -1,3 +1,5 @@
+import "server-only";
+
 export interface RequestContext {
   requestId: string;
   // Best-effort — userId is set after auth resolves; absent on public routes.
