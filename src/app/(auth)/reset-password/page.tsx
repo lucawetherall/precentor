@@ -34,7 +34,15 @@ export default function ResetPasswordPage() {
     const { error: updateError } = await supabase.auth.updateUser({ password });
 
     if (updateError) {
-      setError(updateError.message);
+      // Don't leak the raw Supabase error to the user — the most common cause
+      // is a stale or invalid recovery token, which we map to a friendlier
+      // "request a new reset link" message.
+      const isExpired = /token|expired|invalid|jwt/i.test(updateError.message);
+      setError(
+        isExpired
+          ? "This reset link has expired. Please request a new one."
+          : "Could not update your password. Please try again.",
+      );
       setLoading(false);
     } else {
       router.push("/dashboard");

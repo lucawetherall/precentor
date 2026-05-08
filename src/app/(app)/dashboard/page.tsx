@@ -29,6 +29,7 @@ export default async function DashboardPage() {
     role: string;
   }
   let userChurches: UserChurch[] = [];
+  let dbUserExists = false;
   try {
     const dbUser = await db
       .select()
@@ -37,7 +38,8 @@ export default async function DashboardPage() {
       .limit(1);
 
     if (dbUser.length > 0) {
-      const memberships = await db
+      dbUserExists = true;
+      userChurches = await db
         .select({
           churchId: churches.id,
           churchName: churches.name,
@@ -46,19 +48,17 @@ export default async function DashboardPage() {
         .from(churchMemberships)
         .innerJoin(churches, eq(churchMemberships.churchId, churches.id))
         .where(eq(churchMemberships.userId, dbUser[0].id));
-
-      if (memberships.length === 0) {
-        redirect("/onboarding");
-      }
-      userChurches = memberships;
-
-      // Redirect single-church users straight to their church overview
-      if (userChurches.length === 1) {
-        redirect(`/churches/${userChurches[0].churchId}`);
-      }
     }
   } catch (err) {
     console.error("Failed to load data:", err);
+  }
+
+  // redirect() throws NEXT_REDIRECT; must be called outside try/catch.
+  if (dbUserExists && userChurches.length === 0) {
+    redirect("/onboarding");
+  }
+  if (userChurches.length === 1) {
+    redirect(`/churches/${userChurches[0].churchId}`);
   }
 
   // Fetch upcoming services across all churches
@@ -118,38 +118,31 @@ export default async function DashboardPage() {
       </p>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-        {userChurches.slice(0, 1).map((uc) => (
+      {userChurches[0] && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
           <NavCard
-            key={`sundays-${uc.churchId}`}
-            href={`/churches/${uc.churchId}/services`}
+            href={`/churches/${userChurches[0].churchId}/services`}
             icon={Calendar}
             title="Plan Services"
-            subtitle={uc.churchName}
+            subtitle={userChurches[0].churchName}
             showArrow={false}
           />
-        ))}
-        {userChurches.slice(0, 1).map((uc) => (
           <NavCard
-            key={`rota-${uc.churchId}`}
-            href={`/churches/${uc.churchId}/rota`}
+            href={`/churches/${userChurches[0].churchId}/rota`}
             icon={Users}
             title="Choir Rota"
-            subtitle={uc.churchName}
+            subtitle={userChurches[0].churchName}
             showArrow={false}
           />
-        ))}
-        {userChurches.slice(0, 1).map((uc) => (
           <NavCard
-            key={`repertoire-${uc.churchId}`}
-            href={`/churches/${uc.churchId}/repertoire`}
+            href={`/churches/${userChurches[0].churchId}/repertoire`}
             icon={Music}
             title="Repertoire"
-            subtitle={uc.churchName}
+            subtitle={userChurches[0].churchName}
             showArrow={false}
           />
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Upcoming Services */}
       <div className="mb-8">

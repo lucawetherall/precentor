@@ -9,17 +9,22 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error: Error | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+  static getDerivedStateFromError(): State {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: { componentStack?: string | null }) {
+    // Log to the browser console for client-side debugging without exposing
+    // the message to end users (it can leak DB IDs, file paths, etc.).
+    console.error("[ErrorBoundary]", error, info);
   }
 
   render() {
@@ -28,10 +33,10 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="p-8 max-w-lg mx-auto mt-20 border border-destructive bg-card">
           <h2 className="text-xl font-heading font-semibold text-destructive mb-2">Something went wrong</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            {this.state.error?.message || "An unexpected error occurred."}
+            An unexpected error occurred.
           </p>
           <button
-            onClick={() => this.setState({ hasError: false, error: null })}
+            onClick={() => this.setState({ hasError: false })}
             className="px-4 py-2 text-sm bg-primary text-primary-foreground border border-primary hover:bg-primary-hover transition-colors"
           >
             Try again

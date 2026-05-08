@@ -30,7 +30,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   const { mode } = await searchParams
 
   const { user, membership, error } = await requireChurchRole(churchId, 'MEMBER')
-  if (error) redirect('/login')
+  if (error) redirect('/churches')
 
   const userId = user!.id
   const role = coerceMemberRole(membership!.role)

@@ -28,7 +28,10 @@ export default async function TemplatesAdminPage({ params }: Props) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Verify ADMIN role
+  // Verify ADMIN role. redirect() throws NEXT_REDIRECT; do lookups in
+  // try/catch but call redirect() *after* so the throw propagates correctly.
+  let role: ReturnType<typeof coerceMemberRole> | null = null;
+  let lookupFailed = false;
   try {
     const dbUser = await db
       .select()
@@ -36,26 +39,28 @@ export default async function TemplatesAdminPage({ params }: Props) {
       .where(eq(users.supabaseId, user.id))
       .limit(1);
 
-    if (dbUser.length === 0) redirect("/churches");
-
-    const membership = await db
-      .select({ role: churchMemberships.role })
-      .from(churchMemberships)
-      .where(
-        and(
-          eq(churchMemberships.userId, dbUser[0].id),
-          eq(churchMemberships.churchId, churchId)
+    if (dbUser.length > 0) {
+      const membership = await db
+        .select({ role: churchMemberships.role })
+        .from(churchMemberships)
+        .where(
+          and(
+            eq(churchMemberships.userId, dbUser[0].id),
+            eq(churchMemberships.churchId, churchId)
+          )
         )
-      )
-      .limit(1);
+        .limit(1);
 
-    if (membership.length === 0) redirect("/churches");
-
-    const role = coerceMemberRole(membership[0].role);
-    if (!hasMinRole(role, "ADMIN")) redirect(`/churches/${churchId}/services`);
+      if (membership.length > 0) {
+        role = coerceMemberRole(membership[0].role);
+      }
+    }
   } catch {
-    redirect("/churches");
+    lookupFailed = true;
   }
+
+  if (lookupFailed || !role) redirect("/churches");
+  if (!hasMinRole(role, "ADMIN")) redirect(`/churches/${churchId}/services`);
 
   // Fetch all system service type templates
   let systemTemplates: {

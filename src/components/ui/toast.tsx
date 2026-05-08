@@ -60,10 +60,14 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
     toast.type === "warning" ? "border-warning" :
     "border-primary";
 
+  // Errors are urgent — use role=alert + aria-live=assertive so screen readers
+  // announce them immediately. Non-error toasts use polite live regions so
+  // they don't interrupt the user's current task.
+  const isError = toast.type === "error";
   return (
     <div
-      role="status"
-      aria-live="polite"
+      role={isError ? "alert" : "status"}
+      aria-live={isError ? "assertive" : "polite"}
       className={`flex items-center gap-2 px-4 py-3 bg-card border ${borderColor} shadow-md text-sm animate-in slide-in-from-right`}
     >
       <span className="flex-1">{toast.message}</span>

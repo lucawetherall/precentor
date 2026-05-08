@@ -22,7 +22,7 @@ interface Props {
 export default async function ChurchOverviewPage({ params }: Props) {
   const { churchId } = await params;
   const { user, membership, error } = await requireChurchRole(churchId, "MEMBER");
-  if (error) redirect("/login");
+  if (error) redirect("/churches");
 
   const isMember = membership!.role === "MEMBER";
   const userId = user!.id;

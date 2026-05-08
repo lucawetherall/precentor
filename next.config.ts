@@ -47,15 +47,9 @@ const nextConfig: NextConfig = {
           { key: "X-DNS-Prefetch-Control", value: "on" },
         ],
       },
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
+      // Note: Next.js sets immutable Cache-Control on /_next/static itself and
+      // does not allow overriding it via next.config.ts headers — attempting to
+      // do so emits a build warning and has no effect.
     ];
   },
 };
