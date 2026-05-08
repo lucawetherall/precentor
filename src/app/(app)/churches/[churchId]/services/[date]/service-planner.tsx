@@ -16,6 +16,7 @@ import { ServiceNav } from "./service-nav";
 import { Plus, Loader2, Trash2, FileDown, FileText, Eye, BookMarked } from "lucide-react";
 import { POSITION_LABELS } from "@/types";
 import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -104,6 +105,7 @@ export function ServicePlanner({
   const [pdfError, setPdfError] = useState<string | null>(null);
   const pdfBlobUrlRef = useRef<string | null>(null);
   const { addToast } = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetch(`/api/churches/${churchId}/presets`)
@@ -168,9 +170,12 @@ export function ServicePlanner({
 
   const handleDeleteService = async () => {
     if (!activeTab) return;
-    const confirmed = window.confirm(
-      "Delete this service? This cannot be undone."
-    );
+    const confirmed = await confirm({
+      title: "Delete this service?",
+      description: "This cannot be undone.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
     if (!confirmed) return;
 
     setDeleting(true);

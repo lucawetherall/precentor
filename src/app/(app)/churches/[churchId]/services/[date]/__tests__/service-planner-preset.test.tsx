@@ -6,6 +6,9 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 vi.mock("@/components/ui/toast", () => ({
   useToast: () => ({ addToast: vi.fn() }),
 }));
+vi.mock("@/components/ui/use-confirm", () => ({
+  useConfirm: () => vi.fn().mockResolvedValue(true),
+}));
 vi.mock("../section-editor", () => ({
   SectionEditor: () => <div data-testid="section-editor" />,
 }));

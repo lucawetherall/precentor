@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { GripVertical, Eye, EyeOff, Trash2, Music, BookOpen, FileText, AlignLeft, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { SectionInlineControl } from "./section-inline-control";
 import { MUSIC_SLOT_LABELS } from "@/types";
 import type { MusicSlotType } from "@/types";
@@ -163,17 +164,20 @@ export function SectionRow({
     section.musicSlotType !== null && section.musicSlotId === null;
   // intentionally not reactive: once mounted, user controls expand/collapse manually
   const [isExpanded, setIsExpanded] = useState(shouldAutoExpand);
+  const confirm = useConfirm();
 
-  const handleDeleteClick = () => {
+  const handleDeleteClick = async () => {
     const isLiturgical = !!section.liturgicalTextId;
-    const confirmed = isLiturgical
-      ? window.confirm(
-          `Remove "${section.title}" from this service? This will delete the liturgical text section.`
-        )
-      : true;
-    if (confirmed) {
-      onDelete(section.id);
+    if (isLiturgical) {
+      const ok = await confirm({
+        title: `Remove "${section.title}"?`,
+        description: "This will delete the liturgical text section from this service.",
+        confirmLabel: "Remove",
+        destructive: true,
+      });
+      if (!ok) return;
     }
+    onDelete(section.id);
   };
 
   const handleHeaderClick = (e: React.MouseEvent) => {
