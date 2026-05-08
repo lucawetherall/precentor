@@ -47,7 +47,14 @@ function LoginForm() {
       setError("Invalid email or password.");
       setLoading(false);
     } else {
-      router.push(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard");
+      // Reject protocol-relative ("//evil.com") and backslash-prefixed URLs that
+      // some browsers normalise to absolute. Only allow same-origin paths.
+      const isSafeRedirect =
+        redirectTo &&
+        redirectTo.startsWith("/") &&
+        !redirectTo.startsWith("//") &&
+        !redirectTo.startsWith("/\\");
+      router.push(isSafeRedirect ? redirectTo : "/dashboard");
       router.refresh();
     }
   };

@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { churches } from "@/lib/db/schema";
@@ -7,6 +6,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import Link from "next/link";
 import { ChurchSettingsForm } from "./settings-form";
 import { readSheetMusicLink } from "@/lib/churches/settings";
+import { getAuthUser, getChurchMembership, hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 
 interface Props {
   params: Promise<{ churchId: string }>;
@@ -14,9 +14,15 @@ interface Props {
 
 export default async function ChurchSettingsPage({ params }: Props) {
   const { churchId } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+
+  const user = await getAuthUser();
   if (!user) redirect("/login");
+
+  const membership = await getChurchMembership(user.id, churchId);
+  if (!membership) redirect("/churches");
+  if (!hasMinRole(coerceMemberRole(membership.role), "ADMIN")) {
+    redirect(`/churches/${churchId}`);
+  }
 
   let church: InferSelectModel<typeof churches> | null = null;
   try {

@@ -28,24 +28,36 @@ export function CellAutocomplete({ value, searchUrl, mapResponse, onCommit, onCa
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    // Track the latest request so an out-of-order response can't overwrite a
+    // newer one and show stale suggestions.
+    let cancelled = false;
     if (draft.trim().length === 0) {
-      debounceRef.current = setTimeout(() => setOptions([]), 0);
+      // Defer the clear so it doesn't run synchronously in the effect — keeps
+      // react-hooks/set-state-in-effect happy and ensures the state update is
+      // coalesced with any in-flight render work.
+      debounceRef.current = setTimeout(() => {
+        if (!cancelled) setOptions([]);
+      }, 0);
     } else {
       debounceRef.current = setTimeout(async () => {
         try {
           const res = await fetch(searchUrl(draft));
-          if (!res.ok) return;
+          if (!res.ok || cancelled) return;
           const data = await res.json() as unknown;
           setOptions(mapResponse(data).slice(0, 8));
           setHighlight(0);
         } catch { /* ignore */ }
       }, 200);
     }
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      cancelled = true;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [draft, searchUrl, mapResponse]);
 
-  function commitSelection() {
-    const picked = options[highlight];
+  function commitSelection(forcedIndex?: number) {
+    const idx = forcedIndex ?? highlight;
+    const picked = options[idx];
     if (picked) {
       onCommit({ text: picked.label, refId: picked.id });
     } else if (allowFreeText) {
@@ -61,7 +73,7 @@ export function CellAutocomplete({ value, searchUrl, mapResponse, onCommit, onCa
         ref={inputRef}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => setTimeout(commitSelection, 120)}
+        onBlur={() => setTimeout(() => commitSelection(), 120)}
         onKeyDown={(e) => {
           if (e.key === "Escape") { e.preventDefault(); onCancel(); }
           else if (e.key === "ArrowDown") { e.preventDefault(); setHighlight((h) => Math.min(options.length - 1, h + 1)); }
@@ -76,7 +88,7 @@ export function CellAutocomplete({ value, searchUrl, mapResponse, onCommit, onCa
             <li
               key={o.id}
               className={`px-2 py-1.5 cursor-pointer ${i === highlight ? "bg-accent" : ""}`}
-              onMouseDown={(e) => { e.preventDefault(); setHighlight(i); commitSelection(); }}
+              onMouseDown={(e) => { e.preventDefault(); commitSelection(i); }}
             >
               <div>{o.label}</div>
               {o.meta && <div className="text-xs text-muted-foreground">{o.meta}</div>}

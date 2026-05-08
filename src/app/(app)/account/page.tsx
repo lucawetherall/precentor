@@ -12,9 +12,11 @@ export default function AccountPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
 
   const handleExport = async () => {
     setExporting(true);
+    setExportError("");
     try {
       const res = await fetch("/api/user/export");
       if (!res.ok) throw new Error("Export failed");
@@ -23,10 +25,14 @@ export default function AccountPage() {
       const a = document.createElement("a");
       a.href = url;
       a.download = "precentor-data-export.json";
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      // Revoke after the click has been processed; revoking synchronously can
+      // cancel the download in Firefox/Safari.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
-      // silently fail — browser shows no download
+      setExportError("Could not download your data. Please try again.");
     } finally {
       setExporting(false);
     }
@@ -68,6 +74,9 @@ export default function AccountPage() {
         <Button variant="outline" onClick={handleExport} disabled={exporting}>
           {exporting ? "Preparing export..." : "Download my data"}
         </Button>
+        {exportError && (
+          <p role="alert" className="text-sm text-destructive">{exportError}</p>
+        )}
       </section>
 
       <section className="space-y-4 border border-destructive/30 rounded p-6">

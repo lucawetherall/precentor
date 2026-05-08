@@ -134,18 +134,58 @@ interface SheetContentProps
 const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
   ({ side = "right", className, children, ...props }, ref) => {
     const { open, onOpenChange } = React.useContext(SheetContext)
+    const internalRef = React.useRef<HTMLDivElement>(null)
+    // Keep both the forwarded ref and the internal one pointing at the panel.
+    const setRefs = React.useCallback(
+      (node: HTMLDivElement | null) => {
+        internalRef.current = node
+        if (typeof ref === "function") ref(node)
+        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+      },
+      [ref]
+    )
 
     React.useEffect(() => {
+      if (!open) return
+      const previouslyFocused = document.activeElement as HTMLElement | null
+
       const handleEscape = (e: KeyboardEvent) => {
         if (e.key === "Escape") onOpenChange(false)
       }
-      if (open) {
-        document.addEventListener("keydown", handleEscape)
-        document.body.style.overflow = "hidden"
+      // Simple focus trap: when Tab would leave the panel, wrap to the other end.
+      const handleTab = (e: KeyboardEvent) => {
+        if (e.key !== "Tab" || !internalRef.current) return
+        const focusables = internalRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusables.length === 0) return
+        const first = focusables[0]
+        const last = focusables[focusables.length - 1]
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
       }
+
+      document.addEventListener("keydown", handleEscape)
+      document.addEventListener("keydown", handleTab)
+      document.body.style.overflow = "hidden"
+      // Move focus into the panel for screen-reader users on open.
+      requestAnimationFrame(() => {
+        const focusable = internalRef.current?.querySelector<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+        focusable?.focus()
+      })
+
       return () => {
         document.removeEventListener("keydown", handleEscape)
+        document.removeEventListener("keydown", handleTab)
         document.body.style.overflow = ""
+        previouslyFocused?.focus?.()
       }
     }, [open, onOpenChange])
 
@@ -155,13 +195,16 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
       <>
         <SheetOverlay />
         <div
-          ref={ref}
+          ref={setRefs}
+          role="dialog"
+          aria-modal="true"
           className={cn(sheetVariants({ side }), className)}
           {...props}
         >
           {children}
           <button
             type="button"
+            aria-label="Close"
             className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
             onClick={() => onOpenChange(false)}
           >

@@ -23,7 +23,12 @@ export default async function ServicePatternsPage({ params }: Props) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Verify ADMIN role
+  // Verify ADMIN role. redirect() throws NEXT_REDIRECT; do the lookups in a
+  // try/catch (so a transient DB error doesn't crash the page) but call
+  // redirect() *after* the try/catch so the throw propagates correctly.
+  let dbUserId: string | null = null;
+  let role: ReturnType<typeof coerceMemberRole> | null = null;
+  let lookupFailed = false;
   try {
     const dbUser = await db
       .select()
@@ -31,26 +36,29 @@ export default async function ServicePatternsPage({ params }: Props) {
       .where(eq(users.supabaseId, user.id))
       .limit(1);
 
-    if (dbUser.length === 0) redirect("/churches");
+    if (dbUser.length > 0) {
+      dbUserId = dbUser[0].id;
+      const membership = await db
+        .select({ role: churchMemberships.role })
+        .from(churchMemberships)
+        .where(
+          and(
+            eq(churchMemberships.userId, dbUser[0].id),
+            eq(churchMemberships.churchId, churchId),
+          ),
+        )
+        .limit(1);
 
-    const membership = await db
-      .select({ role: churchMemberships.role })
-      .from(churchMemberships)
-      .where(
-        and(
-          eq(churchMemberships.userId, dbUser[0].id),
-          eq(churchMemberships.churchId, churchId),
-        ),
-      )
-      .limit(1);
-
-    if (membership.length === 0) redirect("/churches");
-
-    const role = coerceMemberRole(membership[0].role);
-    if (!hasMinRole(role, "ADMIN")) redirect(`/churches/${churchId}/services`);
+      if (membership.length > 0) {
+        role = coerceMemberRole(membership[0].role);
+      }
+    }
   } catch {
-    redirect("/churches");
+    lookupFailed = true;
   }
+
+  if (lookupFailed || !dbUserId || !role) redirect("/churches");
+  if (!hasMinRole(role, "ADMIN")) redirect(`/churches/${churchId}/services`);
 
   let patterns: {
     id: string;

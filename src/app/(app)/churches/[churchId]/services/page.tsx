@@ -26,7 +26,7 @@ interface Props {
 export default async function ServicesPage({ params }: Props) {
   const { churchId } = await params
   const { user, membership, error } = await requireChurchRole(churchId, 'MEMBER')
-  if (error) redirect('/login')
+  if (error) redirect('/churches')
 
   const userId = user!.id
   const role = (membership!.role as import('@/types').MemberRole)

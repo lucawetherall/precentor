@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 
 vi.mock("./permissions", () => ({ requireAuth: vi.fn() }));
 vi.mock("@/lib/auth/permissions", () => ({ requireAuth: vi.fn() }));
