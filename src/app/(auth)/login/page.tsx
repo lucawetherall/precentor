@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/form-field";
+import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 
 function LoginForm() {
   const router = useRouter();
@@ -47,14 +48,7 @@ function LoginForm() {
       setError("Invalid email or password.");
       setLoading(false);
     } else {
-      // Reject protocol-relative ("//evil.com") and backslash-prefixed URLs that
-      // some browsers normalise to absolute. Only allow same-origin paths.
-      const isSafeRedirect =
-        redirectTo &&
-        redirectTo.startsWith("/") &&
-        !redirectTo.startsWith("//") &&
-        !redirectTo.startsWith("/\\");
-      router.push(isSafeRedirect ? redirectTo : "/dashboard");
+      router.push(safeRedirectPath(redirectTo));
       router.refresh();
     }
   };

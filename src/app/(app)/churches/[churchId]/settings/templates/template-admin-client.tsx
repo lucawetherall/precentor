@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Loader2, Music, BookOpen, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { Badge } from "@/components/ui/badge";
 
 interface TemplateSection {
@@ -107,6 +108,7 @@ function TemplateCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [actioning, setActioning] = useState(false);
+  const confirm = useConfirm();
 
   const displaySections = template.hasCustomTemplate
     ? template.churchSections
@@ -120,9 +122,13 @@ function TemplateCard({
 
   const handleReset = async () => {
     if (!template.churchTemplateId) return;
-    const confirmed = window.confirm(
-      "Delete the custom template for this service type? The system default will be used instead."
-    );
+    const confirmed = await confirm({
+      title: "Reset to system default?",
+      description:
+        "This deletes the custom template for this service type. The system default will be used instead.",
+      confirmLabel: "Reset",
+      destructive: true,
+    });
     if (!confirmed) return;
     setActioning(true);
     await onReset(template.churchTemplateId);
