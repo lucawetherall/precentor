@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/form-field";
 import { passwordSchema } from "@/lib/validation/schemas";
+
+type SessionState = "checking" | "valid" | "invalid";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -14,6 +17,24 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sessionState, setSessionState] = useState<SessionState>("checking");
+
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+    // The reset link establishes a temporary session via /auth/callback before
+    // redirecting here. If there's no session the user reached this page
+    // directly (or the recovery token has already been consumed/expired) — in
+    // either case the updateUser call would fail with a confusing error, so
+    // surface a clear "invalid/expired link" state instead of the form.
+    supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      setSessionState(data.session ? "valid" : "invalid");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +69,37 @@ export default function ResetPasswordPage() {
       router.push("/dashboard");
     }
   };
+
+  if (sessionState === "checking") {
+    return (
+      <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-8">
+        <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
+          Verifying reset link…
+        </p>
+      </main>
+    );
+  }
+
+  if (sessionState === "invalid") {
+    return (
+      <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-8">
+        <div className="w-full max-w-sm space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-heading font-semibold">Reset link invalid</h1>
+            <p className="text-sm text-muted-foreground">
+              This password reset link is invalid or has expired. Please request a new one.
+            </p>
+          </div>
+          <Link
+            href="/forgot-password"
+            className="inline-flex w-full items-center justify-center bg-primary text-primary-foreground hover:bg-primary-hover h-9 px-4 py-2 text-sm font-medium"
+          >
+            Request new reset link
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main id="main-content" className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-8">
