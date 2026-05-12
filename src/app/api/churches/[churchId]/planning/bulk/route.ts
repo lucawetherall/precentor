@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireChurchRole } from "@/lib/auth/permissions";
+import { logger } from "@/lib/logger";
 import { services, serviceTypeEnum } from "@/lib/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { ensureLiturgicalDay } from "@/lib/db/queries/liturgical-days";
@@ -133,7 +134,7 @@ export async function POST(
     return { written: body.changes.length, resolvedGhosts: Object.keys(resolvedIds).length };
     });
   } catch (err) {
-    console.error("[planning/bulk] transaction failed:", err);
+    logger.error("Planning bulk write failed", err);
     return NextResponse.json({ error: "Failed to apply changes" }, { status: 500 });
   }
 
