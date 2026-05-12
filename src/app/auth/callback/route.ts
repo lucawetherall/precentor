@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { users, churchMemberships } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
       if (!error) {
         return handleAuthenticatedUser(request, supabase, origin, next);
       }
-      console.error("[auth/callback] Code exchange failed:", error.message);
+      logger.error("[auth/callback] Code exchange failed", error);
     }
 
     // Fallback: token_hash flow for email links opened in a different browser context
@@ -37,10 +38,10 @@ export async function GET(request: Request) {
         const redirectPath = type === "recovery" ? "/reset-password" : next;
         return handleAuthenticatedUser(request, supabase, origin, redirectPath);
       }
-      console.error("[auth/callback] OTP verification failed:", error.message);
+      logger.error("[auth/callback] OTP verification failed", error);
     }
   } catch (e) {
-    console.error("[auth/callback] Unexpected error:", e instanceof Error ? e.message : e);
+    logger.error("[auth/callback] Unexpected error", e);
   }
 
   return buildRedirect(request, origin, "/login?error=auth");
@@ -99,7 +100,7 @@ async function handleAuthenticatedUser(
       const redirectTo = memberships.length === 0 ? "/onboarding" : "/dashboard";
       return buildRedirect(request, origin, redirectTo);
     } catch (dbError) {
-      console.error("[auth/callback] DB error during user upsert:", dbError instanceof Error ? dbError.message : dbError);
+      logger.error("[auth/callback] DB error during user upsert", dbError);
       // Auth succeeded even though DB is unreachable — honour the explicit
       // redirect (e.g. /reset-password) so the user isn't stranded.
       return buildRedirect(request, origin, next || "/dashboard");
