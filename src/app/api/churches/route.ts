@@ -35,6 +35,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Church name must be 200 characters or less" }, { status: 400 });
   }
 
+  // Cap and validate the optional defaultServices array before doing any DB
+  // work — without this an attacker could send arbitrarily many entries (each
+  // fans out to one row per liturgical day) and exhaust the transaction.
+  const MAX_DEFAULT_SERVICES = 20;
+  if (defaultServices !== undefined && defaultServices !== null) {
+    if (!Array.isArray(defaultServices)) {
+      return NextResponse.json({ error: "defaultServices must be an array" }, { status: 400 });
+    }
+    if (defaultServices.length > MAX_DEFAULT_SERVICES) {
+      return NextResponse.json(
+        { error: `defaultServices may contain at most ${MAX_DEFAULT_SERVICES} entries` },
+        { status: 400 }
+      );
+    }
+    const validTypes = serviceTypeEnum.enumValues as readonly string[];
+    for (const entry of defaultServices) {
+      if (!entry || typeof entry !== "object" || typeof entry.type !== "string" || !validTypes.includes(entry.type)) {
+        return NextResponse.json(
+          { error: `defaultServices entries must have a valid type (one of ${validTypes.join(", ")})` },
+          { status: 400 }
+        );
+      }
+      if (entry.time !== undefined && entry.time !== null && typeof entry.time !== "string") {
+        return NextResponse.json({ error: "defaultServices.time must be a string" }, { status: 400 });
+      }
+    }
+  }
+
   try {
     const dbUser = await db.select().from(users).where(eq(users.supabaseId, user.id)).limit(1);
     if (dbUser.length === 0) {
