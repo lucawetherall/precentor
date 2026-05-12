@@ -101,7 +101,7 @@ export function CsvImportModal({ churchId, onClose, onImported }: Props) {
         </div>
         {!rows && (
           <div className="space-y-3">
-            <input type="file" accept=".csv" onChange={onFile} />
+            <input type="file" accept=".csv" onChange={onFile} aria-label="Upload CSV file" />
             <div>
               <Button variant="outline" size="sm" onClick={downloadCsvTemplate}>Download template</Button>
             </div>

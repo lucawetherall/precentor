@@ -23,9 +23,11 @@ export function DateRangeControls({ from, to }: Props) {
   return (
     <div className="flex items-center gap-2">
       <input type="date" value={from} onChange={(e) => push(e.target.value, to)}
+        aria-label="From date"
         className="h-9 px-2 border rounded text-sm" />
-      <span className="text-muted-foreground">→</span>
+      <span aria-hidden="true" className="text-muted-foreground">→</span>
       <input type="date" value={to} onChange={(e) => push(from, e.target.value)}
+        aria-label="To date"
         className="h-9 px-2 border rounded text-sm" />
       <Button size="sm" variant="outline" onClick={() => nextNWeeks(4)}>4 weeks</Button>
       <Button size="sm" variant="outline" onClick={() => nextNWeeks(12)}>Term</Button>
