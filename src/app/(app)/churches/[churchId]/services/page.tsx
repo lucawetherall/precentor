@@ -13,6 +13,7 @@ import { format } from 'date-fns'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { requireChurchRole } from '@/lib/auth/permissions'
+import { logger } from '@/lib/logger'
 import type { LiturgicalDayWithService, MusicSlotPreview } from '@/types/service-views'
 import { MUSIC_SLOT_LABELS } from '@/types'
 import type { MusicSlotType } from '@/types'
@@ -174,7 +175,7 @@ export default async function ServicesPage({ params }: Props) {
       }
     })
   } catch (err) {
-    console.error("Failed to load data:", err)
+    logger.error("[services/page] Failed to load services list", err)
   }
 
   return (

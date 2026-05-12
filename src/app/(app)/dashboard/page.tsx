@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { NavCard } from "@/components/nav-card";
 import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { users, churchMemberships, churches, services, liturgicalDays } from "@/lib/db/schema";
 import { eq, and, gte, asc, inArray } from "drizzle-orm";
 import { format, parseISO } from "date-fns";
@@ -50,7 +51,7 @@ export default async function DashboardPage() {
         .where(eq(churchMemberships.userId, dbUser[0].id));
     }
   } catch (err) {
-    console.error("Failed to load data:", err);
+    logger.error("[dashboard/page] Failed to load user/churches", err);
   }
 
   // redirect() throws NEXT_REDIRECT; must be called outside try/catch.
@@ -103,7 +104,7 @@ export default async function DashboardPage() {
       }));
     }
   } catch (err) {
-    console.error("Failed to load data:", err);
+    logger.error("[dashboard/page] Failed to load upcoming services", err);
   }
 
   const userName = user.user_metadata?.name || user.email?.split("@")[0] || "there";

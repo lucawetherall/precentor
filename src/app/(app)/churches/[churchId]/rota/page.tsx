@@ -4,6 +4,7 @@ import { services, liturgicalDays, availability, rotaEntries, churchMemberships,
 import { eq, and, gte, asc, inArray } from "drizzle-orm";
 import { format } from "date-fns";
 import { requireChurchRole } from "@/lib/auth/permissions";
+import { logger } from "@/lib/logger";
 import { RotaGridV2 } from "./rota-grid";
 
 interface Props {
@@ -96,7 +97,7 @@ export default async function RotaPage({ params }: Props) {
         .innerJoin(roleCatalog, eq(roleCatalog.id, serviceRoleSlots.catalogRoleId))
         .where(inArray(serviceRoleSlots.serviceId, serviceIds));
     }
-  } catch (err) { console.error("Failed to load data:", err); }
+  } catch (err) { logger.error("[rota/page] Failed to load rota data", err); }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">

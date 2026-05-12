@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { services, liturgicalDays, users, churchMemberships } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { format, parseISO } from "date-fns";
@@ -35,7 +36,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
         .limit(1);
       if (membership.length > 0) userRole = coerceMemberRole(membership[0].role);
     }
-  } catch (err) { console.error("Failed to load data:", err); }
+  } catch (err) { logger.error("[service-sheets/page] Failed to resolve role", err); }
 
   if (!hasMinRole(userRole, "ADMIN")) {
     redirect(`/churches/${churchId}`);
@@ -71,7 +72,7 @@ export default async function ServiceSheetsPage({ params }: Props) {
       .where(eq(services.churchId, churchId))
       .orderBy(desc(liturgicalDays.date))
       .limit(20);
-  } catch (err) { console.error("Failed to load data:", err); }
+  } catch (err) { logger.error("[service-sheets/page] Failed to load recent services", err); }
 
   const serviceIds = recentServices.map((s) => s.serviceId);
 

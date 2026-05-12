@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { performanceLogs, churches } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -39,7 +40,7 @@ export default async function RepertoirePage({ params }: Props) {
         .limit(1)
         .then((rows) => rows[0]?.settings ?? null),
     ]);
-  } catch (err) { console.error("Failed to load data:", err); }
+  } catch (err) { logger.error("[repertoire/page] Failed to load logs/settings", err); }
 
   const sheetMusicLink = readSheetMusicLink(churchSettings);
 

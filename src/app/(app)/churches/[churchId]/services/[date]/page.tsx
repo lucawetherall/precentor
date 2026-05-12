@@ -14,6 +14,7 @@ import { eq, and, asc, inArray } from 'drizzle-orm'
 import type { InferSelectModel } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 import { requireChurchRole, hasMinRole, coerceMemberRole } from '@/lib/auth/permissions'
+import { logger } from '@/lib/logger'
 import type { AdjacentDayLinks, PopulatedMusicSlot } from '@/types/service-views'
 import { getAdjacentLiturgicalDays } from '@/lib/services/adjacent-liturgical-days'
 import { MemberServiceView } from './member-service-view'
@@ -147,7 +148,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
       }
     }
   } catch (err) {
-    console.error("Failed to load service data:", err);
+    logger.error("[services/[date]/page] Failed to load service data", err);
   }
 
   if (!day) {

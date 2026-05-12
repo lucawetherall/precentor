@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { requireChurchRole } from "@/lib/auth/permissions";
+import { logger } from "@/lib/logger";
 import { formatLiturgicalDayName } from "@/lib/liturgical-display";
 import {
   getThisSunday,
@@ -31,7 +32,7 @@ export default async function ChurchOverviewPage({ params }: Props) {
   let thisSunday: Awaited<ReturnType<typeof getThisSunday>> = null;
   try {
     thisSunday = await getThisSunday(churchId);
-  } catch (err) { console.error("Failed to load data:", err); }
+  } catch (err) { logger.error("[church/overview] Failed to load thisSunday", err); }
 
   // Empty state — no liturgical data at all
   if (!thisSunday) {
@@ -66,7 +67,7 @@ export default async function ChurchOverviewPage({ params }: Props) {
       ];
       const uniqueServiceIds = [...new Set(allServiceIds)];
       userAvail = await getUserAvailability(userId, uniqueServiceIds);
-    } catch (err) { console.error("Failed to load data:", err); }
+    } catch (err) { logger.error("[church/overview] Failed to load music/availability", err); }
 
     const initialAvail: Record<string, "AVAILABLE" | "UNAVAILABLE" | "TENTATIVE" | null> = {};
     for (const [sid, status] of userAvail) {
@@ -105,7 +106,7 @@ export default async function ChurchOverviewPage({ params }: Props) {
       getRotaSummary(serviceIds, churchId),
       getNeedsAttention(churchId),
     ]);
-  } catch (err) { console.error("Failed to load data:", err); }
+  } catch (err) { logger.error("[church/overview] Failed to load rota/attention", err); }
 
   // Exclude "this Sunday" from the attention list (already shown as hero)
   const filteredAttention = attentionItems.filter(

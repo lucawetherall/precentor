@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { InviteMemberForm } from "./invite-form";
 import { MembersTable } from "./members-table";
 import { hasMinRole, coerceMemberRole, requireChurchRole } from "@/lib/auth/permissions";
+import { logger } from "@/lib/logger";
 import type { MemberRole } from "@/types";
 
 interface Props {
@@ -72,7 +73,7 @@ export default async function MembersPage({ params }: Props) {
         isPrimary: r.isPrimary,
       })),
     }));
-  } catch (err) { console.error("Failed to load data:", err); }
+  } catch (err) { logger.error("[members/page] Failed to load members", err); }
 
   const isAdmin = hasMinRole(userRole, "ADMIN");
 

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
@@ -28,7 +29,7 @@ export default async function ChurchSettingsPage({ params }: Props) {
   try {
     const result = await db.select().from(churches).where(eq(churches.id, churchId)).limit(1);
     church = result[0] || null;
-  } catch (err) { console.error("Failed to load data:", err); }
+  } catch (err) { logger.error("[settings/page] Failed to load church", err); }
 
   if (!church) redirect("/churches");
 
