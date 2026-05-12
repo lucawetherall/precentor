@@ -28,7 +28,7 @@ export function SheetMusicLinkButton({ link }: Props) {
         target="_blank"
         rel="noopener noreferrer"
         referrerPolicy="no-referrer"
-        className="inline-flex items-center gap-2 rounded-md border border-input bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="inline-flex items-center gap-2 rounded-md border border-input bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <ExternalLink className="h-4 w-4" aria-hidden="true" strokeWidth={1.75} />
         <span>{label}</span>
