@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { performanceLogs, churches } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { requireChurchRole } from "@/lib/auth/permissions";
 import { RepertoireList } from "./repertoire-list";
 import { readSheetMusicLink } from "@/lib/churches/settings";
 import { SheetMusicLinkButton } from "./sheet-music-link-button";
@@ -11,6 +13,8 @@ interface Props {
 
 export default async function RepertoirePage({ params }: Props) {
   const { churchId } = await params;
+  const { error } = await requireChurchRole(churchId, "MEMBER");
+  if (error) redirect("/churches");
 
   interface PerformanceLogRow { id: string; date: string; freeText: string | null; createdAt: Date; }
   let logs: PerformanceLogRow[] = [];
