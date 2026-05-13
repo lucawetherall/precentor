@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { churches, churchMemberships, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
@@ -31,7 +32,7 @@ export default async function ChurchesPage() {
         .innerJoin(churches, eq(churchMemberships.churchId, churches.id))
         .where(eq(churchMemberships.userId, dbUser[0].id));
     }
-  } catch (err) { console.error("Failed to load data:", err); }
+  } catch (err) { logger.error("[churches/page] Failed to load data", err); }
 
   return (
     <main id="main-content" className="p-4 sm:p-6 lg:p-8 max-w-4xl">

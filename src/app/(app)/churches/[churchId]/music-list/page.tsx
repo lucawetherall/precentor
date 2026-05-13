@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import {
   churches,
   users,
@@ -45,7 +46,7 @@ export default async function MusicListPage({ params }: Props) {
       if (membership.length > 0) userRole = membership[0].role as MemberRole;
     }
   } catch (err) {
-    console.error("Failed to load data:", err);
+    logger.error("[music-list/page] Failed to resolve role", err);
   }
 
   if (!hasMinRole(userRole, "ADMIN")) {
@@ -61,7 +62,7 @@ export default async function MusicListPage({ params }: Props) {
       .limit(1);
     if (churchRows.length > 0) churchName = churchRows[0].name;
   } catch (err) {
-    console.error("Failed to load church:", err);
+    logger.error("[music-list/page] Failed to load church", err);
   }
 
   return (

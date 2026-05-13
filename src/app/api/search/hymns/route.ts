@@ -16,7 +16,9 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q") || "";
-  const book = searchParams.get("book") as "NEH" | "AM" | undefined;
+  const bookRaw = searchParams.get("book");
+  const book: "NEH" | "AM" | undefined =
+    bookRaw === "NEH" || bookRaw === "AM" ? bookRaw : undefined;
 
   if (q.length < 1) {
     return NextResponse.json([]);

@@ -64,13 +64,35 @@ export async function PUT(
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
-    // Validate slotType values before writing
+    const MAX_SLOTS = 100;
+    const MAX_FREE_TEXT_LEN = 500;
+    const MAX_NOTES_LEN = 1000;
+
+    // Validate slotType values and string lengths before writing
     if (slots && slots.length > 0) {
+      if (slots.length > MAX_SLOTS) {
+        return NextResponse.json(
+          { error: `Too many slots (max ${MAX_SLOTS})` },
+          { status: 400 }
+        );
+      }
       const validSlotTypes = musicSlotTypeEnum.enumValues;
       for (const slot of slots) {
         if (!validSlotTypes.includes(slot.slotType)) {
           return NextResponse.json(
             { error: `Invalid slot type: ${slot.slotType}` },
+            { status: 400 }
+          );
+        }
+        if (typeof slot.freeText === "string" && slot.freeText.length > MAX_FREE_TEXT_LEN) {
+          return NextResponse.json(
+            { error: `Slot freeText must be ${MAX_FREE_TEXT_LEN} characters or less` },
+            { status: 400 }
+          );
+        }
+        if (typeof slot.notes === "string" && slot.notes.length > MAX_NOTES_LEN) {
+          return NextResponse.json(
+            { error: `Slot notes must be ${MAX_NOTES_LEN} characters or less` },
             { status: 400 }
           );
         }

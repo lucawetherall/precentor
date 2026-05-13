@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 export const uuidSchema = z.string().uuid();
-export const emailSchema = z.string().email();
+// RFC 5321 caps email addresses at 254 chars (64 local + @ + 255 domain, minus 1).
+export const emailSchema = z.string().email().max(254);
 
 /**
  * Accepts only `https://` URLs, up to 2048 chars (RFC-tolerable ceiling). Uses

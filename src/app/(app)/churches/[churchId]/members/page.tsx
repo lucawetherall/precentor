@@ -1,11 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { churchMemberships, users, churchMemberRoles, roleCatalog } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { InviteMemberForm } from "./invite-form";
 import { MembersTable } from "./members-table";
-import { hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
+import { hasMinRole, coerceMemberRole, requireChurchRole } from "@/lib/auth/permissions";
+import { logger } from "@/lib/logger";
 import type { MemberRole } from "@/types";
 
 interface Props {
@@ -14,9 +14,10 @@ interface Props {
 
 export default async function MembersPage({ params }: Props) {
   const { churchId } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { membership, error } = await requireChurchRole(churchId, "MEMBER");
+  if (error) redirect("/churches");
+
+  const userRole: MemberRole = coerceMemberRole(membership!.role);
 
   interface MemberRow {
     id: string;
@@ -27,32 +28,8 @@ export default async function MembersPage({ params }: Props) {
     roles?: { id: string; catalogRoleId: string; name: string; isPrimary: boolean }[];
   }
   let members: MemberRow[] = [];
-  let userRole: MemberRole = "MEMBER";
 
   try {
-    const dbUser = await db
-      .select()
-      .from(users)
-      .where(eq(users.supabaseId, user.id))
-      .limit(1);
-
-    if (dbUser.length > 0) {
-      const membership = await db
-        .select()
-        .from(churchMemberships)
-        .where(
-          and(
-            eq(churchMemberships.userId, dbUser[0].id),
-            eq(churchMemberships.churchId, churchId)
-          )
-        )
-        .limit(1);
-
-      if (membership.length > 0) {
-        userRole = coerceMemberRole(membership[0].role);
-      }
-    }
-
     const baseMembers = await db
       .select({
         id: churchMemberships.id,
@@ -96,7 +73,7 @@ export default async function MembersPage({ params }: Props) {
         isPrimary: r.isPrimary,
       })),
     }));
-  } catch (err) { console.error("Failed to load data:", err); }
+  } catch (err) { logger.error("[members/page] Failed to load members", err); }
 
   const isAdmin = hasMinRole(userRole, "ADMIN");
 
