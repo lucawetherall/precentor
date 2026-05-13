@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   const book: "NEH" | "AM" | undefined =
     bookRaw === "NEH" || bookRaw === "AM" ? bookRaw : undefined;
 
-  if (q.length < 1) {
+  if (q.trim().length < 1) {
     return NextResponse.json([]);
   }
 

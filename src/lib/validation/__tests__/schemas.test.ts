@@ -102,6 +102,30 @@ describe("serviceUpdateSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("rejects liturgicalOverrides with too many entries", () => {
+    const entries: Record<string, string> = {};
+    for (let i = 0; i < 201; i++) entries[`k${i}`] = "v";
+    const result = serviceUpdateSchema.safeParse({ liturgicalOverrides: entries });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects liturgicalOverrides with oversized value", () => {
+    const result = serviceUpdateSchema.safeParse({
+      liturgicalOverrides: { k: "x".repeat(10_001) },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts valid HH:MM time", () => {
+    const result = serviceUpdateSchema.safeParse({ time: "08:30" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects time that is not HH:MM", () => {
+    const result = serviceUpdateSchema.safeParse({ time: "tomorrow at noon" });
+    expect(result.success).toBe(false);
+  });
+
   it("accepts all valid service types", () => {
     const types = [
       "SUNG_EUCHARIST", "CHORAL_EVENSONG", "SAID_EUCHARIST",

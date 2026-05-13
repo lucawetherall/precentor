@@ -14,9 +14,18 @@ export function MigrationBanner({ churchId }: { churchId: string }) {
   });
 
   useEffect(() => {
+    let cancelled = false;
     fetch(`/api/churches/${churchId}/migration-issues`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => data && setIssues(data));
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setIssues(data);
+      })
+      .catch(() => {
+        // Network/parse failure: silently leave the banner hidden.
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [churchId]);
 
   function dismiss() {

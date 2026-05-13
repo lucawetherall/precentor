@@ -38,12 +38,31 @@ export const sheetMusicLinkSchema = z
   })
   .strict();
 
+// Matches HH:MM (24h). Same shape as `presetCreateSchema.defaultTime`.
+const timeOfDaySchema = z.string().regex(/^\d{2}:\d{2}$/, "Time must be in HH:MM format");
+
+// Caps on the per-section override map. Without these a single PATCH could
+// stuff arbitrarily large JSON into the row.
+const LITURGICAL_OVERRIDES_MAX_ENTRIES = 200;
+const LITURGICAL_OVERRIDE_KEY_MAX = 200;
+const LITURGICAL_OVERRIDE_VALUE_MAX = 10_000;
+
+const liturgicalOverridesSchema = z
+  .record(
+    z.string().min(1).max(LITURGICAL_OVERRIDE_KEY_MAX),
+    z.string().max(LITURGICAL_OVERRIDE_VALUE_MAX),
+  )
+  .refine(
+    (rec) => Object.keys(rec).length <= LITURGICAL_OVERRIDES_MAX_ENTRIES,
+    `liturgicalOverrides must have at most ${LITURGICAL_OVERRIDES_MAX_ENTRIES} entries`,
+  );
+
 export const serviceUpdateSchema = z.object({
   serviceType: z.enum([
     "SUNG_EUCHARIST", "CHORAL_EVENSONG", "SAID_EUCHARIST",
     "CHORAL_MATINS", "FAMILY_SERVICE", "COMPLINE", "CUSTOM",
   ]).optional(),
-  time: z.string().nullable().optional(),
+  time: timeOfDaySchema.nullable().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).optional(),
   notes: z.string().max(5000).nullable().optional(),
   eucharisticPrayer: z.string().max(500).nullable().optional(),
@@ -53,7 +72,7 @@ export const serviceUpdateSchema = z.object({
   includeReadingText: z.boolean().optional(),
   sheetMode: z.string().max(50).optional(),
   defaultMassSettingId: z.string().uuid().nullable().optional(),
-  liturgicalOverrides: z.record(z.string(), z.string()).optional(),
+  liturgicalOverrides: liturgicalOverridesSchema.optional(),
 }).strict();
 
 export const sectionCreateSchema = z.object({
