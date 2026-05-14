@@ -1,10 +1,22 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { services, serviceTypeEnum, serviceSections, musicSlots, musicSlotTypeEnum, presetRoleSlots, serviceRoleSlots, churchServicePresets } from "@/lib/db/schema";
 import { resolveTemplateSections } from "@/lib/services/template-resolution";
 import { eq, and } from "drizzle-orm";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+const serviceCreateSchema = z.object({
+  liturgicalDayId: z.string("liturgicalDayId is required").min(1, "liturgicalDayId is required"),
+  serviceType: z.enum(
+    serviceTypeEnum.enumValues,
+    `serviceType must be one of: ${serviceTypeEnum.enumValues.join(", ")}`,
+  ),
+  time: z.string().optional().nullable(),
+  presetId: z.string().optional().nullable(),
+});
 
 export async function POST(
   request: Request,
@@ -14,37 +26,18 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
-  let body: Record<string, unknown>;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-  const { liturgicalDayId, serviceType, time, presetId } = body as {
-    liturgicalDayId?: unknown;
-    serviceType?: unknown;
-    time?: unknown;
-    presetId?: unknown;
-  };
-
-  if (!liturgicalDayId || typeof liturgicalDayId !== "string") {
-    return NextResponse.json({ error: "liturgicalDayId is required" }, { status: 400 });
-  }
-  if (!serviceType || !(serviceTypeEnum.enumValues as readonly string[]).includes(serviceType as string)) {
-    return NextResponse.json(
-      { error: `serviceType must be one of: ${serviceTypeEnum.enumValues.join(", ")}` },
-      { status: 400 }
-    );
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, serviceCreateSchema);
+  if (bodyError) return bodyError;
+  const { liturgicalDayId, serviceType, time, presetId } = data;
 
   try {
     const service = await db.transaction(async (tx) => {
       const [created] = await tx.insert(services).values({
         churchId,
-        liturgicalDayId: liturgicalDayId as string,
-        serviceType: serviceType as (typeof serviceTypeEnum.enumValues)[number],
-        time: (time as string) || null,
-        presetId: (presetId as string) || null,
+        liturgicalDayId,
+        serviceType,
+        time: time || null,
+        presetId: presetId || null,
       }).returning();
 
       // Snapshot preset role slots if a presetId was provided. Confirm the
@@ -56,14 +49,14 @@ export async function POST(
           .select({ id: churchServicePresets.id })
           .from(churchServicePresets)
           .where(and(
-            eq(churchServicePresets.id, presetId as string),
+            eq(churchServicePresets.id, presetId),
             eq(churchServicePresets.churchId, churchId),
           ))
           .limit(1);
         if (!ownedPreset) {
           throw new Error("preset-not-in-church");
         }
-        const slots = await tx.select().from(presetRoleSlots).where(eq(presetRoleSlots.presetId, presetId as string));
+        const slots = await tx.select().from(presetRoleSlots).where(eq(presetRoleSlots.presetId, presetId));
         if (slots.length > 0) {
           await tx.insert(serviceRoleSlots).values(slots.map((s) => ({
             serviceId: created.id,
@@ -77,7 +70,7 @@ export async function POST(
       }
 
       // Copy template sections for the new service
-      const templateSections = await resolveTemplateSections(churchId, serviceType as string);
+      const templateSections = await resolveTemplateSections(churchId, serviceType);
 
       if (templateSections.length > 0) {
         // Insert music slots for sections that need them, then link back via musicSlotId

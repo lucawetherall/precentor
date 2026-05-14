@@ -1,9 +1,16 @@
-import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { rotaEntries, serviceRoleSlots, churchMemberRoles, services } from "@/lib/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { apiError, apiSuccess, ErrorCodes } from "@/lib/api-helpers";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+const rotaCreateSchema = z.object({
+  userId: z.string().min(1, "userId is required"),
+  serviceId: z.string().min(1, "serviceId is required"),
+  catalogRoleId: z.string().min(1, "catalogRoleId is required"),
+});
 
 export async function POST(
   request: Request,
@@ -13,19 +20,9 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-  const { userId, serviceId, catalogRoleId } = body;
-
-  if (!userId || !serviceId) {
-    return NextResponse.json({ error: "userId and serviceId are required" }, { status: 400 });
-  }
-
-  if (!catalogRoleId) return apiError("catalogRoleId is required", 400, { code: ErrorCodes.INVALID_INPUT });
+  const { data, error: bodyError } = await parseJsonBody(request, rotaCreateSchema);
+  if (bodyError) return bodyError;
+  const { userId, serviceId, catalogRoleId } = data;
 
   // Verify the service belongs to this church before doing anything else.
   // Without this, an EDITOR of church A could insert rota entries against a

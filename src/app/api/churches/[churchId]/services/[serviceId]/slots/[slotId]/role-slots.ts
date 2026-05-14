@@ -3,6 +3,7 @@ import { apiError, apiSuccess, ErrorCodes } from "@/lib/api-helpers";
 import { db } from "@/lib/db";
 import { serviceRoleSlots, rotaEntries, services } from "@/lib/db/schema";
 import { presetSlotUpdateSchema } from "@/lib/validation/schemas";
+import { parseJsonBody } from "@/lib/api/parse-body";
 import { and, eq, isNull } from "drizzle-orm";
 
 export async function PATCH(
@@ -13,14 +14,8 @@ export async function PATCH(
   const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
-  let body: unknown;
-  try { body = await request.json(); } catch {
-    return apiError("Invalid JSON", 400, { code: ErrorCodes.INVALID_INPUT });
-  }
-  const parsed = presetSlotUpdateSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiError("Invalid body", 400, { code: ErrorCodes.INVALID_INPUT, details: parsed.error.issues });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, presetSlotUpdateSchema);
+  if (bodyError) return bodyError;
 
   // Verify the service belongs to this church before touching its slots —
   // otherwise an EDITOR of church A could pass a serviceId from church B and
@@ -31,7 +26,7 @@ export async function PATCH(
 
   const [updated] = await db
     .update(serviceRoleSlots)
-    .set(parsed.data)
+    .set(data)
     .where(and(eq(serviceRoleSlots.id, slotId), eq(serviceRoleSlots.serviceId, serviceId)))
     .returning();
   if (!updated) return apiError("Slot not found", 404, { code: ErrorCodes.NOT_FOUND });

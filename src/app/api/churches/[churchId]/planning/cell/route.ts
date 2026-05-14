@@ -1,23 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireChurchRole } from "@/lib/auth/permissions";
-import { services, serviceTypeEnum } from "@/lib/db/schema";
+import { services } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { ensureLiturgicalDay } from "@/lib/db/queries/liturgical-days";
-import { writeCell, validateCellValue, type CellValue } from "../_write-cell";
-import { COLUMN_ORDER, type GridColumn } from "@/lib/planning/columns";
-
-interface Body {
-  serviceId?: string;
-  ghost?: { date: string; serviceType: string; time?: string | null };
-  column: GridColumn;
-  value: CellValue;
-  expectedUpdatedAt?: string | null;
-}
-
-const SERVICE_TYPE_VALUES = serviceTypeEnum.enumValues as readonly string[];
-const COLUMN_VALUES = COLUMN_ORDER as readonly string[];
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+import { writeCell } from "../_write-cell";
+import { parseJsonBody } from "@/lib/api/parse-body";
+import { cellPatchSchema } from "../schemas";
 
 export async function PATCH(
   req: NextRequest,
@@ -27,32 +16,10 @@ export async function PATCH(
   const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
-  let body: Body;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  // Validate the discriminated union: either an existing serviceId, or a
-  // ghost description (date + service type) so the row can be materialised.
+  const { data: body, error: bodyError } = await parseJsonBody(req, cellPatchSchema);
+  if (bodyError) return bodyError;
   if (!body.serviceId && !body.ghost) {
     return NextResponse.json({ error: "Either serviceId or ghost is required" }, { status: 400 });
-  }
-  if (!COLUMN_VALUES.includes(body.column as string)) {
-    return NextResponse.json({ error: "Invalid column" }, { status: 400 });
-  }
-  const valueError = validateCellValue(body.value);
-  if (valueError) {
-    return NextResponse.json({ error: valueError }, { status: 400 });
-  }
-  if (body.ghost) {
-    if (!ISO_DATE.test(body.ghost.date)) {
-      return NextResponse.json({ error: "ghost.date must be YYYY-MM-DD" }, { status: 400 });
-    }
-    if (!SERVICE_TYPE_VALUES.includes(body.ghost.serviceType)) {
-      return NextResponse.json({ error: "Invalid ghost.serviceType" }, { status: 400 });
-    }
   }
 
   const result = await db.transaction(async (tx) => {
@@ -68,7 +35,7 @@ export async function PATCH(
         .values({
           churchId,
           liturgicalDayId: day.id,
-          serviceType: ghost.serviceType as typeof services.$inferInsert.serviceType,
+          serviceType: ghost.serviceType,
           time: ghost.time ?? null,
         })
         .onConflictDoNothing({ target: [services.churchId, services.liturgicalDayId, services.serviceType] })
@@ -84,7 +51,7 @@ export async function PATCH(
           .where(and(
             eq(services.churchId, churchId),
             eq(services.liturgicalDayId, day.id),
-            eq(services.serviceType, ghost.serviceType as typeof services.$inferInsert.serviceType),
+            eq(services.serviceType, ghost.serviceType),
           ))
           .limit(1);
         if (!existing) return { status: 404 as const };

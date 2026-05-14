@@ -62,7 +62,7 @@ export function buildReadingRows(
 
   for (const [lectionary, serviceReadings] of services) {
     for (const reading of serviceReadings) {
-      const position = reading.position as string;
+      const position = reading.position;
       if (!VALID_POSITIONS.has(position)) {
         logger.warn("Invalid reading position, skipping", {
           position, reference: reading.reference,

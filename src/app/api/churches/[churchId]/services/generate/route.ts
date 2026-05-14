@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { addMonths, format } from "date-fns";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { generateServicesForChurch } from "@/lib/services/auto-generate";
 import { logger } from "@/lib/logger";
+
+const generateServicesSchema = z.object({
+  months: z.number().int().positive().max(12).optional(),
+});
 
 export async function POST(
   request: Request,
@@ -12,14 +17,18 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body: { months?: number } = {};
+  // This endpoint accepts an empty body, so we hand-parse instead of using
+  // parseJsonBody — missing body should fall back to defaults, not 400.
+  let parsedMonths: number | undefined;
   try {
-    body = await request.json();
+    const raw = await request.json();
+    const result = generateServicesSchema.safeParse(raw);
+    if (result.success) parsedMonths = result.data.months;
   } catch {
     // No body or invalid JSON — use defaults
   }
 
-  const months = typeof body.months === "number" && body.months > 0 && body.months <= 12 ? body.months : 3;
+  const months = parsedMonths ?? 3;
 
   const today = new Date();
   const fromDate = format(today, "yyyy-MM-dd");

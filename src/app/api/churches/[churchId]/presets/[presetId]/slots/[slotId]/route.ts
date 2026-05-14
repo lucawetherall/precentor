@@ -3,6 +3,7 @@ import { apiError, apiSuccess, ErrorCodes } from "@/lib/api-helpers";
 import { db } from "@/lib/db";
 import { presetRoleSlots, churchServicePresets } from "@/lib/db/schema";
 import { presetSlotUpdateSchema } from "@/lib/validation/schemas";
+import { parseJsonBody } from "@/lib/api/parse-body";
 import { and, eq } from "drizzle-orm";
 
 export async function PATCH(
@@ -13,14 +14,8 @@ export async function PATCH(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body: unknown;
-  try { body = await request.json(); } catch {
-    return apiError("Invalid JSON", 400, { code: ErrorCodes.INVALID_INPUT });
-  }
-  const parsed = presetSlotUpdateSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiError("Invalid body", 400, { code: ErrorCodes.INVALID_INPUT, details: parsed.error.issues });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, presetSlotUpdateSchema);
+  if (bodyError) return bodyError;
 
   const [slot] = await db
     .select({ id: presetRoleSlots.id })
@@ -32,7 +27,7 @@ export async function PATCH(
 
   const [updated] = await db
     .update(presetRoleSlots)
-    .set(parsed.data)
+    .set(data)
     .where(and(eq(presetRoleSlots.id, slotId), eq(presetRoleSlots.presetId, presetId)))
     .returning();
   return apiSuccess(updated);

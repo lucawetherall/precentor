@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { serviceSections, musicSlotTypeEnum, services } from "@/lib/db/schema";
 import { eq, asc, and, max } from "drizzle-orm";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+const sectionCreateSchema = z.object({
+  sectionKey: z.string().min(1, "sectionKey is required").max(200, "sectionKey must be 200 characters or fewer"),
+  title: z.string().min(1, "title is required").max(500, "title must be 500 characters or fewer"),
+  musicSlotType: z.enum(musicSlotTypeEnum.enumValues, "Invalid musicSlotType").nullable().optional(),
+  placeholderType: z.string().max(100, "placeholderType must be a string of 100 characters or fewer").nullable().optional(),
+  positionOrder: z.number().int().positive("positionOrder must be a positive integer").optional(),
+});
 
 export async function GET(
   _request: Request,
@@ -14,7 +24,6 @@ export async function GET(
   if (error) return error;
 
   try {
-    // Verify the service belongs to this church
     const [service] = await db
       .select({ id: services.id })
       .from(services)
@@ -45,49 +54,11 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
-  let body: Record<string, unknown>;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const { sectionKey, title, musicSlotType, placeholderType, positionOrder } = body as {
-    sectionKey?: unknown;
-    title?: unknown;
-    musicSlotType?: unknown;
-    placeholderType?: unknown;
-    positionOrder?: unknown;
-  };
-
-  if (typeof sectionKey !== "string" || !sectionKey) {
-    return NextResponse.json({ error: "sectionKey is required" }, { status: 400 });
-  }
-  if (sectionKey.length > 200) {
-    return NextResponse.json({ error: "sectionKey must be 200 characters or fewer" }, { status: 400 });
-  }
-  if (typeof title !== "string" || !title) {
-    return NextResponse.json({ error: "title is required" }, { status: 400 });
-  }
-  if (title.length > 500) {
-    return NextResponse.json({ error: "title must be 500 characters or fewer" }, { status: 400 });
-  }
-  if (musicSlotType !== undefined && musicSlotType !== null) {
-    if (!musicSlotTypeEnum.enumValues.includes(musicSlotType as (typeof musicSlotTypeEnum.enumValues)[number])) {
-      return NextResponse.json({ error: "Invalid musicSlotType" }, { status: 400 });
-    }
-  }
-  if (placeholderType !== undefined && placeholderType !== null) {
-    if (typeof placeholderType !== "string" || placeholderType.length > 100) {
-      return NextResponse.json({ error: "placeholderType must be a string of 100 characters or fewer" }, { status: 400 });
-    }
-  }
-  if (positionOrder !== undefined && (!Number.isInteger(positionOrder) || (positionOrder as number) < 1)) {
-    return NextResponse.json({ error: "positionOrder must be a positive integer" }, { status: 400 });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, sectionCreateSchema);
+  if (bodyError) return bodyError;
+  const { sectionKey, title, musicSlotType, placeholderType, positionOrder } = data;
 
   try {
-    // Verify the service belongs to this church
     const [service] = await db
       .select({ id: services.id })
       .from(services)
@@ -98,7 +69,7 @@ export async function POST(
     }
 
     let resolvedPosition: number;
-    if (typeof positionOrder === "number") {
+    if (positionOrder !== undefined) {
       resolvedPosition = positionOrder;
     } else {
       // Append after current max
@@ -116,8 +87,8 @@ export async function POST(
         sectionKey,
         title,
         positionOrder: resolvedPosition,
-        musicSlotType: (musicSlotType ?? null) as (typeof musicSlotTypeEnum.enumValues)[number] | null,
-        placeholderType: typeof placeholderType === "string" ? placeholderType : null,
+        musicSlotType: musicSlotType ?? null,
+        placeholderType: placeholderType ?? null,
       })
       .returning();
 

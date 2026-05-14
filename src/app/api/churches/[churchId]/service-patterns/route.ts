@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { churchServicePatterns, churchServicePresets } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+const servicePatternCreateSchema = z.object({
+  presetId: z.string().uuid({ message: "presetId is required" }),
+  dayOfWeek: z.number().int().min(0, "dayOfWeek must be an integer 0–6").max(6, "dayOfWeek must be an integer 0–6"),
+  enabled: z.boolean().default(true),
+});
 
 export async function GET(
   _request: Request,
@@ -33,30 +41,9 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body: { dayOfWeek?: unknown; enabled?: unknown; presetId?: unknown };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const { dayOfWeek, enabled, presetId } = body;
-
-  if (!presetId || typeof presetId !== "string") {
-    return NextResponse.json({ error: "presetId is required" }, { status: 400 });
-  }
-
-  if (
-    typeof dayOfWeek !== "number" ||
-    !Number.isInteger(dayOfWeek) ||
-    dayOfWeek < 0 ||
-    dayOfWeek > 6
-  ) {
-    return NextResponse.json(
-      { error: "dayOfWeek must be an integer 0–6" },
-      { status: 400 },
-    );
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, servicePatternCreateSchema);
+  if (bodyError) return bodyError;
+  const { dayOfWeek, enabled, presetId } = data;
 
   try {
     // Verify the preset belongs to this church before creating a pattern that
@@ -66,7 +53,7 @@ export async function POST(
       .select({ id: churchServicePresets.id })
       .from(churchServicePresets)
       .where(and(
-        eq(churchServicePresets.id, presetId as string),
+        eq(churchServicePresets.id, presetId),
         eq(churchServicePresets.churchId, churchId),
       ))
       .limit(1);
@@ -79,8 +66,8 @@ export async function POST(
       .values({
         churchId,
         dayOfWeek,
-        enabled: typeof enabled === "boolean" ? enabled : true,
-        presetId: presetId as string,
+        enabled,
+        presetId,
       })
       .returning();
 

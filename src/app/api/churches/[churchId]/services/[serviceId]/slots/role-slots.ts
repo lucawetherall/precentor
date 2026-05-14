@@ -3,6 +3,7 @@ import { apiError, apiSuccess, ErrorCodes } from "@/lib/api-helpers";
 import { db } from "@/lib/db";
 import { serviceRoleSlots, services, roleCatalog } from "@/lib/db/schema";
 import { presetSlotCreateSchema } from "@/lib/validation/schemas";
+import { parseJsonBody } from "@/lib/api/parse-body";
 import { and, eq } from "drizzle-orm";
 
 export async function GET(
@@ -29,29 +30,23 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
-  let body: unknown;
-  try { body = await request.json(); } catch {
-    return apiError("Invalid JSON", 400, { code: ErrorCodes.INVALID_INPUT });
-  }
-  const parsed = presetSlotCreateSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiError("Invalid body", 400, { code: ErrorCodes.INVALID_INPUT, details: parsed.error.issues });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, presetSlotCreateSchema);
+  if (bodyError) return bodyError;
 
   const [svc] = await db.select({ id: services.id }).from(services)
     .where(and(eq(services.id, serviceId), eq(services.churchId, churchId))).limit(1);
   if (!svc) return apiError("Service not found", 404, { code: ErrorCodes.NOT_FOUND });
   const [role] = await db.select({ rotaEligible: roleCatalog.rotaEligible, category: roleCatalog.category })
-    .from(roleCatalog).where(eq(roleCatalog.id, parsed.data.catalogRoleId)).limit(1);
+    .from(roleCatalog).where(eq(roleCatalog.id, data.catalogRoleId)).limit(1);
   if (!role?.rotaEligible) {
     return apiError("Role is not rota-eligible", 400, { code: ErrorCodes.ROLE_NOT_ROTA_ELIGIBLE });
   }
-  if (role.category === "VOICE" && parsed.data.exclusive) {
+  if (role.category === "VOICE" && data.exclusive) {
     return apiError("Voice-part slots cannot be exclusive", 400, { code: ErrorCodes.VOICE_PART_CANNOT_BE_EXCLUSIVE });
   }
 
   try {
-    const [created] = await db.insert(serviceRoleSlots).values({ ...parsed.data, serviceId }).returning();
+    const [created] = await db.insert(serviceRoleSlots).values({ ...data, serviceId }).returning();
     return apiSuccess(created, 201);
   } catch (e) {
     if (e instanceof Error && e.message.toLowerCase().includes("unique")) {

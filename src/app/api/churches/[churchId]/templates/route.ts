@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -9,6 +10,11 @@ import {
   templateSections,
 } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+const churchTemplateCreateSchema = z.object({
+  baseTemplateId: z.string().uuid({ message: "baseTemplateId is required" }),
+});
 
 export async function GET(
   _request: Request,
@@ -44,17 +50,9 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const { baseTemplateId } = body;
-  if (!baseTemplateId) {
-    return NextResponse.json({ error: "baseTemplateId is required" }, { status: 400 });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, churchTemplateCreateSchema);
+  if (bodyError) return bodyError;
+  const { baseTemplateId } = data;
 
   try {
     // Fetch the base template to get its name

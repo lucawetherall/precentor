@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { SERVICE_TYPE_LABELS } from "@/types";
 import type { ServiceType } from "@/types";
 import { SectionEditor } from "./section-editor";
@@ -13,43 +13,13 @@ import type { ServiceSection } from "./section-row";
 import type { MusicSlot } from "./use-service-editor";
 import type { AdjacentDayLinks } from "@/types/service-views";
 import { ServiceNav } from "./service-nav";
-import { Plus, Loader2, Trash2, FileDown, FileText, Eye, BookMarked } from "lucide-react";
-import { POSITION_LABELS } from "@/types";
+import { Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { useConfirm } from "@/components/ui/use-confirm";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
-interface Reading {
-  id: string;
-  position: string;
-  lectionary: string;
-  reference: string;
-  readingText: string | null;
-}
-
-const LECTIONARY_LABELS: Record<string, string> = {
-  PRINCIPAL: "Principal Service",
-  SECOND: "Second Service",
-};
-
-function getLectionaryForServiceType(serviceType: string): string {
-  switch (serviceType) {
-    case "CHORAL_EVENSONG":
-      return "SECOND";
-    case "SUNG_EUCHARIST":
-    case "SAID_EUCHARIST":
-    case "FAMILY_SERVICE":
-    case "CHORAL_MATINS":
-    default:
-      return "PRINCIPAL";
-  }
-}
+import { NewServiceForm } from "./new-service-form";
+import { ReadingsPanel, type Reading } from "./readings-panel";
+import { PdfPreviewDialog } from "./pdf-preview-dialog";
 
 interface Service {
   id: string;
@@ -65,9 +35,6 @@ interface Service {
   collectId: string | null;
   collectOverride: string | null;
 }
-
-
-interface Preset { id: string; name: string; serviceType: string; }
 
 export function ServicePlanner({
   churchId,
@@ -95,39 +62,19 @@ export function ServicePlanner({
   const [fetchedSectionsMap, setFetchedSectionsMap] = useState<Record<string, ServiceSection[]>>({});
   const [fetchedSlotsMap, setFetchedSlotsMap] = useState<Record<string, MusicSlot[]>>({});
   const [deleting, setDeleting] = useState(false);
-  const [newType, setNewType] = useState<ServiceType>("SUNG_EUCHARIST");
-  const [newTime, setNewTime] = useState("10:00");
-  const [newPresetId, setNewPresetId] = useState<string>("");
-  const [presets, setPresets] = useState<Preset[]>([]);
-  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
-  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
-  const pdfBlobUrlRef = useRef<string | null>(null);
   const { addToast } = useToast();
   const confirm = useConfirm();
 
-  useEffect(() => {
-    fetch(`/api/churches/${churchId}/presets`)
-      .then((r) => r.ok ? r.json() : [])
-      .then((data) => {
-        if (Array.isArray(data)) setPresets(data);
-        else if (data?.data && Array.isArray(data.data)) setPresets(data.data);
-      })
-      .catch(() => {});
-  }, [churchId]);
-
-  const handleCreateService = async () => {
+  async function handleCreateService(input: { serviceType: ServiceType; time: string; presetId: string | null }) {
     setCreating(true);
     try {
       const body: Record<string, unknown> = {
         liturgicalDayId,
-        serviceType: newType,
-        time: newTime,
+        serviceType: input.serviceType,
+        time: input.time,
       };
-      if (newPresetId) {
-        body.presetId = newPresetId;
-      }
+      if (input.presetId) body.presetId = input.presetId;
+
       const res = await fetch(`/api/churches/${churchId}/services`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -146,7 +93,8 @@ export function ServicePlanner({
           collectId: service.collectId ?? null,
           collectOverride: service.collectOverride ?? null,
         };
-        // Fetch the template sections and slots that were auto-created on the server
+        // Pull the template sections and slots that were auto-created on the
+        // server so the editor opens fully populated rather than empty.
         const [sectionsRes, slotsRes] = await Promise.all([
           fetch(`/api/churches/${churchId}/services/${service.id}/sections`),
           fetch(`/api/churches/${churchId}/services/${service.id}/slots`),
@@ -166,9 +114,9 @@ export function ServicePlanner({
       addToast("Network error — could not create service", "error");
     }
     setCreating(false);
-  };
+  }
 
-  const handleDeleteService = async () => {
+  async function handleDeleteService() {
     if (!activeTab) return;
     const confirmed = await confirm({
       title: "Delete this service?",
@@ -182,7 +130,7 @@ export function ServicePlanner({
     try {
       const res = await fetch(
         `/api/churches/${churchId}/services/${activeTab}`,
-        { method: "DELETE" }
+        { method: "DELETE" },
       );
       if (res.ok) {
         const remaining = services.filter((s) => s.id !== activeTab);
@@ -196,55 +144,9 @@ export function ServicePlanner({
       addToast("Network error — could not delete service", "error");
     }
     setDeleting(false);
-  };
+  }
 
   const activeService = services.find((s) => s.id === activeTab);
-
-  // Revoke old blob URL when dialog closes or a new one is created
-  const handlePdfDialogClose = () => {
-    setPdfDialogOpen(false);
-    if (pdfBlobUrlRef.current) {
-      URL.revokeObjectURL(pdfBlobUrlRef.current);
-      pdfBlobUrlRef.current = null;
-    }
-    setPdfBlobUrl(null);
-    setPdfError(null);
-  };
-
-  const handlePreviewPdf = async () => {
-    if (!activeService) return;
-    setPdfLoading(true);
-    setPdfError(null);
-    setPdfDialogOpen(true);
-    try {
-      const sheetMode = activeService.sheetMode === "booklet" ? "booklet" : "summary";
-      const url = `/api/churches/${churchId}/services/${activeService.id}/sheet?format=pdf&mode=${sheetMode}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        setPdfError("Failed to load PDF preview");
-        setPdfLoading(false);
-        return;
-      }
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      // Revoke any previous blob URL
-      if (pdfBlobUrlRef.current) {
-        URL.revokeObjectURL(pdfBlobUrlRef.current);
-      }
-      pdfBlobUrlRef.current = blobUrl;
-      setPdfBlobUrl(blobUrl);
-    } catch {
-      setPdfError("Network error loading PDF");
-    }
-    setPdfLoading(false);
-  };
-
-  const handleDownload = (format: "pdf" | "docx") => {
-    if (!activeService) return;
-    const sheetMode = activeService.sheetMode === "booklet" ? "booklet" : "summary";
-    const url = `/api/churches/${churchId}/services/${activeService.id}/sheet?format=${format}&mode=${sheetMode}`;
-    window.open(url, "_blank");
-  };
 
   return (
     <div>
@@ -261,7 +163,6 @@ export function ServicePlanner({
         <h2 className="text-xl font-heading font-semibold">Services</h2>
       </div>
 
-      {/* Service tabs */}
       <div className="flex items-center gap-1 border-b border-border mb-4">
         <div role="tablist" aria-label="Services" className="flex items-center gap-1">
           {services.map((s) => (
@@ -282,83 +183,19 @@ export function ServicePlanner({
           ))}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
-          <label htmlFor="new-service-type" className="sr-only">Service type</label>
-          <select
-            id="new-service-type"
-            value={newType}
-            onChange={(e) => setNewType(e.target.value as ServiceType)}
-            className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            {Object.entries(SERVICE_TYPE_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
-          <label htmlFor="new-service-time" className="sr-only">Service time</label>
-          <input
-            id="new-service-time"
-            type="time"
-            value={newTime}
-            onChange={(e) => setNewTime(e.target.value)}
-            className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-          {presets.length > 0 && (
-            <>
-              <label htmlFor="new-service-preset" className="sr-only">Preset</label>
-              <select
-                id="new-service-preset"
-                value={newPresetId}
-                onChange={(e) => setNewPresetId(e.target.value)}
-                className="text-xs rounded-md border border-input px-2 py-1 bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="">No preset</option>
-                {presets.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </>
-          )}
-          <Button onClick={handleCreateService} disabled={creating} size="sm">
-            {creating ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <Plus className="h-3 w-3" strokeWidth={1.5} />}
-            Add
-          </Button>
-        </div>
+        <NewServiceForm churchId={churchId} creating={creating} onCreate={handleCreateService} />
       </div>
 
-      {/* Readings for the active service's lectionary */}
-      {activeService && readings.length > 0 && (() => {
-        const lectionary = getLectionaryForServiceType(activeService.serviceType);
-        const filtered = readings.filter((r) => r.lectionary === lectionary);
-        if (filtered.length === 0) return null;
-        return (
-          <div className="border border-border bg-card mb-4">
-            <div className="px-4 py-2.5 border-b border-border bg-muted/30 flex items-center gap-2">
-              <BookMarked className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
-              <h3 className="small-caps text-xs text-muted-foreground">
-                Readings — {LECTIONARY_LABELS[lectionary] ?? lectionary}
-              </h3>
-            </div>
-            <div className="divide-y divide-border">
-              {filtered.map((r) => (
-                <div key={r.id} className="flex gap-3 px-4 py-3 text-sm">
-                  <span className="small-caps text-xs text-muted-foreground w-28 flex-shrink-0 pt-0.5">
-                    {POSITION_LABELS[r.position] ?? r.position.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-                  </span>
-                  <span className="font-heading">{r.reference}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
+      {activeService && readings.length > 0 && (
+        <ReadingsPanel readings={readings} serviceType={activeService.serviceType} />
+      )}
 
-      {/* Active service content */}
       {activeService && (
         <ServiceEditorProvider
           key={activeService.id}
           serviceId={activeService.id}
           churchId={churchId}
-          initialSections={(fetchedSectionsMap[activeService.id] ?? editorSectionsMap[activeService.id] ?? []) as ServiceSection[]}
+          initialSections={fetchedSectionsMap[activeService.id] ?? editorSectionsMap[activeService.id] ?? []}
           initialSettings={{
             sheetMode: activeService.sheetMode,
             eucharisticPrayer: activeService.eucharisticPrayer,
@@ -368,9 +205,8 @@ export function ServicePlanner({
             collectId: activeService.collectId,
             collectOverride: activeService.collectOverride,
           }}
-          initialSlots={(fetchedSlotsMap[activeService.id] ?? editorSlotsMap[activeService.id] ?? []) as MusicSlot[]}
+          initialSlots={fetchedSlotsMap[activeService.id] ?? editorSlotsMap[activeService.id] ?? []}
         >
-          {/* Editor sub-tabs with save status */}
           <div className="flex items-center border-b border-border mb-4">
             <div role="tablist" aria-label="Editor sections" className="flex items-center gap-4">
               <button
@@ -415,33 +251,18 @@ export function ServicePlanner({
             </div>
           </div>
 
-          {/* Running Order tab */}
-          {editorTab === "order" && (
-            <SectionEditor churchId={churchId} />
-          )}
+          {editorTab === "order" && <SectionEditor churchId={churchId} />}
 
-          {/* Settings tab */}
-          {editorTab === "settings" && (
-            <ServiceSettings serviceType={activeService.serviceType} />
-          )}
+          {editorTab === "settings" && <ServiceSettings serviceType={activeService.serviceType} />}
 
-          {/* Preview tab */}
           {editorTab === "preview" && (
             <div>
               <div className="flex items-center gap-2 mb-4 flex-wrap">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePreviewPdf}
-                  disabled={pdfLoading}
-                >
-                  {pdfLoading ? (
-                    <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
-                  ) : (
-                    <Eye className="h-3 w-3" strokeWidth={1.5} />
-                  )}
-                  Preview PDF
-                </Button>
+                <PdfPreviewDialog
+                  churchId={churchId}
+                  serviceId={activeService.id}
+                  sheetMode={activeService.sheetMode === "booklet" ? "booklet" : "summary"}
+                />
               </div>
               <BookletPreview
                 churchId={churchId}
@@ -452,7 +273,6 @@ export function ServicePlanner({
             </div>
           )}
 
-          {/* Service-level actions */}
           <div className="mt-4 flex items-center justify-end">
             <Button
               variant="destructive"
@@ -461,11 +281,9 @@ export function ServicePlanner({
               disabled={deleting}
               aria-label="Delete service"
             >
-              {deleting ? (
-                <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
-              ) : (
-                <Trash2 className="h-3 w-3" strokeWidth={1.5} />
-              )}
+              {deleting
+                ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} />
+                : <Trash2 className="h-3 w-3" strokeWidth={1.5} />}
               Delete service
             </Button>
           </div>
@@ -477,48 +295,6 @@ export function ServicePlanner({
           <p className="text-muted-foreground">No services planned for this day. Add one above.</p>
         </div>
       )}
-
-      {/* PDF Preview Dialog */}
-      <Dialog open={pdfDialogOpen} onOpenChange={(open) => { if (!open) handlePdfDialogClose(); }}>
-        <DialogContent className="w-[95vw] max-w-4xl h-[90vh] p-0 flex flex-col">
-          <DialogHeader className="px-4 py-3 border-b border-border flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="font-heading text-sm">PDF Preview</DialogTitle>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleDownload("pdf")}>
-                  <FileDown className="h-3 w-3" strokeWidth={1.5} />
-                  Download PDF
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => handleDownload("docx")}>
-                  <FileText className="h-3 w-3" strokeWidth={1.5} />
-                  Download DOCX
-                </Button>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-hidden">
-            {pdfLoading && (
-              <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" strokeWidth={1.5} />
-                Loading PDF…
-              </div>
-            )}
-            {pdfError && (
-              <div className="flex items-center justify-center h-full text-destructive text-sm">
-                {pdfError}
-              </div>
-            )}
-            {pdfBlobUrl && !pdfLoading && (
-              <iframe
-                src={pdfBlobUrl}
-                className="w-full h-full border-0"
-                title="PDF Preview"
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

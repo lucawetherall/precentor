@@ -1,9 +1,30 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { churchTemplates, churchTemplateSections } from "@/lib/db/schema";
+import { churchTemplates, churchTemplateSections, musicSlotTypeEnum } from "@/lib/db/schema";
 import { eq, asc, and } from "drizzle-orm";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+const churchTemplateSectionsPutSchema = z.object({
+  sections: z
+    .array(
+      z.object({
+        sectionKey: z.string(),
+        title: z.string(),
+        majorSection: z.string().nullable().optional(),
+        positionOrder: z.number().int().optional(),
+        liturgicalTextId: z.string().uuid().nullable().optional(),
+        musicSlotType: z.enum(musicSlotTypeEnum.enumValues).nullable().optional(),
+        placeholderType: z.string().nullable().optional(),
+        optional: z.boolean().optional(),
+        allowOverride: z.boolean().optional(),
+      }),
+    )
+    .optional()
+    .default([]),
+});
 
 export async function GET(
   _request: Request,
@@ -14,7 +35,6 @@ export async function GET(
   if (error) return error;
 
   try {
-    // Verify the template belongs to this church
     const [template] = await db
       .select({ id: churchTemplates.id })
       .from(churchTemplates)
@@ -45,16 +65,11 @@ export async function PUT(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-  const { sections } = body;
+  const { data, error: bodyError } = await parseJsonBody(request, churchTemplateSectionsPutSchema);
+  if (bodyError) return bodyError;
+  const { sections } = data;
 
   try {
-    // Verify the template belongs to this church
     const [template] = await db
       .select({ id: churchTemplates.id })
       .from(churchTemplates)
@@ -68,19 +83,9 @@ export async function PUT(
       .delete(churchTemplateSections)
       .where(eq(churchTemplateSections.churchTemplateId, templateId));
 
-    if (sections && sections.length > 0) {
+    if (sections.length > 0) {
       await db.insert(churchTemplateSections).values(
-        sections.map((section: {
-          sectionKey: string;
-          title: string;
-          majorSection?: string | null;
-          positionOrder: number;
-          liturgicalTextId?: string | null;
-          musicSlotType?: string | null;
-          placeholderType?: string | null;
-          optional?: boolean;
-          allowOverride?: boolean;
-        }, i: number) => ({
+        sections.map((section, i) => ({
           churchTemplateId: templateId,
           sectionKey: section.sectionKey,
           title: section.title,

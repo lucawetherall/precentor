@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { renderToBuffer } from "@react-pdf/renderer";
@@ -14,7 +15,17 @@ import {
   generateMultiSummaryDocx,
 } from "@/lib/pdf/service-sheet-docx";
 import type { BookletServiceSheetData, SummaryServiceSheetData, TemplateLayout } from "@/types/service-sheet";
-import type { SheetMode } from "@/types/service-sheet";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+const sheetsPostSchema = z.object({
+  serviceIds: z
+    .array(z.string())
+    .min(1, "serviceIds required")
+    .max(20, "Maximum 20 services per batch"),
+  format: z.enum(["pdf", "docx"]).default("pdf"),
+  size: z.enum(["A4", "A5"]).default("A4"),
+  mode: z.enum(["booklet", "summary"]).default("summary"),
+});
 
 /**
  * POST /api/churches/[churchId]/sheets
@@ -30,25 +41,11 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, sheetsPostSchema);
+  if (bodyError) return bodyError;
 
   try {
-    const serviceIds: string[] = body.serviceIds;
-    const format: string = body.format || "pdf";
-    const pageSize: "A4" | "A5" = body.size === "A5" ? "A5" : "A4";
-    const mode: SheetMode = body.mode === "booklet" ? "booklet" : "summary";
-
-    if (!Array.isArray(serviceIds) || serviceIds.length === 0) {
-      return NextResponse.json({ error: "serviceIds required" }, { status: 400 });
-    }
-    if (serviceIds.length > 20) {
-      return NextResponse.json({ error: "Maximum 20 services per batch" }, { status: 400 });
-    }
+    const { serviceIds, format, size: pageSize, mode } = data;
 
     const layoutOverride: Partial<TemplateLayout> = { paperSize: pageSize };
 

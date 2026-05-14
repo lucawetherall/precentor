@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { churchUpdateSchema } from "@/lib/validation/schemas";
-import { apiError } from "@/lib/api-helpers";
+import { parseJsonBody } from "@/lib/api/parse-body";
 import { writeSheetMusicLink } from "@/lib/churches/settings";
 
 export async function PATCH(
@@ -16,16 +16,8 @@ export async function PATCH(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const parsed = churchUpdateSchema.safeParse(body);
-  if (!parsed.success) return apiError(parsed.error.issues[0].message, 400);
-  const fields = parsed.data;
+  const { data: fields, error: bodyError } = await parseJsonBody(request, churchUpdateSchema);
+  if (bodyError) return bodyError;
 
   try {
     const updates: Record<string, unknown> = { updatedAt: new Date() };
