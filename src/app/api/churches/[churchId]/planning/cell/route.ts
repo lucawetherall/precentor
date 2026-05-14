@@ -4,7 +4,7 @@ import { requireChurchRole } from "@/lib/auth/permissions";
 import { services, serviceTypeEnum } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { ensureLiturgicalDay } from "@/lib/db/queries/liturgical-days";
-import { writeCell, type CellValue } from "../_write-cell";
+import { writeCell, validateCellValue, type CellValue } from "../_write-cell";
 import { COLUMN_ORDER, type GridColumn } from "@/lib/planning/columns";
 
 interface Body {
@@ -41,6 +41,10 @@ export async function PATCH(
   }
   if (!COLUMN_VALUES.includes(body.column as string)) {
     return NextResponse.json({ error: "Invalid column" }, { status: 400 });
+  }
+  const valueError = validateCellValue(body.value);
+  if (valueError) {
+    return NextResponse.json({ error: valueError }, { status: 400 });
   }
   if (body.ghost) {
     if (!ISO_DATE.test(body.ghost.date)) {

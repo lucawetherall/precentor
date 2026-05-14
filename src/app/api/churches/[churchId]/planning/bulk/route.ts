@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 import { services, serviceTypeEnum } from "@/lib/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { ensureLiturgicalDay } from "@/lib/db/queries/liturgical-days";
-import { writeCell, type CellValue } from "../_write-cell";
+import { writeCell, validateCellValue, type CellValue } from "../_write-cell";
 import { COLUMN_ORDER, type GridColumn } from "@/lib/planning/columns";
 
 interface Change {
@@ -50,6 +50,10 @@ export async function POST(
     }
     if (!COLUMN_VALUES.includes(c.column as string)) {
       return NextResponse.json({ error: `changes[${i}].column is invalid` }, { status: 400 });
+    }
+    const valueError = validateCellValue(c.value);
+    if (valueError) {
+      return NextResponse.json({ error: `changes[${i}].${valueError}` }, { status: 400 });
     }
     if (c.ghost) {
       if (!ISO_DATE.test(c.ghost.date)) {

@@ -15,6 +15,28 @@ export interface WriteCellInput {
   value: CellValue;
 }
 
+// Match the limits in /services/[serviceId]/slots/route.ts so the planning
+// grid can't bypass them via the cell/bulk endpoints.
+export const MAX_CELL_TEXT_LEN = 1000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Returns an error message if the value is malformed (too long, wrong type,
+ * non-UUID refId), or null if it is acceptable to pass to `writeCell`.
+ */
+export function validateCellValue(value: unknown): string | null {
+  if (value === null || typeof value !== "object") return "value must be an object";
+  const v = value as Record<string, unknown>;
+  if ("text" in v && v.text !== null && v.text !== undefined) {
+    if (typeof v.text !== "string") return "value.text must be a string or null";
+    if (v.text.length > MAX_CELL_TEXT_LEN) return `value.text must be ${MAX_CELL_TEXT_LEN} characters or fewer`;
+  }
+  if ("refId" in v && v.refId !== null && v.refId !== undefined) {
+    if (typeof v.refId !== "string" || !UUID_RE.test(v.refId)) return "value.refId must be a UUID or null";
+  }
+  return null;
+}
+
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export async function writeCell(
