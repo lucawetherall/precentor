@@ -15,7 +15,7 @@ import {
   hymnVerses,
   collects,
 } from "@/lib/db/schema";
-import { eq, asc, inArray } from "drizzle-orm";
+import { eq, and, asc, inArray } from "drizzle-orm";
 import type {
   BookletServiceSheetData,
   SummaryServiceSheetData,
@@ -256,7 +256,7 @@ async function fetchServiceData(
     .from(services)
     .innerJoin(liturgicalDays, eq(services.liturgicalDayId, liturgicalDays.id))
     .innerJoin(churches, eq(services.churchId, churches.id))
-    .where(eq(services.id, serviceId))
+    .where(and(eq(services.id, serviceId), eq(services.churchId, churchId)))
     .limit(1);
 
   if (serviceResult.length === 0) return null;
