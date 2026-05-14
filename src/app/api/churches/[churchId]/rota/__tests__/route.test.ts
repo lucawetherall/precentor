@@ -54,8 +54,25 @@ describe("POST rota", () => {
     expect(json.code).toBe("INVALID_INPUT");
   });
 
+  it("returns 404 when service does not belong to the church", async () => {
+    vi.mocked(db.select)
+      // service ownership check: returns empty
+      .mockReturnValueOnce({
+        from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }),
+      } as unknown as ReturnType<typeof db.select>);
+    const res = await POST(makeReq({ userId: "u1", serviceId: "other-church-svc", confirmed: true, catalogRoleId: "r1" }), {
+      params: Promise.resolve({ churchId: "c1" }),
+    });
+    expect(res.status).toBe(404);
+  });
+
   it("returns 403 USER_LACKS_ROLE when member doesn't hold the role", async () => {
     vi.mocked(db.select)
+      // service ownership check: found
+      .mockReturnValueOnce({
+        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "s1" }]) }) }),
+      } as unknown as ReturnType<typeof db.select>)
+      // memberRole not found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }),
       } as unknown as ReturnType<typeof db.select>);
@@ -69,6 +86,10 @@ describe("POST rota", () => {
 
   it("returns 404 SLOT_NOT_ON_SERVICE when slot doesn't exist for service", async () => {
     vi.mocked(db.select)
+      // service ownership check
+      .mockReturnValueOnce({
+        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "s1" }]) }) }),
+      } as unknown as ReturnType<typeof db.select>)
       // memberRole found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
@@ -87,6 +108,10 @@ describe("POST rota", () => {
 
   it("returns 409 SLOT_ALREADY_FILLED for exclusive slot that is occupied", async () => {
     vi.mocked(db.select)
+      // service ownership check
+      .mockReturnValueOnce({
+        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "s1" }]) }) }),
+      } as unknown as ReturnType<typeof db.select>)
       // memberRole found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
@@ -109,6 +134,10 @@ describe("POST rota", () => {
 
   it("returns 409 SLOT_AT_CAPACITY when maxCount reached", async () => {
     vi.mocked(db.select)
+      // service ownership check
+      .mockReturnValueOnce({
+        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "s1" }]) }) }),
+      } as unknown as ReturnType<typeof db.select>)
       // memberRole found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
@@ -132,6 +161,10 @@ describe("POST rota", () => {
   it("returns 201 with warnings:[] on first assignment", async () => {
     const insertMock = vi.fn().mockResolvedValue(undefined);
     vi.mocked(db.select)
+      // service ownership check
+      .mockReturnValueOnce({
+        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "s1" }]) }) }),
+      } as unknown as ReturnType<typeof db.select>)
       // memberRole found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
@@ -163,6 +196,10 @@ describe("POST rota", () => {
   it("returns 201 with DUAL_ROLE warning when user already on service in another role", async () => {
     const insertMock = vi.fn().mockResolvedValue(undefined);
     vi.mocked(db.select)
+      // service ownership check
+      .mockReturnValueOnce({
+        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "s1" }]) }) }),
+      } as unknown as ReturnType<typeof db.select>)
       // memberRole found
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
