@@ -31,13 +31,27 @@ describe("DELETE /presets/[presetId]/slots/[slotId]", () => {
 
   it("deletes and returns 200", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    // ownership check returns the preset
+    vi.mocked(db.select).mockReturnValue({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "p1" }]) }) }) } as unknown as ReturnType<typeof db.select>);
     vi.mocked(db.delete).mockReturnValue({ where: () => ({ returning: () => Promise.resolve([{ id: "sl1" }]) }) } as unknown as ReturnType<typeof db.delete>);
     const res = await DELETE(new Request("http://x"), { params: Promise.resolve({ churchId: "c1", presetId: "p1", slotId: "sl1" }) });
     expect(res.status).toBe(200);
   });
 
-  it("returns 404 when not found", async () => {
+  it("returns 404 when preset belongs to another church", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    // ownership check returns empty
+    vi.mocked(db.select).mockReturnValue({ from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }) } as unknown as ReturnType<typeof db.select>);
+    const deleteSpy = vi.fn().mockReturnValue({ returning: () => Promise.resolve([]) });
+    vi.mocked(db.delete).mockReturnValue({ where: deleteSpy } as unknown as ReturnType<typeof db.delete>);
+    const res = await DELETE(new Request("http://x"), { params: Promise.resolve({ churchId: "c1", presetId: "p1", slotId: "sl1" }) });
+    expect(res.status).toBe(404);
+    expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when slot not found within owned preset", async () => {
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    vi.mocked(db.select).mockReturnValue({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "p1" }]) }) }) } as unknown as ReturnType<typeof db.select>);
     vi.mocked(db.delete).mockReturnValue({ where: () => ({ returning: () => Promise.resolve([]) }) } as unknown as ReturnType<typeof db.delete>);
     const res = await DELETE(new Request("http://x"), { params: Promise.resolve({ churchId: "c1", presetId: "p1", slotId: "sl1" }) });
     expect(res.status).toBe(404);
