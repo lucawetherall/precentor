@@ -60,10 +60,20 @@ describe("PATCH /api/churches/[churchId]/presets/[presetId]", () => {
 describe("DELETE /api/churches/[churchId]/presets/[presetId]", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("returns 404 when preset belongs to another church", async () => {
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    // Ownership check returns empty -> 404, no further selects
+    vi.mocked(db.select)
+      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }) } as unknown as ReturnType<typeof db.select>);
+    const res = await DELETE(new Request("http://x"), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
+    expect(res.status).toBe(404);
+  });
+
   it("returns 409 when referenced by services", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
-    // First select (patterns) returns count 1
+    // Ownership check passes; patterns count 1; services count 0
     vi.mocked(db.select)
+      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "p1" }]) }) }) } as unknown as ReturnType<typeof db.select>)
       .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 1 }]) }) } as unknown as ReturnType<typeof db.select>)
       .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 0 }]) }) } as unknown as ReturnType<typeof db.select>);
     const res = await DELETE(new Request("http://x"), { params: Promise.resolve({ churchId: "c1", presetId: "p1" }) });
@@ -73,6 +83,7 @@ describe("DELETE /api/churches/[churchId]/presets/[presetId]", () => {
   it("deletes when not referenced", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     vi.mocked(db.select)
+      .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "p1" }]) }) }) } as unknown as ReturnType<typeof db.select>)
       .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 0 }]) }) } as unknown as ReturnType<typeof db.select>)
       .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve([{ count: 0 }]) }) } as unknown as ReturnType<typeof db.select>);
     vi.mocked(db.delete).mockReturnValue({

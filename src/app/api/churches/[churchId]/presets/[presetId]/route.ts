@@ -58,14 +58,24 @@ export async function DELETE(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
+  // Confirm the preset belongs to this church before scanning references.
+  // Without this check, a probe could return 409 ("referenced") for a preset
+  // owned by another church and leak whether that preset exists / is in use.
+  const [owned] = await db
+    .select({ id: churchServicePresets.id })
+    .from(churchServicePresets)
+    .where(and(eq(churchServicePresets.id, presetId), eq(churchServicePresets.churchId, churchId)))
+    .limit(1);
+  if (!owned) return apiError("Preset not found", 404, { code: ErrorCodes.NOT_FOUND });
+
   const [patternRef] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(churchServicePatterns)
-    .where(eq(churchServicePatterns.presetId, presetId));
+    .where(and(eq(churchServicePatterns.presetId, presetId), eq(churchServicePatterns.churchId, churchId)));
   const [serviceRef] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(services)
-    .where(eq(services.presetId, presetId));
+    .where(and(eq(services.presetId, presetId), eq(services.churchId, churchId)));
   if ((patternRef?.count ?? 0) > 0 || (serviceRef?.count ?? 0) > 0) {
     return apiError("Preset is referenced; archive instead", 409, { code: ErrorCodes.CONFLICT });
   }

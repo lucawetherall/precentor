@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     if (error) return error;
   }
 
-  if (q.length < 1) {
+  if (q.trim().length < 1) {
     return NextResponse.json([]);
   }
 

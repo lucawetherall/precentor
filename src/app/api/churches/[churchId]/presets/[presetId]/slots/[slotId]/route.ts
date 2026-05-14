@@ -46,6 +46,16 @@ export async function DELETE(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
+  // Verify the preset belongs to this church before deleting one of its
+  // slots — otherwise an ADMIN of church A could delete a preset slot from
+  // church B by guessing the (presetId, slotId) pair.
+  const [owned] = await db
+    .select({ id: churchServicePresets.id })
+    .from(churchServicePresets)
+    .where(and(eq(churchServicePresets.id, presetId), eq(churchServicePresets.churchId, churchId)))
+    .limit(1);
+  if (!owned) return apiError("Slot not found", 404, { code: ErrorCodes.NOT_FOUND });
+
   const deleted = await db
     .delete(presetRoleSlots)
     .where(and(eq(presetRoleSlots.id, slotId), eq(presetRoleSlots.presetId, presetId)))

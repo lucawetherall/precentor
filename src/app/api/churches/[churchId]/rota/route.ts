@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
-import { rotaEntries, serviceRoleSlots, churchMemberRoles } from "@/lib/db/schema";
+import { rotaEntries, serviceRoleSlots, churchMemberRoles, services } from "@/lib/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { apiError, apiSuccess, ErrorCodes } from "@/lib/api-helpers";
 
@@ -26,6 +26,13 @@ export async function POST(
   }
 
   if (!catalogRoleId) return apiError("catalogRoleId is required", 400, { code: ErrorCodes.INVALID_INPUT });
+
+  // Verify the service belongs to this church before doing anything else.
+  // Without this, an EDITOR of church A could insert rota entries against a
+  // service in church B, polluting another church's rota.
+  const [svc] = await db.select({ id: services.id }).from(services)
+    .where(and(eq(services.id, serviceId), eq(services.churchId, churchId))).limit(1);
+  if (!svc) return apiError("Service not found", 404, { code: ErrorCodes.NOT_FOUND });
 
   const [memberRole] = await db.select().from(churchMemberRoles)
     .where(and(

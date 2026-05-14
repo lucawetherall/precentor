@@ -35,10 +35,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Church name must be 200 characters or less" }, { status: 400 });
   }
 
+  // Cap optional descriptive fields so users can't pad arbitrarily large
+  // strings into the row. Matches the limits used by churchUpdateSchema.
+  if (diocese !== undefined && diocese !== null) {
+    if (typeof diocese !== "string" || diocese.length > 200) {
+      return NextResponse.json({ error: "diocese must be a string of 200 characters or fewer" }, { status: 400 });
+    }
+  }
+  if (address !== undefined && address !== null) {
+    if (typeof address !== "string" || address.length > 500) {
+      return NextResponse.json({ error: "address must be a string of 500 characters or fewer" }, { status: 400 });
+    }
+  }
+  if (ccliNumber !== undefined && ccliNumber !== null) {
+    if (typeof ccliNumber !== "string" || ccliNumber.length > 50) {
+      return NextResponse.json({ error: "ccliNumber must be a string of 50 characters or fewer" }, { status: 400 });
+    }
+  }
+
   // Cap and validate the optional defaultServices array before doing any DB
   // work — without this an attacker could send arbitrarily many entries (each
   // fans out to one row per liturgical day) and exhaust the transaction.
   const MAX_DEFAULT_SERVICES = 20;
+  const TIME_RE = /^\d{2}:\d{2}$/;
   if (defaultServices !== undefined && defaultServices !== null) {
     if (!Array.isArray(defaultServices)) {
       return NextResponse.json({ error: "defaultServices must be an array" }, { status: 400 });
@@ -57,8 +76,10 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      if (entry.time !== undefined && entry.time !== null && typeof entry.time !== "string") {
-        return NextResponse.json({ error: "defaultServices.time must be a string" }, { status: 400 });
+      if (entry.time !== undefined && entry.time !== null) {
+        if (typeof entry.time !== "string" || !TIME_RE.test(entry.time)) {
+          return NextResponse.json({ error: "defaultServices.time must be in HH:MM format" }, { status: 400 });
+        }
       }
     }
   }

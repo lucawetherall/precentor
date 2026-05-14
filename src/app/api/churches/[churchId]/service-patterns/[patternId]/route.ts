@@ -13,18 +13,18 @@ export async function PATCH(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body: { enabled?: unknown; time?: unknown };
+  let body: { enabled?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const updates: { enabled?: boolean; time?: string | null } = {};
+  // `churchServicePatterns` only stores `enabled` and the FK columns; an
+  // older revision had a `time` field that no longer exists. Ignore unknown
+  // fields rather than passing them to the update and triggering a 500.
+  const updates: { enabled?: boolean } = {};
   if (typeof body.enabled === "boolean") updates.enabled = body.enabled;
-  if (body.time !== undefined) {
-    updates.time = typeof body.time === "string" ? body.time : null;
-  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

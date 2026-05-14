@@ -3,7 +3,7 @@ import { logger } from "@/lib/logger";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { services } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { renderToBuffer } from "@react-pdf/renderer";
 import React from "react";
 import {
@@ -35,7 +35,7 @@ export async function GET(
     const serviceRecord = await db
       .select({ sheetMode: services.sheetMode })
       .from(services)
-      .where(eq(services.id, serviceId))
+      .where(and(eq(services.id, serviceId), eq(services.churchId, churchId)))
       .limit(1);
 
     if (serviceRecord.length === 0) {

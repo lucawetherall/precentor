@@ -67,6 +67,9 @@ describe("POST /api/churches/[churchId]/services", () => {
           values: vi.fn().mockReturnValue({ returning: () => Promise.resolve([created]) }),
         }),
         select: vi.fn()
+          // ownership check returns the preset (belongs to this church)
+          .mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "p1" }]) }) }) })
+          // then preset role slots
           .mockReturnValueOnce({ from: () => ({ where: () => Promise.resolve(presetSlots) }) }),
       };
       return fn(tx);
@@ -75,5 +78,22 @@ describe("POST /api/churches/[churchId]/services", () => {
     expect(res.status).toBe(201);
     // insert should have been called at least twice (service + role slots)
     expect(insertMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects presetId from another church with 400", async () => {
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(db.transaction).mockImplementation(async (fn: any) => {
+      const tx = {
+        insert: vi.fn().mockReturnValue({
+          values: () => ({ returning: () => Promise.resolve([{ id: "svc1", churchId: "c1", liturgicalDayId: "d1", serviceType: "SUNG_EUCHARIST" }]) }),
+        }),
+        // ownership check returns empty (preset not in this church)
+        select: vi.fn().mockReturnValueOnce({ from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }) }),
+      };
+      return fn(tx);
+    });
+    const res = await POST(makeReq({ liturgicalDayId: "d1", serviceType: "SUNG_EUCHARIST", presetId: "other-church-preset" }), { params: Promise.resolve({ churchId: "c1" }) });
+    expect(res.status).toBe(400);
   });
 });
