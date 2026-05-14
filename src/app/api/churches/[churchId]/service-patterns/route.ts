@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { churchServicePatterns } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { churchServicePatterns, churchServicePresets } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 
 export async function GET(
   _request: Request,
@@ -48,6 +48,7 @@ export async function POST(
 
   if (
     typeof dayOfWeek !== "number" ||
+    !Number.isInteger(dayOfWeek) ||
     dayOfWeek < 0 ||
     dayOfWeek > 6
   ) {
@@ -58,6 +59,21 @@ export async function POST(
   }
 
   try {
+    // Verify the preset belongs to this church before creating a pattern that
+    // references it — otherwise an ADMIN of church A could create a pattern in
+    // their own church that references church B's preset.
+    const [owned] = await db
+      .select({ id: churchServicePresets.id })
+      .from(churchServicePresets)
+      .where(and(
+        eq(churchServicePresets.id, presetId as string),
+        eq(churchServicePresets.churchId, churchId),
+      ))
+      .limit(1);
+    if (!owned) {
+      return NextResponse.json({ error: "Preset not found in this church" }, { status: 400 });
+    }
+
     const [pattern] = await db
       .insert(churchServicePatterns)
       .values({
