@@ -63,12 +63,23 @@ export async function POST(
   if (typeof sectionKey !== "string" || !sectionKey) {
     return NextResponse.json({ error: "sectionKey is required" }, { status: 400 });
   }
+  if (sectionKey.length > 200) {
+    return NextResponse.json({ error: "sectionKey must be 200 characters or fewer" }, { status: 400 });
+  }
   if (typeof title !== "string" || !title) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
+  }
+  if (title.length > 500) {
+    return NextResponse.json({ error: "title must be 500 characters or fewer" }, { status: 400 });
   }
   if (musicSlotType !== undefined && musicSlotType !== null) {
     if (!musicSlotTypeEnum.enumValues.includes(musicSlotType as (typeof musicSlotTypeEnum.enumValues)[number])) {
       return NextResponse.json({ error: "Invalid musicSlotType" }, { status: 400 });
+    }
+  }
+  if (placeholderType !== undefined && placeholderType !== null) {
+    if (typeof placeholderType !== "string" || placeholderType.length > 100) {
+      return NextResponse.json({ error: "placeholderType must be a string of 100 characters or fewer" }, { status: 400 });
     }
   }
   if (positionOrder !== undefined && (!Number.isInteger(positionOrder) || (positionOrder as number) < 1)) {

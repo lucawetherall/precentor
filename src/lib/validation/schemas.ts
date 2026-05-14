@@ -76,16 +76,25 @@ export const serviceUpdateSchema = z.object({
 }).strict();
 
 export const sectionCreateSchema = z.object({
-  sectionKey: z.string().min(1),
-  title: z.string().min(1),
-  majorSection: z.string().nullable().optional(),
+  sectionKey: z.string().min(1).max(200),
+  title: z.string().min(1).max(500),
+  majorSection: z.string().max(200).nullable().optional(),
   positionOrder: z.number().int().positive(),
   liturgicalTextId: z.string().uuid().nullable().optional(),
-  textOverride: z.array(z.object({ speaker: z.string(), text: z.string() })).nullable().optional(),
+  textOverride: z
+    .array(
+      z.object({
+        speaker: z.string().max(200),
+        text: z.string().max(10_000),
+      }),
+    )
+    .max(200)
+    .nullable()
+    .optional(),
   musicSlotId: z.string().uuid().nullable().optional(),
-  musicSlotType: z.string().nullable().optional(),
-  placeholderType: z.string().nullable().optional(),
-  placeholderValue: z.string().nullable().optional(),
+  musicSlotType: z.string().max(100).nullable().optional(),
+  placeholderType: z.string().max(100).nullable().optional(),
+  placeholderValue: z.string().max(10_000).nullable().optional(),
   visible: z.boolean().optional(),
 });
 

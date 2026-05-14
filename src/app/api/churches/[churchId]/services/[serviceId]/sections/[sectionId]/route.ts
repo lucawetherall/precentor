@@ -55,16 +55,19 @@ export async function PATCH(
       if (body.textOverride !== null) {
         if (
           !Array.isArray(body.textOverride) ||
+          body.textOverride.length > 200 ||
           !body.textOverride.every(
             (item) =>
               typeof item === "object" &&
               item !== null &&
               typeof (item as Record<string, unknown>).speaker === "string" &&
-              typeof (item as Record<string, unknown>).text === "string"
+              ((item as Record<string, unknown>).speaker as string).length <= 200 &&
+              typeof (item as Record<string, unknown>).text === "string" &&
+              ((item as Record<string, unknown>).text as string).length <= 10_000
           )
         ) {
           return NextResponse.json(
-            { error: "textOverride must be null or an array of { speaker: string; text: string }" },
+            { error: "textOverride must be null or an array (max 200) of { speaker: string ≤200, text: string ≤10000 }" },
             { status: 400 }
           );
         }
@@ -73,22 +76,22 @@ export async function PATCH(
     }
 
     if ("title" in body) {
-      if (typeof body.title !== "string" || !body.title) {
-        return NextResponse.json({ error: "title must be a non-empty string" }, { status: 400 });
+      if (typeof body.title !== "string" || !body.title || body.title.length > 500) {
+        return NextResponse.json({ error: "title must be a non-empty string of 500 characters or fewer" }, { status: 400 });
       }
       updates.title = body.title;
     }
 
     if ("placeholderValue" in body) {
-      if (body.placeholderValue !== null && typeof body.placeholderValue !== "string") {
-        return NextResponse.json({ error: "placeholderValue must be a string or null" }, { status: 400 });
+      if (body.placeholderValue !== null && (typeof body.placeholderValue !== "string" || body.placeholderValue.length > 10_000)) {
+        return NextResponse.json({ error: "placeholderValue must be null or a string of 10000 characters or fewer" }, { status: 400 });
       }
       updates.placeholderValue = body.placeholderValue;
     }
 
     if ("notes" in body) {
-      if (body.notes !== null && typeof body.notes !== "string") {
-        return NextResponse.json({ error: "notes must be a string or null" }, { status: 400 });
+      if (body.notes !== null && (typeof body.notes !== "string" || body.notes.length > 5000)) {
+        return NextResponse.json({ error: "notes must be null or a string of 5000 characters or fewer" }, { status: 400 });
       }
       updates.notes = body.notes;
     }
