@@ -1,7 +1,22 @@
+import type { Metadata } from "next";
 import { Music, BookOpen, Users, Calendar, Sparkles, FileText, ArrowRight, Church } from "lucide-react";
 import Link from "next/link";
 import { Ornament } from "@/components/ui/ornament";
 import { Footer } from "@/components/footer";
+
+export const metadata: Metadata = {
+  title: "Precentor — Plan your next Sunday in minutes",
+  description:
+    "AI-powered liturgical music suggestions, the Common Worship lectionary, and choir management for Church of England parishes — in one place.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Precentor — Plan your next Sunday in minutes",
+    description:
+      "AI-powered liturgical music suggestions, the Common Worship lectionary, and choir management for Church of England parishes.",
+    type: "website",
+    url: "/",
+  },
+};
 
 const jsonLd = {
   "@context": "https://schema.org",
