@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { services, serviceTypeEnum, serviceSections, musicSlots, musicSlotTypeEnum, presetRoleSlots, serviceRoleSlots } from "@/lib/db/schema";
+import { services, serviceTypeEnum, serviceSections, musicSlots, musicSlotTypeEnum, presetRoleSlots, serviceRoleSlots, churchServicePresets } from "@/lib/db/schema";
 import { resolveTemplateSections } from "@/lib/services/template-resolution";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export async function POST(
   request: Request,
@@ -47,8 +47,22 @@ export async function POST(
         presetId: (presetId as string) || null,
       }).returning();
 
-      // Snapshot preset role slots if a presetId was provided
+      // Snapshot preset role slots if a presetId was provided. Confirm the
+      // preset belongs to this church first — otherwise an EDITOR could pass
+      // another church's presetId and copy its role-slot layout into their
+      // service.
       if (presetId) {
+        const [ownedPreset] = await tx
+          .select({ id: churchServicePresets.id })
+          .from(churchServicePresets)
+          .where(and(
+            eq(churchServicePresets.id, presetId as string),
+            eq(churchServicePresets.churchId, churchId),
+          ))
+          .limit(1);
+        if (!ownedPreset) {
+          throw new Error("preset-not-in-church");
+        }
         const slots = await tx.select().from(presetRoleSlots).where(eq(presetRoleSlots.presetId, presetId as string));
         if (slots.length > 0) {
           await tx.insert(serviceRoleSlots).values(slots.map((s) => ({
@@ -105,6 +119,9 @@ export async function POST(
 
     return NextResponse.json(service, { status: 201 });
   } catch (err) {
+    if (err instanceof Error && err.message === "preset-not-in-church") {
+      return NextResponse.json({ error: "Preset does not belong to this church" }, { status: 400 });
+    }
     logger.error("Failed to create service", err);
     return NextResponse.json({ error: "Failed to create service" }, { status: 500 });
   }
