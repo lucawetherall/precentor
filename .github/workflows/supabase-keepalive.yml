@@ -1,0 +1,29 @@
+name: Supabase Keepalive
+
+on:
+  schedule:
+    # Every 3 days at 12:00 UTC. Well under Supabase's 7-day pause threshold,
+    # so a single missed run cannot pause the project.
+    - cron: "0 12 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Supabase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit REST API
+        env:
+          SUPABASE_URL: https://yiqsazurvymvkpjntphl.supabase.co
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/")
+          echo "Supabase responded with HTTP $status"
+          if [ "$status" != "200" ]; then
+            echo "::error::Unexpected status $status — project may be paused or misconfigured"
+            exit 1
+          fi
