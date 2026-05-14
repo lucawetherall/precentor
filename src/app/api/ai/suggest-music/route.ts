@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createLLMProvider } from "@/lib/ai/provider";
 import { requireChurchRole, requireAuth } from "@/lib/auth/permissions";
 import { logger } from "@/lib/logger";
@@ -9,6 +10,12 @@ import { format, subWeeks } from "date-fns";
 import type { SuggestionContext } from "@/lib/ai/types";
 import { rateLimit } from "@/lib/rate-limit";
 import { consumeAiQuota } from "@/lib/ai/quota";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+const suggestMusicSchema = z.object({
+  serviceId: z.string().uuid({ message: "serviceId is required" }),
+  slotType: z.string().min(1, "slotType is required"),
+});
 
 export async function POST(request: Request) {
   // Auth check and rate limit before expensive operations
@@ -18,17 +25,9 @@ export async function POST(request: Request) {
   const rateLimited = await rateLimit(`ai-suggest:${authUser!.id}`, { maxRequests: 10, windowMs: 60_000 });
   if (rateLimited) return rateLimited;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-  const { serviceId, slotType } = body;
-
-  if (!serviceId || !slotType) {
-    return NextResponse.json({ error: "serviceId and slotType required" }, { status: 400 });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, suggestMusicSchema);
+  if (bodyError) return bodyError;
+  const { serviceId, slotType } = data;
 
   try {
     // Get service with liturgical day

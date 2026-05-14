@@ -3,6 +3,7 @@ import { apiError, apiSuccess, ErrorCodes } from "@/lib/api-helpers";
 import { db } from "@/lib/db";
 import { presetRoleSlots, roleCatalog, churchServicePresets } from "@/lib/db/schema";
 import { presetSlotCreateSchema } from "@/lib/validation/schemas";
+import { parseJsonBody } from "@/lib/api/parse-body";
 import { and, eq } from "drizzle-orm";
 
 export async function POST(
@@ -13,14 +14,8 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body: unknown;
-  try { body = await request.json(); } catch {
-    return apiError("Invalid JSON", 400, { code: ErrorCodes.INVALID_INPUT });
-  }
-  const parsed = presetSlotCreateSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiError("Invalid body", 400, { code: ErrorCodes.INVALID_INPUT, details: parsed.error.issues });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, presetSlotCreateSchema);
+  if (bodyError) return bodyError;
 
   const [preset] = await db
     .select({ id: churchServicePresets.id })
@@ -32,20 +27,20 @@ export async function POST(
   const [role] = await db
     .select({ rotaEligible: roleCatalog.rotaEligible, category: roleCatalog.category })
     .from(roleCatalog)
-    .where(eq(roleCatalog.id, parsed.data.catalogRoleId))
+    .where(eq(roleCatalog.id, data.catalogRoleId))
     .limit(1);
   if (!role) return apiError("Catalog role not found", 404, { code: ErrorCodes.NOT_FOUND });
   if (!role.rotaEligible) {
     return apiError("Role is not rota-eligible", 400, { code: ErrorCodes.ROLE_NOT_ROTA_ELIGIBLE });
   }
-  if (role.category === "VOICE" && parsed.data.exclusive) {
+  if (role.category === "VOICE" && data.exclusive) {
     return apiError("Voice-part slots cannot be exclusive", 400, { code: ErrorCodes.VOICE_PART_CANNOT_BE_EXCLUSIVE });
   }
 
   try {
     const [created] = await db
       .insert(presetRoleSlots)
-      .values({ ...parsed.data, presetId })
+      .values({ ...data, presetId })
       .returning();
     return apiSuccess(created, 201);
   } catch (e) {

@@ -108,6 +108,18 @@ export const quickInviteSchema = z.object({
   role: z.enum(["ADMIN", "EDITOR", "MEMBER"]).default("MEMBER"),
 });
 
+/**
+ * Accepts both "full invite" (with email, optional sendEmail flag) and
+ * "tokenless quick invite" (no email) in a single shape. The route validates
+ * the email format separately when present, so we keep `email` as a loose
+ * string here.
+ */
+export const inviteCreateSchema = z.object({
+  email: z.string().nullable().optional(),
+  role: z.enum(["ADMIN", "EDITOR", "MEMBER"]).default("MEMBER"),
+  sendEmail: z.boolean().default(true),
+});
+
 export const churchUpdateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   address: z.string().max(500).nullable().optional(),

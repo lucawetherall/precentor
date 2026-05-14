@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 import { services } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { serviceUpdateSchema } from "@/lib/validation/schemas";
-import { apiError } from "@/lib/api-helpers";
+import { parseJsonBody } from "@/lib/api/parse-body";
 
 export async function GET(
   _request: Request,
@@ -47,19 +47,10 @@ export async function PATCH(
   const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
-  let body: Record<string, unknown>;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, serviceUpdateSchema);
+  if (bodyError) return bodyError;
 
-  const parsed = serviceUpdateSchema.safeParse(body);
-  if (!parsed.success) return apiError(parsed.error.issues[0].message, 400);
-
-  // Build update object from allowed fields
   const updates: Record<string, unknown> = {};
-  const data = parsed.data;
 
   if ("sheetMode" in data) updates.sheetMode = data.sheetMode;
   if ("eucharisticPrayer" in data) updates.eucharisticPrayer = data.eucharisticPrayer;

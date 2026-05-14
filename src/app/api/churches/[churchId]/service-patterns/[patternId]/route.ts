@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { churchServicePatterns } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+// `churchServicePatterns` only stores `enabled` and the FK columns; an older
+// revision had a `time` field that no longer exists. Unknown fields are
+// stripped by Zod rather than passed through to the update.
+const servicePatternUpdateSchema = z.object({
+  enabled: z.boolean().optional(),
+});
 
 export async function PATCH(
   request: Request,
@@ -13,18 +22,11 @@ export async function PATCH(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body: { enabled?: unknown };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, servicePatternUpdateSchema);
+  if (bodyError) return bodyError;
 
-  // `churchServicePatterns` only stores `enabled` and the FK columns; an
-  // older revision had a `time` field that no longer exists. Ignore unknown
-  // fields rather than passing them to the update and triggering a 500.
   const updates: { enabled?: boolean } = {};
-  if (typeof body.enabled === "boolean") updates.enabled = body.enabled;
+  if (data.enabled !== undefined) updates.enabled = data.enabled;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

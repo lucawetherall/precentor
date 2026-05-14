@@ -55,10 +55,16 @@ vi.mock("@/lib/db/schema", () => ({
 }));
 
 vi.mock("@/lib/validation/schemas", () => ({
-  memberInviteSchema: {
+  inviteCreateSchema: {
     safeParse: vi.fn().mockReturnValue({
       success: true,
       data: { email: "singer@parish.org.uk", role: "MEMBER", sendEmail: true },
+    }),
+  },
+  emailSchema: {
+    safeParse: vi.fn().mockReturnValue({
+      success: true,
+      data: "singer@parish.org.uk",
     }),
   },
 }));

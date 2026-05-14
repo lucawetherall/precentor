@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireChurchRole, hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { availability, services, churchMemberships, availabilityStatusEnum, serviceRoleSlots, churchMemberRoles } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { apiError, ErrorCodes } from "@/lib/api-helpers";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+const availabilityPostSchema = z.object({
+  userId: z.string().optional(),
+  serviceId: z.string().min(1, "serviceId is required"),
+  status: z.enum(availabilityStatusEnum.enumValues, "Invalid status"),
+});
+
+const availabilityDeleteSchema = z.object({
+  userId: z.string().optional(),
+  serviceId: z.string().min(1, "serviceId is required"),
+});
 
 export async function POST(
   request: Request,
@@ -14,25 +27,9 @@ export async function POST(
   const { user, membership, error } = await requireChurchRole(churchId, "MEMBER");
   if (error) return error;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-  const { userId, serviceId, status } = body;
-
-  if (!serviceId || !status) {
-    return NextResponse.json({ error: "serviceId and status are required" }, { status: 400 });
-  }
-
-  const validStatuses = availabilityStatusEnum.enumValues;
-  if (!validStatuses.includes(status)) {
-    return NextResponse.json(
-      { error: `Invalid status: ${status}` },
-      { status: 400 }
-    );
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, availabilityPostSchema);
+  if (bodyError) return bodyError;
+  const { userId, serviceId, status } = data;
 
   // Members can only set their own availability; editors+ can set for anyone
   const targetUserId = userId || user!.id;
@@ -93,11 +90,11 @@ export async function POST(
       .values({
         userId: targetUserId,
         serviceId,
-        status: status as (typeof availabilityStatusEnum.enumValues)[number],
+        status,
       })
       .onConflictDoUpdate({
         target: [availability.userId, availability.serviceId],
-        set: { status: status as (typeof availabilityStatusEnum.enumValues)[number] },
+        set: { status },
       });
 
     return NextResponse.json({ success: true });
@@ -115,17 +112,9 @@ export async function DELETE(
   const { user, membership, error } = await requireChurchRole(churchId, "MEMBER");
   if (error) return error;
 
-  let body: { userId?: string; serviceId?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const { userId, serviceId } = body;
-  if (!serviceId) {
-    return NextResponse.json({ error: "serviceId is required" }, { status: 400 });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, availabilityDeleteSchema);
+  if (bodyError) return bodyError;
+  const { userId, serviceId } = data;
 
   const targetUserId = userId || user!.id;
   if (targetUserId !== user!.id && !hasMinRole(coerceMemberRole(membership!.role), "EDITOR")) {

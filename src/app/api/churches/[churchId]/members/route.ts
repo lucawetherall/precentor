@@ -5,8 +5,9 @@ import { logger } from "@/lib/logger";
 import { invites, churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
-import { memberInviteSchema, quickInviteSchema } from "@/lib/validation/schemas";
+import { inviteCreateSchema, emailSchema } from "@/lib/validation/schemas";
 import { apiError } from "@/lib/api-helpers";
+import { parseJsonBody } from "@/lib/api/parse-body";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendInvitation } from "@/lib/email/send";
 
@@ -21,28 +22,24 @@ export async function POST(
   const rateLimited = await rateLimit(`invite:${user!.id}`, { maxRequests: 10, windowMs: 60_000 });
   if (rateLimited) return rateLimited;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-  const hasEmail = body.email && typeof body.email === "string" && body.email.trim() !== "";
+  const { data, error: bodyError } = await parseJsonBody(request, inviteCreateSchema);
+  if (bodyError) return bodyError;
+
+  const trimmedEmail = data.email?.trim() ?? "";
   let email: string | null = null;
-  let validatedRole: "ADMIN" | "EDITOR" | "MEMBER";
   let sendEmail = false;
 
-  if (hasEmail) {
-    const parsed = memberInviteSchema.safeParse(body);
-    if (!parsed.success) return apiError(parsed.error.issues[0].message, 400);
-    email = parsed.data.email;
-    validatedRole = parsed.data.role;
-    sendEmail = parsed.data.sendEmail;
-  } else {
-    const parsed = quickInviteSchema.safeParse(body);
-    if (!parsed.success) return apiError(parsed.error.issues[0].message, 400);
-    validatedRole = parsed.data.role;
+  if (trimmedEmail !== "") {
+    // Empty/missing email is the "quick invite" path. A non-empty value must
+    // still match emailSchema — quietly accepting `{ email: "not-an-email" }`
+    // as a tokenless invite would surprise admins typing a typo.
+    const emailResult = emailSchema.safeParse(trimmedEmail);
+    if (!emailResult.success) return apiError(emailResult.error.issues[0].message, 400);
+    email = emailResult.data;
+    sendEmail = data.sendEmail;
   }
+
+  const validatedRole = data.role;
 
   try {
     const [church] = await db

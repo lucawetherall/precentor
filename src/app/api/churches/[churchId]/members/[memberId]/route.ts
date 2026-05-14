@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { churchMemberships } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { logger } from "@/lib/logger";
+import { parseJsonBody } from "@/lib/api/parse-body";
 
-const VALID_ROLES = ["ADMIN", "EDITOR", "MEMBER"] as const;
+const memberUpdateSchema = z.object({
+  role: z.enum(["ADMIN", "EDITOR", "MEMBER"]).optional(),
+});
 
 export async function PATCH(
   request: Request,
@@ -15,21 +19,11 @@ export async function PATCH(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, memberUpdateSchema);
+  if (bodyError) return bodyError;
 
   const updates: Record<string, string | null> = {};
-
-  if ("role" in body) {
-    if (!VALID_ROLES.includes(body.role)) {
-      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
-    }
-    updates.role = body.role;
-  }
+  if (data.role !== undefined) updates.role = data.role;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

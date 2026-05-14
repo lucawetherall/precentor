@@ -1,9 +1,29 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { serviceSections, musicSlotTypeEnum, services } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+const sectionUpdateSchema = z.object({
+  visible: z.boolean().optional(),
+  textOverride: z
+    .array(
+      z.object({
+        speaker: z.string().max(200),
+        text: z.string().max(10_000),
+      }),
+    )
+    .max(200, "textOverride must be null or an array (max 200) of { speaker: string ≤200, text: string ≤10000 }")
+    .nullable()
+    .optional(),
+  title: z.string().min(1, "title must be a non-empty string of 500 characters or fewer").max(500, "title must be a non-empty string of 500 characters or fewer").optional(),
+  placeholderValue: z.string().max(10_000, "placeholderValue must be null or a string of 10000 characters or fewer").nullable().optional(),
+  notes: z.string().max(5000, "notes must be null or a string of 5000 characters or fewer").nullable().optional(),
+  musicSlotType: z.enum(musicSlotTypeEnum.enumValues, "Invalid musicSlotType").nullable().optional(),
+});
 
 export async function PATCH(
   request: Request,
@@ -13,15 +33,10 @@ export async function PATCH(
   const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
-  let body: Record<string, unknown>;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, sectionUpdateSchema);
+  if (bodyError) return bodyError;
 
   try {
-    // Verify the service belongs to this church
     const [service] = await db
       .select({ id: services.id })
       .from(services)
@@ -31,7 +46,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
-    // Verify the section belongs to this service
     const [existing] = await db
       .select({ id: serviceSections.id })
       .from(serviceSections)
@@ -41,69 +55,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Section not found" }, { status: 404 });
     }
 
-    // Build update object from allowed fields
+    // Only forward fields that were actually present so callers can clear vs.
+    // leave-unchanged for nullable columns.
     const updates: Record<string, unknown> = {};
-
-    if ("visible" in body) {
-      if (typeof body.visible !== "boolean") {
-        return NextResponse.json({ error: "visible must be a boolean" }, { status: 400 });
-      }
-      updates.visible = body.visible;
-    }
-
-    if ("textOverride" in body) {
-      if (body.textOverride !== null) {
-        if (
-          !Array.isArray(body.textOverride) ||
-          body.textOverride.length > 200 ||
-          !body.textOverride.every(
-            (item) =>
-              typeof item === "object" &&
-              item !== null &&
-              typeof (item as Record<string, unknown>).speaker === "string" &&
-              ((item as Record<string, unknown>).speaker as string).length <= 200 &&
-              typeof (item as Record<string, unknown>).text === "string" &&
-              ((item as Record<string, unknown>).text as string).length <= 10_000
-          )
-        ) {
-          return NextResponse.json(
-            { error: "textOverride must be null or an array (max 200) of { speaker: string ≤200, text: string ≤10000 }" },
-            { status: 400 }
-          );
-        }
-      }
-      updates.textOverride = body.textOverride;
-    }
-
-    if ("title" in body) {
-      if (typeof body.title !== "string" || !body.title || body.title.length > 500) {
-        return NextResponse.json({ error: "title must be a non-empty string of 500 characters or fewer" }, { status: 400 });
-      }
-      updates.title = body.title;
-    }
-
-    if ("placeholderValue" in body) {
-      if (body.placeholderValue !== null && (typeof body.placeholderValue !== "string" || body.placeholderValue.length > 10_000)) {
-        return NextResponse.json({ error: "placeholderValue must be null or a string of 10000 characters or fewer" }, { status: 400 });
-      }
-      updates.placeholderValue = body.placeholderValue;
-    }
-
-    if ("notes" in body) {
-      if (body.notes !== null && (typeof body.notes !== "string" || body.notes.length > 5000)) {
-        return NextResponse.json({ error: "notes must be null or a string of 5000 characters or fewer" }, { status: 400 });
-      }
-      updates.notes = body.notes;
-    }
-
-    if ("musicSlotType" in body) {
-      if (body.musicSlotType !== null) {
-        if (!musicSlotTypeEnum.enumValues.includes(body.musicSlotType as (typeof musicSlotTypeEnum.enumValues)[number])) {
-          return NextResponse.json({ error: "Invalid musicSlotType" }, { status: 400 });
-        }
-      }
-      updates.musicSlotType = body.musicSlotType;
-    }
+    if (data.visible !== undefined) updates.visible = data.visible;
+    if (data.textOverride !== undefined) updates.textOverride = data.textOverride;
+    if (data.title !== undefined) updates.title = data.title;
+    if (data.placeholderValue !== undefined) updates.placeholderValue = data.placeholderValue;
+    if (data.notes !== undefined) updates.notes = data.notes;
+    if (data.musicSlotType !== undefined) updates.musicSlotType = data.musicSlotType;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
@@ -131,7 +91,6 @@ export async function DELETE(
   if (error) return error;
 
   try {
-    // Verify the service belongs to this church
     const [service] = await db
       .select({ id: services.id })
       .from(services)
@@ -141,7 +100,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
-    // Verify the section belongs to this service
     const [existing] = await db
       .select({ id: serviceSections.id })
       .from(serviceSections)

@@ -2,24 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { logger } from "@/lib/logger";
-import { services, serviceTypeEnum } from "@/lib/db/schema";
+import { services } from "@/lib/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { ensureLiturgicalDay } from "@/lib/db/queries/liturgical-days";
-import { writeCell, validateCellValue, type CellValue } from "../_write-cell";
-import { COLUMN_ORDER, type GridColumn } from "@/lib/planning/columns";
-
-interface Change {
-  serviceId?: string;
-  ghost?: { date: string; serviceType: string; time?: string | null };
-  column: GridColumn;
-  value: CellValue;
-}
-
-interface Body { changes: Change[]; }
-
-const SERVICE_TYPE_VALUES = serviceTypeEnum.enumValues as readonly string[];
-const COLUMN_VALUES = COLUMN_ORDER as readonly string[];
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+import { writeCell } from "../_write-cell";
+import { parseJsonBody } from "@/lib/api/parse-body";
+import { cellBulkSchema } from "../schemas";
 
 export async function POST(
   req: NextRequest,
@@ -29,47 +17,21 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
-  let body: Body;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-  if (!Array.isArray(body.changes) || body.changes.length === 0) {
-    return NextResponse.json({ error: "changes required" }, { status: 400 });
-  }
-  if (body.changes.length > 1000) {
-    return NextResponse.json({ error: "too many changes (max 1000)" }, { status: 400 });
-  }
-  // Validate each change up front so we never throw inside the transaction
-  // for predictable bad input — callers get a 400, not a 500.
+  const { data: body, error: bodyError } = await parseJsonBody(req, cellBulkSchema);
+  if (bodyError) return bodyError;
+  // Zod can't express "either serviceId or ghost"; enforce inline so the
+  // error stays as a 400 (matching the per-row validation message style).
   for (let i = 0; i < body.changes.length; i++) {
     const c = body.changes[i];
     if (!c.serviceId && !c.ghost) {
       return NextResponse.json({ error: `changes[${i}] requires serviceId or ghost` }, { status: 400 });
     }
-    if (!COLUMN_VALUES.includes(c.column as string)) {
-      return NextResponse.json({ error: `changes[${i}].column is invalid` }, { status: 400 });
-    }
-    const valueError = validateCellValue(c.value);
-    if (valueError) {
-      return NextResponse.json({ error: `changes[${i}].${valueError}` }, { status: 400 });
-    }
-    if (c.ghost) {
-      if (!ISO_DATE.test(c.ghost.date)) {
-        return NextResponse.json({ error: `changes[${i}].ghost.date must be YYYY-MM-DD` }, { status: 400 });
-      }
-      if (!SERVICE_TYPE_VALUES.includes(c.ghost.serviceType)) {
-        return NextResponse.json({ error: `changes[${i}].ghost.serviceType is invalid` }, { status: 400 });
-      }
-    }
   }
 
   const resolvedIds: Record<string, { id: string; serviceType: string }> = {};
 
-  let result: { written: number; resolvedGhosts: number };
   try {
-    result = await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
     for (const change of body.changes) {
       let serviceId = change.serviceId;
       let serviceType: string;
@@ -86,7 +48,7 @@ export async function POST(
             .values({
               churchId,
               liturgicalDayId: day.id,
-              serviceType: change.ghost.serviceType as typeof services.$inferInsert.serviceType,
+              serviceType: change.ghost.serviceType,
               time: change.ghost.time ?? null,
             })
             .onConflictDoNothing({ target: [services.churchId, services.liturgicalDayId, services.serviceType] })
@@ -101,7 +63,7 @@ export async function POST(
               .where(and(
                 eq(services.churchId, churchId),
                 eq(services.liturgicalDayId, day.id),
-                eq(services.serviceType, change.ghost.serviceType as typeof services.$inferInsert.serviceType),
+                eq(services.serviceType, change.ghost.serviceType),
               ))
               .limit(1);
             if (!existing) throw new Error(`service for ghost ${change.ghost.date}:${change.ghost.serviceType} not found after conflict`);
@@ -137,10 +99,9 @@ export async function POST(
 
     return { written: body.changes.length, resolvedGhosts: Object.keys(resolvedIds).length };
     });
+    return NextResponse.json(result);
   } catch (err) {
     logger.error("Planning bulk write failed", err);
     return NextResponse.json({ error: "Failed to apply changes" }, { status: 500 });
   }
-
-  return NextResponse.json(result);
 }

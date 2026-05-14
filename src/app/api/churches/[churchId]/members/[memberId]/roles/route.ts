@@ -3,6 +3,7 @@ import { apiError, apiSuccess, ErrorCodes } from "@/lib/api-helpers";
 import { db } from "@/lib/db";
 import { churchMemberRoles, churchMemberships } from "@/lib/db/schema";
 import { memberRoleAssignmentSchema } from "@/lib/validation/schemas";
+import { parseJsonBody } from "@/lib/api/parse-body";
 import { and, eq } from "drizzle-orm";
 
 export async function POST(
@@ -13,17 +14,9 @@ export async function POST(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return apiError("Invalid JSON", 400, { code: ErrorCodes.INVALID_INPUT });
-  }
-  const parsed = memberRoleAssignmentSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiError("Invalid body", 400, { code: ErrorCodes.INVALID_INPUT, details: parsed.error.issues });
-  }
-  const { catalogRoleId, isPrimary } = parsed.data;
+  const { data, error: bodyError } = await parseJsonBody(request, memberRoleAssignmentSchema);
+  if (bodyError) return bodyError;
+  const { catalogRoleId, isPrimary } = data;
 
   const inserted = await db.transaction(async (tx) => {
     const membership = await tx

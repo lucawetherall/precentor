@@ -3,6 +3,7 @@ import { apiError, apiSuccess, ErrorCodes } from "@/lib/api-helpers";
 import { db } from "@/lib/db";
 import { churchServicePresets, presetRoleSlots, churchServicePatterns, services } from "@/lib/db/schema";
 import { presetUpdateSchema } from "@/lib/validation/schemas";
+import { parseJsonBody } from "@/lib/api/parse-body";
 import { and, eq, sql } from "drizzle-orm";
 
 export async function GET(
@@ -32,18 +33,12 @@ export async function PATCH(
   const { error } = await requireChurchRole(churchId, "ADMIN");
   if (error) return error;
 
-  let body: unknown;
-  try { body = await request.json(); } catch {
-    return apiError("Invalid JSON", 400, { code: ErrorCodes.INVALID_INPUT });
-  }
-  const parsed = presetUpdateSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiError("Invalid body", 400, { code: ErrorCodes.INVALID_INPUT, details: parsed.error.issues });
-  }
+  const { data, error: bodyError } = await parseJsonBody(request, presetUpdateSchema);
+  if (bodyError) return bodyError;
 
   const [updated] = await db
     .update(churchServicePresets)
-    .set({ ...parsed.data, updatedAt: new Date() })
+    .set({ ...data, updatedAt: new Date() })
     .where(and(eq(churchServicePresets.id, presetId), eq(churchServicePresets.churchId, churchId)))
     .returning();
   if (!updated) return apiError("Preset not found", 404, { code: ErrorCodes.NOT_FOUND });

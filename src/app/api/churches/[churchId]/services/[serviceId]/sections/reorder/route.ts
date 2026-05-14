@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { serviceSections, services } from "@/lib/db/schema";
 import { eq, and, inArray, count } from "drizzle-orm";
+import { parseJsonBody } from "@/lib/api/parse-body";
+
+const sectionReorderSchema = z.object({
+  sectionIds: z
+    .array(z.string("All sectionIds must be strings"))
+    .min(1, "sectionIds must be a non-empty array"),
+});
 
 export async function PUT(
   request: Request,
@@ -13,27 +21,11 @@ export async function PUT(
   const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
-  let body: Record<string, unknown>;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const { sectionIds } = body as { sectionIds?: unknown };
-
-  if (!Array.isArray(sectionIds) || sectionIds.length === 0) {
-    return NextResponse.json({ error: "sectionIds must be a non-empty array" }, { status: 400 });
-  }
-
-  if (!sectionIds.every((id) => typeof id === "string")) {
-    return NextResponse.json({ error: "All sectionIds must be strings" }, { status: 400 });
-  }
-
-  const typedSectionIds = sectionIds as string[];
+  const { data, error: bodyError } = await parseJsonBody(request, sectionReorderSchema);
+  if (bodyError) return bodyError;
+  const { sectionIds } = data;
 
   try {
-    // Verify the service belongs to this church
     const [service] = await db
       .select({ id: services.id })
       .from(services)
@@ -47,9 +39,9 @@ export async function PUT(
     const existing = await db
       .select({ id: serviceSections.id })
       .from(serviceSections)
-      .where(and(eq(serviceSections.serviceId, serviceId), inArray(serviceSections.id, typedSectionIds)));
+      .where(and(eq(serviceSections.serviceId, serviceId), inArray(serviceSections.id, sectionIds)));
 
-    if (existing.length !== typedSectionIds.length) {
+    if (existing.length !== sectionIds.length) {
       return NextResponse.json(
         { error: "One or more sectionIds do not belong to this service" },
         { status: 400 }
@@ -61,7 +53,7 @@ export async function PUT(
       .select({ total: count() })
       .from(serviceSections)
       .where(eq(serviceSections.serviceId, serviceId));
-    if ((totalResult?.total ?? 0) !== typedSectionIds.length) {
+    if ((totalResult?.total ?? 0) !== sectionIds.length) {
       return NextResponse.json(
         { error: "sectionIds must include all sections for this service" },
         { status: 400 }
@@ -70,11 +62,11 @@ export async function PUT(
 
     // Update positionOrder in a transaction
     await db.transaction(async (tx) => {
-      for (let i = 0; i < typedSectionIds.length; i++) {
+      for (let i = 0; i < sectionIds.length; i++) {
         await tx
           .update(serviceSections)
           .set({ positionOrder: i + 1 })
-          .where(and(eq(serviceSections.id, typedSectionIds[i]), eq(serviceSections.serviceId, serviceId)));
+          .where(and(eq(serviceSections.id, sectionIds[i]), eq(serviceSections.serviceId, serviceId)));
       }
     });
 
