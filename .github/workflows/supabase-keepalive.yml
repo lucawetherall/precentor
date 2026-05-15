@@ -18,12 +18,20 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           set -euo pipefail
-          status=$(curl -sS -o /dev/null -w "%{http_code}" \
+          if [ -z "${SUPABASE_ANON_KEY}" ]; then
+            echo "::error::SUPABASE_ANON_KEY repo secret is not set. Add it under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          body=$(mktemp)
+          status=$(curl -sS -o "$body" -w "%{http_code}" \
             -H "apikey: $SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
             "$SUPABASE_URL/rest/v1/")
           echo "Supabase responded with HTTP $status"
           if [ "$status" != "200" ]; then
-            echo "::error::Unexpected status $status — project may be paused or misconfigured"
+            echo "Response body (first 500 bytes):"
+            head -c 500 "$body" || true
+            echo
+            echo "::error::Unexpected status $status — project may be paused, the anon key may be wrong/rotated, or the URL may be misconfigured"
             exit 1
           fi
