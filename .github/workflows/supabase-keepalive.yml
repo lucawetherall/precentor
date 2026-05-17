@@ -22,11 +22,33 @@ jobs:
             echo "::error::SUPABASE_ANON_KEY repo secret is not set. Add it under Settings → Secrets and variables → Actions."
             exit 1
           fi
+          # Strip whitespace (including newlines pasted with the JWT) so we never
+          # build a header with a stray \r or \n, which curl rejects with exit 43
+          # ("Failed sending HTTP request") before we get any HTTP status back.
+          key=$(printf '%s' "$SUPABASE_ANON_KEY" | tr -d '[:space:]')
+          if [ -z "$key" ]; then
+            echo "::error::SUPABASE_ANON_KEY contains only whitespace — re-paste the JWT into the repo secret."
+            exit 1
+          fi
+          if ! printf '%s' "$key" | grep -Eq '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'; then
+            echo "::error::SUPABASE_ANON_KEY does not look like a JWT (expected three dot-separated base64url parts). Check you pasted the anon key, not a URL or label."
+            exit 1
+          fi
           body=$(mktemp)
+          curl_err=$(mktemp)
+          set +e
           status=$(curl -sS -o "$body" -w "%{http_code}" \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-            "$SUPABASE_URL/rest/v1/")
+            -H "apikey: $key" \
+            -H "Authorization: Bearer $key" \
+            "$SUPABASE_URL/rest/v1/" 2>"$curl_err")
+          curl_exit=$?
+          set -e
+          if [ "$curl_exit" -ne 0 ]; then
+            echo "curl stderr:"
+            cat "$curl_err"
+            echo "::error::curl failed with exit $curl_exit before getting an HTTP response"
+            exit 1
+          fi
           echo "Supabase responded with HTTP $status"
           if [ "$status" != "200" ]; then
             echo "Response body (first 500 bytes):"
