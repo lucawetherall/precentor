@@ -65,71 +65,71 @@
   --radius-2xl: 10px;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(44, 36, 22, 0.06);
-  --shadow: 0 1px 3px rgba(44, 36, 22, 0.08);
-  --shadow-md: 0 2px 4px rgba(44, 36, 22, 0.08);
-  --shadow-lg: 0 4px 8px rgba(44, 36, 22, 0.08);
+  --shadow-sm: 0 1px 2px rgba(42, 23, 8, 0.05);
+  --shadow: 0 1px 3px rgba(42, 23, 8, 0.07);
+  --shadow-md: 0 2px 4px rgba(42, 23, 8, 0.07);
+  --shadow-lg: 0 4px 10px rgba(42, 23, 8, 0.08);
 }
 
 :root {
-  /* Background & foreground */
-  --background: #FAF6F1;
-  --foreground: #2C2416;
+  /* Background & foreground — parchment lifted slightly closer to white */
+  --background: #FBF8F2;
+  --foreground: #2A1708;
 
   /* Card */
   --card: #FFFFFF;
-  --card-foreground: #2C2416;
+  --card-foreground: #2A1708;
 
   /* Popover */
   --popover: #FFFFFF;
-  --popover-foreground: #2C2416;
+  --popover-foreground: #2A1708;
 
-  /* Primary (saddle brown) */
-  --primary: #8B4513;
-  --primary-hover: #6B4423;
-  --primary-foreground: #FAF6F1;
+  /* Primary (cassock-red — burgundy, the ecclesiastical accent) */
+  --primary: #7E1818;
+  --primary-hover: #5C1212;
+  --primary-foreground: #FBF8F2;
 
   /* Secondary (muted olive green) */
   --secondary: #4A6741;
-  --secondary-foreground: #FAF6F1;
+  --secondary-foreground: #FBF8F2;
 
   /* Muted */
-  --muted: #F5F0E8;
-  --muted-foreground: #4F4332;
+  --muted: #F4EFE5;
+  --muted-foreground: #5F544A;
 
   /* Accent */
-  --accent: #F5F0E8;
-  --accent-foreground: #2C2416;
+  --accent: #F4EFE5;
+  --accent-foreground: #2A1708;
 
   /* Destructive */
   --destructive: #8B2500;
-  --destructive-foreground: #FAF6F1;
+  --destructive-foreground: #FBF8F2;
 
   /* Success (available / confirmed) */
   --success: #4A6741;
-  --success-foreground: #FAF6F1;
+  --success-foreground: #FBF8F2;
 
   /* Warning (tentative) */
   --warning: #D4AF37;
-  --warning-foreground: #2C2416;
+  --warning-foreground: #2A1708;
 
-  /* Borders & input */
-  --border: #D4C5B2;
-  --input: #D4C5B2;
-  --ring: #8B4513;
+  /* Borders & input — limestone */
+  --border: #C8BFA9;
+  --input: #C8BFA9;
+  --ring: #7E1818;
 
   /* Sidebar */
-  --sidebar: #F5F0E8;
-  --sidebar-foreground: #2C2416;
-  --sidebar-primary: #8B4513;
-  --sidebar-primary-foreground: #FAF6F1;
-  --sidebar-accent: #EDE6DA;
-  --sidebar-accent-foreground: #2C2416;
-  --sidebar-border: #D4C5B2;
-  --sidebar-ring: #8B4513;
+  --sidebar: #F4EFE5;
+  --sidebar-foreground: #2A1708;
+  --sidebar-primary: #7E1818;
+  --sidebar-primary-foreground: #FBF8F2;
+  --sidebar-accent: #EDE6D6;
+  --sidebar-accent-foreground: #2A1708;
+  --sidebar-border: #C8BFA9;
+  --sidebar-ring: #7E1818;
 
   /* Chart colors */
-  --chart-1: #8B4513;
+  --chart-1: #7E1818;
   --chart-2: #4A6741;
   --chart-3: #5B2C6F;
   --chart-4: #D4AF37;
@@ -159,8 +159,8 @@
   }
 
   ::selection {
-    background-color: rgba(139, 69, 19, 0.15);
-    color: #2C2416;
+    background-color: rgba(126, 24, 24, 0.15);
+    color: #2A1708;
   }
 
   h1,

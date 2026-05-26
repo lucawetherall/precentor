@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { logger } from "@/lib/logger";
 import { RotaGridV2 } from "./rota-grid";
+import { PageHeader } from "@/components/page-header";
 
 interface Props {
   params: Promise<{ churchId: string }>;
@@ -101,7 +102,11 @@ export default async function RotaPage({ params }: Props) {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
-      <h1 className="text-3xl font-heading font-semibold mb-6">Choir Rota</h1>
+      <PageHeader
+        eyebrow="Choir"
+        title="Choir Rota"
+        subtitle="Plan singers across the coming Sundays"
+      />
       <RotaGridV2
         churchId={churchId}
         services={upcomingServices.map((s) => ({

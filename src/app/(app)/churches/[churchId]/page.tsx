@@ -14,6 +14,7 @@ import {
 import { DomThisSunday, NeedsAttention } from "./overview-dom";
 import { MemberThisSunday, MyAvailabilityList } from "./overview-member";
 import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { Calendar } from "lucide-react";
 
 interface Props {
@@ -76,10 +77,11 @@ export default async function ChurchOverviewPage({ params }: Props) {
 
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
-        <p className="small-caps text-xs text-muted-foreground mb-1">
-          {format(parseISO(thisSunday.date), "d MMM yyyy")} · {formatLiturgicalDayName(thisSunday.cwName, thisSunday.date)}
-        </p>
-        <h1 className="font-heading text-3xl font-semibold mb-6">This Sunday</h1>
+        <PageHeader
+          eyebrow={`${format(parseISO(thisSunday.date), "d MMMM yyyy")} · ${formatLiturgicalDayName(thisSunday.cwName, thisSunday.date)}`}
+          title="This Sunday"
+          subtitle="Your services, music, and availability"
+        />
         <MemberThisSunday
           churchId={churchId}
           services={thisSunday.services.map((s) => ({
@@ -115,10 +117,11 @@ export default async function ChurchOverviewPage({ params }: Props) {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
-      <h1 className="font-heading text-2xl font-semibold mb-1">This Sunday</h1>
-      <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider mb-6">
-        {format(parseISO(thisSunday.date), "d MMM yyyy")} · {formatLiturgicalDayName(thisSunday.cwName, thisSunday.date)}
-      </p>
+      <PageHeader
+        eyebrow={`${format(parseISO(thisSunday.date), "d MMMM yyyy")} · ${formatLiturgicalDayName(thisSunday.cwName, thisSunday.date)}`}
+        title="This Sunday"
+        subtitle="An overview of the coming Sunday's services and rota"
+      />
       <DomThisSunday
         churchId={churchId}
         day={thisSunday}
