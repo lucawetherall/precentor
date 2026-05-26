@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { ServicesList } from './services-list'
 import { ServicesCalendar } from './services-calendar'
+import { PageHeader } from '@/components/page-header'
 import type { LiturgicalDayWithService } from '@/types/service-views'
 import type { MemberRole } from '@/types'
 
@@ -54,28 +55,32 @@ export function ServicesViewWrapper({
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-heading font-semibold">Upcoming Services</h1>
-        {isDesktop && (
-          <div className="flex border border-border overflow-hidden rounded-sm">
-            {VALID_VIEWS.map((v, i) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={cn(
-                  'px-4 py-2 text-sm capitalize transition-colors',
-                  i > 0 && 'border-l border-border',
-                  view === v
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted'
-                )}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Calendar"
+        title="Upcoming Services"
+        subtitle="The services and music coming up in your church"
+        actions={
+          isDesktop ? (
+            <div className="flex border border-border overflow-hidden rounded-sm">
+              {VALID_VIEWS.map((v, i) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={cn(
+                    'px-4 py-2 text-sm capitalize transition-colors',
+                    i > 0 && 'border-l border-border',
+                    view === v
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted'
+                  )}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          ) : undefined
+        }
+      />
 
       {view === 'list' && <ServicesList churchId={churchId} days={liturgicalDays} />}
       {view === 'calendar' && (

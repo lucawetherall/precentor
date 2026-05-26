@@ -43,6 +43,7 @@ export default function Home() {
       <section className="flex flex-col items-center justify-center px-4 sm:px-8 py-20 sm:py-28 lg:py-36 text-center relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/30" />
         <div className="max-w-2xl space-y-6 relative z-10">
+          <Ornament variant="fleur-de-lis" className="my-0 mb-2 text-primary/80" />
           <div className="inline-flex items-center gap-2 px-3 py-1 small-caps text-xs text-primary border border-primary/30 bg-primary/5 mb-2 rounded-full">
             <Sparkles className="h-3 w-3" strokeWidth={1.5} aria-hidden="true" />
             AI-powered church music planning
@@ -248,7 +249,7 @@ export default function Home() {
       {/* CTA */}
       <section className="px-4 sm:px-8 py-12 sm:py-16 bg-muted/50">
         <div className="max-w-2xl mx-auto text-center">
-          <Ornament variant="fleuron" className="my-0 mb-6" />
+          <Ornament variant="cross-fleury" className="my-0 mb-6" />
           <h2 className="text-2xl font-heading font-semibold mb-3">
             Ready to simplify your music planning?
           </h2>

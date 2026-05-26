@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Plus, Church } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge, type StatusKind } from "@/components/status-badge";
 
@@ -36,16 +37,20 @@ export default async function ChurchesPage() {
 
   return (
     <main id="main-content" className="p-4 sm:p-6 lg:p-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-heading font-semibold">Your Churches</h1>
-        <Link
-          href="/churches/new"
-          className={buttonVariants({ variant: "default", size: "default" })}
-        >
-          <Plus className="h-4 w-4" strokeWidth={1.5} />
-          Add Church
-        </Link>
-      </div>
+      <PageHeader
+        eyebrow="Parishes"
+        title="Your Churches"
+        subtitle="The parishes you sing for or look after"
+        actions={
+          <Link
+            href="/churches/new"
+            className={buttonVariants({ variant: "default", size: "default" })}
+          >
+            <Plus className="h-4 w-4" strokeWidth={1.5} />
+            Add Church
+          </Link>
+        }
+      />
 
       {userChurches.length === 0 ? (
         <EmptyState
@@ -67,14 +72,17 @@ export default async function ChurchesPage() {
             <Link
               key={church.id}
               href={`/churches/${church.id}/services`}
-              className="block rounded-md border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
+              className="block rounded-md border border-border border-t-2 border-t-primary/70 bg-card p-5 shadow-sm transition-all hover:border-primary hover:border-t-primary hover:shadow-md"
             >
               <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 className="text-lg font-heading font-semibold truncate">{church.name}</h2>
-                  {church.diocese && (
-                    <p className="text-sm text-muted-foreground truncate">{church.diocese}</p>
-                  )}
+                <div className="min-w-0 flex items-center gap-3">
+                  <Church className="h-5 w-5 text-primary flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-heading font-semibold truncate leading-tight">{church.name}</h2>
+                    {church.diocese && (
+                      <p className="text-sm text-muted-foreground italic truncate">{church.diocese}</p>
+                    )}
+                  </div>
                 </div>
                 <StatusBadge status={church.role.toLowerCase() as StatusKind} />
               </div>

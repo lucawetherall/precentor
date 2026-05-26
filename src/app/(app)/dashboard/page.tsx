@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Church, Calendar, Users, Music, ArrowRight } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { NavCard } from "@/components/nav-card";
+import { PageHeader } from "@/components/page-header";
+import { Ornament } from "@/components/ui/ornament";
 import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -111,12 +113,11 @@ export default async function DashboardPage() {
 
   return (
     <main id="main-content" className="p-4 sm:p-6 lg:p-8 max-w-4xl">
-      <h1 className="text-3xl font-heading font-semibold mb-1">
-        Welcome, {userName}
-      </h1>
-      <p className="text-muted-foreground mb-8">
-        Here&apos;s what&apos;s coming up across your churches.
-      </p>
+      <PageHeader
+        eyebrow={format(new Date(), "EEEE, d MMMM yyyy")}
+        title={`Welcome, ${userName}`}
+        subtitle="What is coming up across your churches"
+      />
 
       {/* Quick Actions */}
       {userChurches[0] && (
@@ -146,8 +147,9 @@ export default async function DashboardPage() {
       )}
 
       {/* Upcoming Services */}
-      <div className="mb-8">
-        <h2 className="text-xl font-heading font-semibold mb-4">Upcoming Services</h2>
+      <div className="mb-10">
+        <h2 className="text-xl font-heading font-semibold mb-1">Upcoming Services</h2>
+        <Ornament variant="rule" className="my-0 mb-4 text-primary/40" />
         {upcomingServices.length === 0 ? (
           <EmptyState
             icon={Calendar}
@@ -172,7 +174,7 @@ export default async function DashboardPage() {
                 <Link
                   key={s.serviceId}
                   href={`/churches/${s.churchId}/services/${s.date}`}
-                  className="flex items-center gap-4 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
+                  className="flex items-center gap-4 rounded-md border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary"
                 >
                   <span
                     role="img"
@@ -201,7 +203,7 @@ export default async function DashboardPage() {
 
       {/* Churches */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-1">
           <h2 className="text-xl font-heading font-semibold">Your Churches</h2>
           <Link
             href="/churches"
@@ -210,17 +212,18 @@ export default async function DashboardPage() {
             Manage
           </Link>
         </div>
+        <Ornament variant="rule" className="my-0 mb-4 text-primary/40" />
         <div className="grid gap-3 sm:grid-cols-2">
           {userChurches.map((uc) => (
             <Link
               key={uc.churchId}
               href={`/churches/${uc.churchId}`}
-              className="flex items-center gap-3 border border-border bg-card p-4 shadow-sm hover:border-primary transition-colors"
+              className="flex items-center gap-3 rounded-md border border-border border-t-2 border-t-primary/70 bg-card p-4 shadow-sm transition-all hover:border-primary hover:border-t-primary hover:shadow-md"
             >
-              <Church className="h-6 w-6 text-muted-foreground flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
+              <Church className="h-6 w-6 text-primary flex-shrink-0" strokeWidth={1.5} aria-hidden="true" />
               <div className="min-w-0">
                 <p className="font-heading font-semibold truncate">{uc.churchName}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="small-caps text-xs text-muted-foreground">
                   {uc.role === "ADMIN" ? "Admin" : uc.role === "EDITOR" ? "Editor" : "Member"}
                 </p>
               </div>

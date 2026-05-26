@@ -12,6 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Home, Calendar, Users, Music, FileText, Settings, LayoutGrid } from "lucide-react";
+import { Ornament } from "@/components/ui/ornament";
 
 const ICON_STROKE = 1.5;
 const SIDEBAR_WIDTH = "w-60";
@@ -71,14 +72,20 @@ function NavGroups({
                   onClick={onNavigate}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-2 rounded-sm px-2 py-2.5 md:py-1.5 text-sm transition-colors min-h-[44px] md:min-h-0",
+                    "group relative flex items-center gap-2 rounded-sm px-2 py-2.5 md:py-1.5 text-sm transition-colors min-h-[44px] md:min-h-0",
                     isActive
-                      ? "border-l-2 border-primary bg-primary/10 pl-[calc(0.5rem-2px)] text-primary font-medium"
+                      ? "bg-primary/[0.07] text-primary font-medium"
                       : isMuted
                       ? "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
                       : "hover:bg-sidebar-accent text-foreground"
                   )}
                 >
+                  {isActive && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 w-1.5 rotate-45 bg-primary"
+                    />
+                  )}
                   <Icon className="h-4 w-4" strokeWidth={ICON_STROKE} />
                   {item.label}
                 </Link>
@@ -112,10 +119,16 @@ export function ChurchSidebar({
 
   const sidebarContent = (
     <>
-      <h2 className="font-heading text-lg font-semibold mb-1 leading-tight text-balance" title={churchName}>
-        {churchName}
-      </h2>
-      <p className="text-xs text-muted-foreground mb-6">{roleLabel}</p>
+      <div className="mb-5 pb-4 border-b border-border/70">
+        <Ornament
+          variant="fleur-de-lis"
+          className="my-0 mb-2 justify-start text-primary/75 [&_span]:h-6 [&_span]:w-6"
+        />
+        <h2 className="font-heading text-lg font-semibold leading-tight text-balance" title={churchName}>
+          {churchName}
+        </h2>
+        <p className="small-caps text-xs text-muted-foreground mt-0.5">{roleLabel}</p>
+      </div>
 
       <NavGroups
         navGroups={navGroups}

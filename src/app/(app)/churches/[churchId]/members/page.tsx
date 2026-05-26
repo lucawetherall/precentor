@@ -6,6 +6,7 @@ import { InviteMemberForm } from "./invite-form";
 import { MembersTable } from "./members-table";
 import { hasMinRole, coerceMemberRole, requireChurchRole } from "@/lib/auth/permissions";
 import { logger } from "@/lib/logger";
+import { PageHeader } from "@/components/page-header";
 import type { MemberRole } from "@/types";
 
 interface Props {
@@ -79,7 +80,11 @@ export default async function MembersPage({ params }: Props) {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
-      <h1 className="text-3xl font-heading font-semibold mb-6">Members</h1>
+      <PageHeader
+        eyebrow="Parish"
+        title="Members"
+        subtitle="Singers, organists, clergy, and others in your community"
+      />
 
       {isAdmin && <InviteMemberForm churchId={churchId} />}
 

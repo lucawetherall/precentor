@@ -6,6 +6,7 @@ import { LITURGICAL_COLOURS, MUSIC_SLOT_LABELS, SERVICE_TYPE_LABELS } from "@/ty
 import type { LiturgicalColour, MusicSlotType, ServiceType } from "@/types";
 import { AvailabilityWidget } from "@/components/availability-widget";
 import { formatLiturgicalDayName } from "@/lib/liturgical-display";
+import { Ornament } from "@/components/ui/ornament";
 
 interface ServiceWithMusic {
   serviceId: string;
@@ -34,10 +35,11 @@ export function MemberThisSunday({
   return (
     <div className="mb-8 space-y-2">
       {services.map((s) => (
-        <div key={s.serviceId} className="border border-border bg-card p-4 shadow-sm">
+        <div key={s.serviceId} className="rounded-md border border-border border-t-2 border-t-primary bg-card p-4 shadow-sm">
           <div className="flex justify-between items-center mb-3">
             <div>
-              <span className="font-heading text-base font-semibold">
+              <span className="font-heading text-base font-semibold inline-flex items-center gap-2">
+                <span aria-hidden="true" className="h-1.5 w-1.5 rotate-45 bg-primary inline-block" />
                 {SERVICE_TYPE_LABELS[s.serviceType as ServiceType] || s.serviceType}
               </span>
               {s.time && (
@@ -82,7 +84,7 @@ export function MemberThisSunday({
       ))}
 
       {services.length === 0 && (
-        <div className="border border-border bg-card p-6 text-center">
+        <div className="rounded-md border border-border bg-card p-6 text-center">
           <p className="text-sm text-muted-foreground">No services planned for this Sunday yet.</p>
         </div>
       )}
@@ -104,8 +106,9 @@ export function MyAvailabilityList({
 
   return (
     <div>
-      <h2 className="font-heading text-lg font-semibold mb-3">My availability</h2>
-      <div className="border border-border bg-card divide-y divide-border">
+      <h2 className="font-heading text-lg font-semibold mb-1">My availability</h2>
+      <Ornament variant="rule" className="my-0 mb-3 text-primary/40" />
+      <div className="rounded-md border border-border bg-card divide-y divide-border">
         {remainingDays.map((day) => (
           <div key={day.id} className="flex items-center gap-3 px-4 py-3">
             <span

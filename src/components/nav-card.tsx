@@ -31,7 +31,7 @@ export function NavCard({
     <Link
       href={href}
       className={cn(
-        "group flex items-center gap-3 rounded-md border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary focus-visible:border-primary",
+        "group relative flex items-center gap-3 rounded-md border border-border border-t-2 border-t-primary/70 bg-card p-4 shadow-sm transition-all hover:border-primary hover:border-t-primary hover:shadow-md focus-visible:border-primary focus-visible:border-t-primary",
         className,
       )}
     >

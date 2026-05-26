@@ -11,6 +11,7 @@ import { and, eq } from "drizzle-orm";
 import { hasMinRole } from "@/lib/auth/permissions";
 import type { MemberRole } from "@/types";
 import { MusicListFormClient } from "./music-list-form-client";
+import { PageHeader } from "@/components/page-header";
 
 interface Props {
   params: Promise<{ churchId: string }>;
@@ -67,12 +68,11 @@ export default async function MusicListPage({ params }: Props) {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
-      <h1 className="text-3xl font-heading font-semibold mb-6">Music List</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        Generate a printable music list announcing choral and organ music for a
-        date range. The PDF includes every service with music planned in the
-        period you select.
-      </p>
+      <PageHeader
+        eyebrow="Choir & Organ"
+        title="Music List"
+        subtitle="A printable announcement of choral and organ music for a date range — the PDF includes every service with music planned in the period you select."
+      />
 
       <MusicListFormClient churchId={churchId} churchName={churchName} />
     </div>

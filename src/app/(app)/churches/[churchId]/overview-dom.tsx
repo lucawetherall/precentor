@@ -4,6 +4,7 @@ import { AlertTriangle } from "lucide-react";
 import { LITURGICAL_COLOURS, SERVICE_TYPE_LABELS } from "@/types";
 import type { LiturgicalColour, ServiceType } from "@/types";
 import { formatLiturgicalDayName } from "@/lib/liturgical-display";
+import { Ornament } from "@/components/ui/ornament";
 
 const VOICE_PARTS = ["SOPRANO", "ALTO", "TENOR", "BASS"] as const;
 
@@ -50,10 +51,11 @@ export function DomThisSunday({
             <Link
               key={s.serviceId}
               href={`/churches/${churchId}/services/${day.date}`}
-              className="flex-1 h-full rounded-sm border border-l-4 border-l-primary border-border bg-card p-4 shadow-sm hover:border-primary hover:border-l-primary transition-colors"
+              className="flex-1 h-full rounded-md border border-border border-t-2 border-t-primary bg-card p-4 shadow-sm transition-all hover:border-primary hover:shadow-md"
             >
               <div className="flex justify-between items-center mb-2">
-                <span className="font-heading text-base font-semibold">
+                <span className="font-heading text-base font-semibold inline-flex items-center gap-2">
+                  <span aria-hidden="true" className="h-1.5 w-1.5 rotate-45 bg-primary inline-block" />
                   {SERVICE_TYPE_LABELS[s.serviceType as ServiceType] || s.serviceType}
                 </span>
                 {s.time && (
@@ -79,7 +81,7 @@ export function DomThisSunday({
       </div>
 
       {services.length === 0 && (
-        <div className="border border-border bg-card p-6 text-center">
+        <div className="rounded-md border border-border bg-card p-6 text-center">
           <p className="text-sm text-muted-foreground">
             No services created for this Sunday.{" "}
             <Link
@@ -106,8 +108,9 @@ export function NeedsAttention({
 
   return (
     <div>
-      <h2 className="font-heading text-lg font-semibold mb-3">Needs attention</h2>
-      <div className="border border-border bg-card divide-y divide-border">
+      <h2 className="font-heading text-lg font-semibold mb-1">Needs attention</h2>
+      <Ornament variant="rule" className="my-0 mb-3 text-primary/40" />
+      <div className="rounded-md border border-border bg-card divide-y divide-border">
         {items.map((item) => (
           <Link
             key={item.id}
