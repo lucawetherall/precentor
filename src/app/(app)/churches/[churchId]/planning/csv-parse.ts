@@ -1,5 +1,6 @@
 import Papa from "papaparse";
 import { resolveServiceType } from "./cell-parsers";
+import { isRealCalendarDate } from "@/lib/planning/dates";
 
 export interface CsvParsedRow {
   status: "valid" | "invalid";
@@ -32,7 +33,9 @@ export function parseCsvToRows(csv: string): CsvParseResult {
   const rows: CsvParsedRow[] = parsed.data.map((r) => {
     const date = (r.date ?? "").trim();
     const serviceTypeRaw = (r.service_type ?? "").trim();
-    if (!DATE_RE.test(date)) return { status: "invalid", error: "bad date", raw: r };
+    if (!DATE_RE.test(date) || !isRealCalendarDate(date)) {
+      return { status: "invalid", error: "bad date", raw: r };
+    }
     const serviceType = resolveServiceType(serviceTypeRaw);
     if (!serviceType) return { status: "invalid", error: `unknown service_type "${serviceTypeRaw}"`, raw: r };
     return {

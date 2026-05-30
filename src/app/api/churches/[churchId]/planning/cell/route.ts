@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireChurchRole } from "@/lib/auth/permissions";
+import { logger } from "@/lib/logger";
 import { services } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { ensureLiturgicalDay } from "@/lib/db/queries/liturgical-days";
@@ -22,7 +23,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Either serviceId or ghost is required" }, { status: 400 });
   }
 
-  const result = await db.transaction(async (tx) => {
+  try {
+    const result = await db.transaction(async (tx) => {
     let serviceId = body.serviceId;
     let serviceType: string;
 
@@ -80,9 +82,13 @@ export async function PATCH(
       .returning({ id: services.id, updatedAt: services.updatedAt });
 
     return { status: 200 as const, serviceId: updated.id, updatedAt: updated.updatedAt };
-  });
+    });
 
-  if (result.status === 404) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (result.status === 409) return NextResponse.json({ error: "stale", conflict: true }, { status: 409 });
-  return NextResponse.json({ serviceId: result.serviceId, updatedAt: result.updatedAt });
+    if (result.status === 404) return NextResponse.json({ error: "not found" }, { status: 404 });
+    if (result.status === 409) return NextResponse.json({ error: "stale", conflict: true }, { status: 409 });
+    return NextResponse.json({ serviceId: result.serviceId, updatedAt: result.updatedAt });
+  } catch (err) {
+    logger.error("Planning cell write failed", err);
+    return NextResponse.json({ error: "Failed to apply change" }, { status: 500 });
+  }
 }
