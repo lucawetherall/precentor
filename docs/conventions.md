@@ -55,7 +55,7 @@ For confirmations specifically, use `useConfirm()` from `@/components/ui/use-con
 | Rule | What it catches | Where defined |
 |------|-----------------|---------------|
 | `no-restricted-globals` | `alert`, `confirm`, `prompt` calls | `eslint.config.mjs` |
-| `precentor/no-redirect-in-try` | `redirect()` from `next/navigation` inside a `try` block (Next.js 16 swallows the throw) | `tools/eslint-rules/no-redirect-in-try.js` |
+| `precentor/no-redirect-in-try` | `redirect()` from `next/navigation` inside a `try` block (Next.js 16 swallows the throw) | `tools/eslint-rules/no-redirect-in-try.mjs` |
 | `react-hooks/refs` | Writing to `ref.current` during render | Next.js core-web-vitals preset |
 | `@typescript-eslint/no-unused-vars` | Unused imports/vars (with `^_` opt-out) | `eslint.config.mjs` |
 

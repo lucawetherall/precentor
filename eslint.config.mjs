@@ -1,7 +1,7 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
-import noRedirectInTry from "./tools/eslint-rules/no-redirect-in-try.js";
+import noRedirectInTry from "./tools/eslint-rules/no-redirect-in-try.mjs";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -37,7 +37,7 @@ const eslintConfig = defineConfig([
       ],
       // Catches the worst correctness bug from the audit: redirect() in a
       // try block is silently swallowed because Next.js redirects throw
-      // NEXT_REDIRECT. See tools/eslint-rules/no-redirect-in-try.js.
+      // NEXT_REDIRECT. See tools/eslint-rules/no-redirect-in-try.mjs.
       "precentor/no-redirect-in-try": "error",
     },
   },
