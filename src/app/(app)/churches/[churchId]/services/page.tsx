@@ -60,50 +60,47 @@ export default async function ServicesPage({ params }: Props) {
 
     const serviceIds = churchServices.map((s) => s.id)
 
-    const userAvailability =
+    // Availability, music slots, and rota entries all key off the same
+    // serviceIds and are independent of one another — fetch them concurrently
+    // instead of in three sequential round-trips.
+    const [userAvailability, slots, rotas] =
       serviceIds.length > 0
-        ? await db
-            .select()
-            .from(availability)
-            .where(
-              and(
-                eq(availability.userId, userId),
-                inArray(availability.serviceId, serviceIds)
-              )
-            )
-        : []
-
-    const slots =
-      serviceIds.length > 0
-        ? await db
-            .select({
-              id: musicSlots.id,
-              serviceId: musicSlots.serviceId,
-              slotType: musicSlots.slotType,
-              positionOrder: musicSlots.positionOrder,
-              freeText: musicSlots.freeText,
-              hymnId: musicSlots.hymnId,
-              anthemId: musicSlots.anthemId,
-              hymnFirstLine: hymns.firstLine,
-              anthemTitle: anthems.title,
-            })
-            .from(musicSlots)
-            .leftJoin(hymns, eq(musicSlots.hymnId, hymns.id))
-            .leftJoin(anthems, eq(musicSlots.anthemId, anthems.id))
-            .where(inArray(musicSlots.serviceId, serviceIds))
-            .orderBy(asc(musicSlots.positionOrder))
-        : []
-
-    const rotas =
-      serviceIds.length > 0
-        ? await db
-            .select({
-              serviceId: rotaEntries.serviceId,
-              confirmed: rotaEntries.confirmed,
-            })
-            .from(rotaEntries)
-            .where(inArray(rotaEntries.serviceId, serviceIds))
-        : []
+        ? await Promise.all([
+            db
+              .select()
+              .from(availability)
+              .where(
+                and(
+                  eq(availability.userId, userId),
+                  inArray(availability.serviceId, serviceIds)
+                )
+              ),
+            db
+              .select({
+                id: musicSlots.id,
+                serviceId: musicSlots.serviceId,
+                slotType: musicSlots.slotType,
+                positionOrder: musicSlots.positionOrder,
+                freeText: musicSlots.freeText,
+                hymnId: musicSlots.hymnId,
+                anthemId: musicSlots.anthemId,
+                hymnFirstLine: hymns.firstLine,
+                anthemTitle: anthems.title,
+              })
+              .from(musicSlots)
+              .leftJoin(hymns, eq(musicSlots.hymnId, hymns.id))
+              .leftJoin(anthems, eq(musicSlots.anthemId, anthems.id))
+              .where(inArray(musicSlots.serviceId, serviceIds))
+              .orderBy(asc(musicSlots.positionOrder)),
+            db
+              .select({
+                serviceId: rotaEntries.serviceId,
+                confirmed: rotaEntries.confirmed,
+              })
+              .from(rotaEntries)
+              .where(inArray(rotaEntries.serviceId, serviceIds)),
+          ])
+        : [[], [], []]
 
     // Build lookup maps for O(1) access
     const servicesByDayId = new Map<string, typeof churchServices>();

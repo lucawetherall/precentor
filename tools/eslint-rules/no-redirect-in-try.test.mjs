@@ -1,5 +1,5 @@
 import { RuleTester } from "eslint";
-import rule from "./no-redirect-in-try.js";
+import rule from "./no-redirect-in-try.mjs";
 
 const tester = new RuleTester({
   languageOptions: {

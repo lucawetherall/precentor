@@ -4,7 +4,7 @@ import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { serviceSections, services } from "@/lib/db/schema";
-import { eq, and, inArray, count } from "drizzle-orm";
+import { eq, and, inArray, count, sql } from "drizzle-orm";
 import { parseJsonBody } from "@/lib/api/parse-body";
 
 const sectionReorderSchema = z.object({
@@ -60,15 +60,21 @@ export async function PUT(
       );
     }
 
-    // Update positionOrder in a transaction
-    await db.transaction(async (tx) => {
-      for (let i = 0; i < sectionIds.length; i++) {
-        await tx
-          .update(serviceSections)
-          .set({ positionOrder: i + 1 })
-          .where(and(eq(serviceSections.id, sectionIds[i]), eq(serviceSections.serviceId, serviceId)));
-      }
-    });
+    // Apply the new ordering in a single statement: a CASE expression maps
+    // each id to its index, so one UPDATE replaces N sequential round-trips
+    // (and the transaction they needed to stay atomic).
+    const cases = sectionIds.map(
+      (id, i) => sql`when ${serviceSections.id} = ${id} then ${i + 1}`
+    );
+    await db
+      .update(serviceSections)
+      .set({ positionOrder: sql`case ${sql.join(cases, sql` `)} end` })
+      .where(
+        and(
+          eq(serviceSections.serviceId, serviceId),
+          inArray(serviceSections.id, sectionIds)
+        )
+      );
 
     return NextResponse.json({ success: true });
   } catch (err) {

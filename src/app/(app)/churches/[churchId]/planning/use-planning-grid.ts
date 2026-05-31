@@ -22,7 +22,8 @@ type Action =
   | { type: "COMMIT_CELL"; rowKey: string; column: GridColumn; value: CellDisplay; previous: CellDisplay }
   | { type: "UNDO" }
   | { type: "SAVE_STATUS"; status: SaveStatus }
-  | { type: "REPLACE_ROW_ID"; ghostId: string; serviceId: string; updatedAt: string };
+  | { type: "REPLACE_ROW_ID"; ghostId: string; serviceId: string; updatedAt: string }
+  | { type: "SET_ROW_UPDATED_AT"; serviceId: string; updatedAt: string };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -54,6 +55,17 @@ function reducer(state: State, action: Action): State {
       const nextRows = state.rows.map((r) =>
         r.kind === "ghost" && r.ghostId === action.ghostId
           ? { ...r, kind: "real" as const, serviceId: action.serviceId, ghostId: undefined, updatedAt: action.updatedAt }
+          : r
+      );
+      return { ...state, rows: nextRows };
+    }
+    // Keep the optimistic-concurrency token current after a successful save, so
+    // a second edit to the same row sends the fresh expectedUpdatedAt instead
+    // of a stale one (which the server would reject as a 409 conflict).
+    case "SET_ROW_UPDATED_AT": {
+      const nextRows = state.rows.map((r) =>
+        r.kind === "real" && r.serviceId === action.serviceId
+          ? { ...r, updatedAt: action.updatedAt }
           : r
       );
       return { ...state, rows: nextRows };

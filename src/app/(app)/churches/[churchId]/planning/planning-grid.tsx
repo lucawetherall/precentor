@@ -87,6 +87,8 @@ export function PlanningGrid({ churchId, from, to, initialData }: Props) {
         const data = await res.json() as { serviceId?: string; updatedAt?: string };
         if (row.kind === "ghost" && row.ghostId && data.serviceId && data.updatedAt) {
           dispatch({ type: "REPLACE_ROW_ID", ghostId: row.ghostId, serviceId: data.serviceId, updatedAt: data.updatedAt });
+        } else if (row.kind === "real" && row.serviceId && data.updatedAt) {
+          dispatch({ type: "SET_ROW_UPDATED_AT", serviceId: row.serviceId, updatedAt: data.updatedAt });
         }
         dispatch({ type: "SAVE_STATUS", status: "saved" });
         setTimeout(() => dispatch({ type: "SAVE_STATUS", status: "idle" }), 1500);

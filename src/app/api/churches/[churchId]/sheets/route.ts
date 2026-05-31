@@ -50,11 +50,15 @@ export async function POST(
     const layoutOverride: Partial<TemplateLayout> = { paperSize: pageSize };
 
     if (mode === "booklet") {
-      const sheets: BookletServiceSheetData[] = [];
-      for (const id of serviceIds) {
-        const data = await buildBookletData(id, churchId, layoutOverride);
-        if (data) sheets.push(data);
-      }
+      // Each buildBookletData call issues several independent reads against the
+      // shared connection pool, so fan them out in parallel rather than
+      // serializing per service (up to 20 per batch).
+      const built = await Promise.all(
+        serviceIds.map((id) => buildBookletData(id, churchId, layoutOverride))
+      );
+      const sheets = built.filter(
+        (sheet): sheet is BookletServiceSheetData => sheet !== null
+      );
 
       if (sheets.length === 0) {
         return NextResponse.json({ error: "No services found" }, { status: 404 });
@@ -84,12 +88,13 @@ export async function POST(
       });
     }
 
-    // Summary mode
-    const sheets: SummaryServiceSheetData[] = [];
-    for (const id of serviceIds) {
-      const data = await buildSummaryData(id, churchId, layoutOverride);
-      if (data) sheets.push(data);
-    }
+    // Summary mode — same parallel fan-out as booklet mode above.
+    const built = await Promise.all(
+      serviceIds.map((id) => buildSummaryData(id, churchId, layoutOverride))
+    );
+    const sheets = built.filter(
+      (sheet): sheet is SummaryServiceSheetData => sheet !== null
+    );
 
     if (sheets.length === 0) {
       return NextResponse.json({ error: "No services found" }, { status: 404 });

@@ -4,7 +4,7 @@ import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { serviceSections, musicSlotTypeEnum, services } from "@/lib/db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, inArray, sql } from "drizzle-orm";
 import { parseJsonBody } from "@/lib/api/parse-body";
 
 const sectionUpdateSchema = z.object({
@@ -123,11 +123,24 @@ export async function DELETE(
         .where(eq(serviceSections.serviceId, serviceId))
         .orderBy(asc(serviceSections.positionOrder));
 
-      for (let i = 0; i < remaining.length; i++) {
+      // Collapse the per-row renumber into one CASE update instead of N
+      // sequential round-trips inside the transaction.
+      if (remaining.length > 0) {
+        const cases = remaining.map(
+          (row, i) => sql`when ${serviceSections.id} = ${row.id} then ${i + 1}`
+        );
         await tx
           .update(serviceSections)
-          .set({ positionOrder: i + 1 })
-          .where(eq(serviceSections.id, remaining[i].id));
+          .set({ positionOrder: sql`case ${sql.join(cases, sql` `)} end` })
+          .where(
+            and(
+              eq(serviceSections.serviceId, serviceId),
+              inArray(
+                serviceSections.id,
+                remaining.map((row) => row.id)
+              )
+            )
+          );
       }
     });
 

@@ -1,12 +1,16 @@
 import { z } from "zod";
 import { serviceTypeEnum } from "@/lib/db/schema";
 import { COLUMN_ORDER } from "@/lib/planning/columns";
+import { isRealCalendarDate } from "@/lib/planning/dates";
 import { MAX_CELL_TEXT_LEN } from "./_write-cell";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const ghostSchema = z.object({
-  date: z.string().regex(ISO_DATE, "ghost.date must be YYYY-MM-DD"),
+  date: z
+    .string()
+    .regex(ISO_DATE, "ghost.date must be YYYY-MM-DD")
+    .refine(isRealCalendarDate, "ghost.date must be a real calendar date"),
   serviceType: z.enum(serviceTypeEnum.enumValues, "ghost.serviceType is invalid"),
   time: z.string().nullable().optional(),
 });
