@@ -36,11 +36,14 @@ jobs:
           fi
           body=$(mktemp)
           curl_err=$(mktemp)
+          # Query an upcoming liturgical day — a real DB read, not just the schema endpoint.
+          # This ensures the Supabase project registers genuine database activity.
           set +e
           status=$(curl -sS -o "$body" -w "%{http_code}" \
             -H "apikey: $key" \
             -H "Authorization: Bearer $key" \
-            "$SUPABASE_URL/rest/v1/" 2>"$curl_err")
+            -H "Accept: application/json" \
+            "$SUPABASE_URL/rest/v1/liturgical_days?select=id,date,cw_name&order=date.asc&limit=1&date=gte.$(date -u +%Y-%m-%d)" 2>"$curl_err")
           curl_exit=$?
           set -e
           if [ "$curl_exit" -ne 0 ]; then
@@ -50,10 +53,10 @@ jobs:
             exit 1
           fi
           echo "Supabase responded with HTTP $status"
+          echo "Next upcoming service:"
+          cat "$body"
+          echo
           if [ "$status" != "200" ]; then
-            echo "Response body (first 500 bytes):"
-            head -c 500 "$body" || true
-            echo
             echo "::error::Unexpected status $status — project may be paused, the anon key may be wrong/rotated, or the URL may be misconfigured"
             exit 1
           fi
