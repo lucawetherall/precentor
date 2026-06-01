@@ -24,6 +24,16 @@ describe("PATCH /presets/[presetId]/slots/[slotId]", () => {
     const res = await PATCH(new Request("http://x", { method: "PATCH", body: JSON.stringify({ minCount: 2 }), headers: { "content-type": "application/json" } }), { params: Promise.resolve({ churchId: "c1", presetId: "p1", slotId: "sl1" }) });
     expect(res.status).toBe(200);
   });
+
+  it("returns 404 (not a misleading 200) when the slot is in the church but under a different preset", async () => {
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    // Existence check passes (slot belongs to this church) ...
+    vi.mocked(db.select).mockReturnValue({ from: () => ({ innerJoin: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "sl1" }]) }) }) }) } as unknown as ReturnType<typeof db.select>);
+    // ... but the presetId-scoped UPDATE matches no rows.
+    vi.mocked(db.update).mockReturnValue({ set: () => ({ where: () => ({ returning: () => Promise.resolve([]) }) }) } as unknown as ReturnType<typeof db.update>);
+    const res = await PATCH(new Request("http://x", { method: "PATCH", body: JSON.stringify({ minCount: 2 }), headers: { "content-type": "application/json" } }), { params: Promise.resolve({ churchId: "c1", presetId: "p1", slotId: "sl1" }) });
+    expect(res.status).toBe(404);
+  });
 });
 
 describe("DELETE /presets/[presetId]/slots/[slotId]", () => {

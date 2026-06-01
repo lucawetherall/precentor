@@ -30,6 +30,10 @@ export async function PATCH(
     .set(data)
     .where(and(eq(presetRoleSlots.id, slotId), eq(presetRoleSlots.presetId, presetId)))
     .returning();
+  // The existence check above only scopes by slotId + church, so a valid slot
+  // reached via the wrong presetId would match zero rows here and leave
+  // `updated` undefined — return 404 rather than a misleading 200 + null body.
+  if (!updated) return apiError("Slot not found", 404, { code: ErrorCodes.NOT_FOUND });
   return apiSuccess(updated);
 }
 
