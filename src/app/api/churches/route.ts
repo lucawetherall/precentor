@@ -6,6 +6,10 @@ import { logger } from "@/lib/logger";
 import { churches, churchMemberships, users, liturgicalDays, services, serviceTypeEnum } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { parseJsonBody } from "@/lib/api/parse-body";
+import { createDefaultChurchSetup } from "@/lib/churches/default-setup";
+import { generateServicesForChurch } from "@/lib/services/auto-generate";
+import { getChurchYear } from "@/lib/lectionary/calendar";
+import { format } from "date-fns";
 
 function slugify(text: string): string {
   return text
@@ -103,10 +107,33 @@ export async function POST(request: Request) {
           const chunk = serviceValues.slice(i, i + CHUNK_SIZE);
           await tx.insert(services).values(chunk).onConflictDoNothing();
         }
+      } else {
+        // No explicit services supplied: seed the standard presets + a Sunday
+        // pattern so the church isn't empty. Services are generated from the
+        // pattern after this transaction commits (generate isn't tx-aware).
+        await createDefaultChurchSetup(tx, created.id);
       }
 
       return created;
     });
+
+    // Fan the default Sunday pattern out into actual services for the rest of
+    // the current church year. Best-effort: a failure here must not fail church
+    // creation — the admin can re-generate from Settings → Service Patterns.
+    if (!hasDefaults) {
+      try {
+        // Cover all seeded liturgical days from today through the next church
+        // year so the new church starts with a full set of upcoming services.
+        const { endYear } = getChurchYear(new Date());
+        await generateServicesForChurch(
+          church.id,
+          format(new Date(), "yyyy-MM-dd"),
+          `${endYear + 1}-12-31`,
+        );
+      } catch (genErr) {
+        logger.error("Failed to generate default services for new church", genErr);
+      }
+    }
 
     return NextResponse.json(church, { status: 201 });
   } catch (error) {

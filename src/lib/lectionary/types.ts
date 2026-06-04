@@ -1,9 +1,22 @@
 import type { ReadingPosition } from "./bible-books";
 
+/**
+ * In Ordinary Time the C of E Principal Service offers two psalm options —
+ * "Continuous" and "Related".
+ *
+ * IMPORTANT: in this app the track toggles ONLY the psalm (and its verse
+ * numbers). The OT reading is always the Continuous track's, and the Epistle
+ * and Gospel are shared. So this tag is carried ONLY by psalm readings; every
+ * other reading (OT, Epistle, Gospel, and all non-Ordinary days) leaves it
+ * undefined and is shown regardless of the chosen track.
+ */
+export type ReadingTrack = "CONTINUOUS" | "RELATED";
+
 export interface LectionaryReading {
   reference: string;
   position: ReadingPosition;
   bookName?: string;
+  track?: ReadingTrack;
 }
 
 export interface ServiceReadings {

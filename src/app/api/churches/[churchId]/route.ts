@@ -6,7 +6,7 @@ import { churches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { churchUpdateSchema } from "@/lib/validation/schemas";
 import { parseJsonBody } from "@/lib/api/parse-body";
-import { writeSheetMusicLink } from "@/lib/churches/settings";
+import { writeSheetMusicLink, writeLectionaryTrack } from "@/lib/churches/settings";
 
 export async function PATCH(
   request: Request,
@@ -26,15 +26,19 @@ export async function PATCH(
     if ("address" in fields) updates.address = fields.address || null;
     if ("ccliNumber" in fields) updates.ccliNumber = fields.ccliNumber || null;
 
-    // `sheetMusicLink` lives inside the shared `settings` JSON blob. Merge into
-    // the existing settings so we don't clobber unrelated keys.
-    if ("sheetMusicLink" in fields) {
+    // `sheetMusicLink` and `lectionaryTrack` live inside the shared `settings`
+    // JSON blob. Fetch once and apply each writer so we don't clobber unrelated
+    // keys (or each other).
+    if ("sheetMusicLink" in fields || "lectionaryTrack" in fields) {
       const [existing] = await db
         .select({ settings: churches.settings })
         .from(churches)
         .where(eq(churches.id, churchId))
         .limit(1);
-      updates.settings = writeSheetMusicLink(existing?.settings ?? {}, fields.sheetMusicLink ?? null);
+      let settings: Record<string, unknown> = existing?.settings ?? {};
+      if ("sheetMusicLink" in fields) settings = writeSheetMusicLink(settings, fields.sheetMusicLink ?? null);
+      if ("lectionaryTrack" in fields && fields.lectionaryTrack) settings = writeLectionaryTrack(settings, fields.lectionaryTrack);
+      updates.settings = settings;
     }
 
     const [updated] = await db

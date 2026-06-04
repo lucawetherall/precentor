@@ -2,6 +2,8 @@ import { computeGhostRows } from "./ghost-rows";
 import type { ExistingServiceRef } from "./ghost-rows";
 import type { ApiDay, ApiReading, ApiResponse, ApiService, ApiSlot } from "./api-types";
 import type { PlanningRow, ReadingsDisplay } from "./types";
+import { resolveLectionaryTrack, filterReadingsByTrack } from "@/lib/lectionary/track";
+import type { LectionaryTrack } from "@/lib/churches/settings";
 import {
   cellText,
   deriveAnthem,
@@ -20,14 +22,19 @@ function buildRealRow(
   day: ApiDay,
   slotsByService: Map<string, ApiSlot[]>,
   readingsByDay: Map<string, ApiReading[]>,
+  defaultTrack: LectionaryTrack,
 ): PlanningRow {
   const slots = slotsByService.get(svc.id) ?? [];
   const isEvensong = svc.serviceType === "CHORAL_EVENSONG";
   const dayReadings = readingsByDay.get(svc.liturgicalDayId) ?? [];
 
-  const readings: ReadingsDisplay[] = dayReadings
-    .filter((r) => r.lectionary === "PRINCIPAL")
-    .map((r) => ({ ref: r.reference, text: r.bookName ?? null }));
+  // Show only the active track's psalm (resolved per service). The OT reading,
+  // epistle and gospel are untagged and always shown.
+  const track = resolveLectionaryTrack(svc.lectionaryTrack, defaultTrack);
+  const readings: ReadingsDisplay[] = filterReadingsByTrack(
+    dayReadings.filter((r) => r.lectionary === "PRINCIPAL"),
+    track,
+  ).map((r) => ({ ref: r.reference, text: r.bookName ?? null }));
 
   return {
     kind: "real",
@@ -73,11 +80,12 @@ export function buildRowsFromApi(data: ApiResponse, from: string, to: string): P
     readingsByDay.set(reading.liturgicalDayId, existing);
   }
 
+  const defaultTrack: LectionaryTrack = data.lectionaryTrackDefault ?? "CONTINUOUS";
   const realRows: PlanningRow[] = [];
   for (const svc of data.services) {
     const day = daysById.get(svc.liturgicalDayId);
     if (!day) continue;
-    realRows.push(buildRealRow(svc, day, slotsByService, readingsByDay));
+    realRows.push(buildRealRow(svc, day, slotsByService, readingsByDay, defaultTrack));
   }
 
   const existingRefs: ExistingServiceRef[] = data.services

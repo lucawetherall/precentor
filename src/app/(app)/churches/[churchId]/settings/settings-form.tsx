@@ -13,6 +13,7 @@ interface Church {
   address: string | null;
   ccliNumber: string | null;
   sheetMusicLink: SheetMusicLink | null;
+  lectionaryTrack: "CONTINUOUS" | "RELATED";
 }
 
 type FieldErrors = Partial<
@@ -68,6 +69,8 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
       ccliNumber: formData.get("ccliNumber"),
     };
     if (sheetMusicLink !== undefined) payload.sheetMusicLink = sheetMusicLink;
+    const trackRaw = String(formData.get("lectionaryTrack") ?? "");
+    if (trackRaw === "CONTINUOUS" || trackRaw === "RELATED") payload.lectionaryTrack = trackRaw;
 
     const res = await fetch(`/api/churches/${church.id}`, {
       method: "PATCH",
@@ -233,6 +236,28 @@ export function ChurchSettingsForm({ church }: { church: Church }) {
             {removingLink ? "Removing..." : "Remove link"}
           </Button>
         )}
+      </fieldset>
+
+      <fieldset className="space-y-3 border-t pt-4">
+        <legend className="text-sm font-body font-semibold">Lectionary</legend>
+        <p id="lectionary-track-help" className="text-xs text-muted-foreground">
+          In Ordinary Time the Church of England offers two psalm options. Choose your
+          church&apos;s default — only the psalm changes; the readings are unaffected. You can
+          override this on an individual service.
+        </p>
+        <div className="space-y-1">
+          <label htmlFor="lectionaryTrack" className="text-sm font-body">Default psalm track</label>
+          <select
+            id="lectionaryTrack"
+            name="lectionaryTrack"
+            defaultValue={church.lectionaryTrack}
+            aria-describedby="lectionary-track-help"
+            className="w-full rounded-md px-3 py-2 text-sm border border-input bg-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="CONTINUOUS">Continuous</option>
+            <option value="RELATED">Related</option>
+          </select>
+        </div>
       </fieldset>
 
       {message && (

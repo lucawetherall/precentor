@@ -28,6 +28,8 @@ import type {
 import { DEFAULT_TEMPLATE_LAYOUT } from "@/types/service-sheet";
 import type { ServiceType, LiturgicalColour } from "@/types";
 import { MUSIC_SLOT_LABELS } from "@/types";
+import { resolveLectionaryTrack, filterReadingsByTrack } from "@/lib/lectionary/track";
+import { readLectionaryTrack } from "@/lib/churches/settings";
 import { CW_EUCHARIST_ORDER_ONE } from "@/data/liturgy/cw-eucharist-order-one";
 import { BCP_EVENSONG } from "@/data/liturgy/bcp-evensong";
 import { EUCHARISTIC_PRAYERS } from "@/data/liturgy/eucharistic-prayers";
@@ -263,11 +265,15 @@ async function fetchServiceData(
 
   const { service, day, church } = serviceResult[0];
 
-  // Fetch readings (with text for booklet mode)
-  const dayReadings = await db
+  // Fetch readings (with text for booklet mode), then collapse the Ordinary
+  // Time psalm to this service's track (per-service override → church default).
+  // Only the psalm is affected; OT/epistle/gospel are untagged and kept.
+  const allReadings = await db
     .select()
     .from(readings)
     .where(eq(readings.liturgicalDayId, day.id));
+  const track = resolveLectionaryTrack(service.lectionaryTrack, readLectionaryTrack(church.settings));
+  const dayReadings = filterReadingsByTrack(allReadings, track);
 
   // Fetch music slots with full joins
   const slotsRaw = await db

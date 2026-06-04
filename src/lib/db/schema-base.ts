@@ -15,6 +15,9 @@ export const lectionaryEnum = pgEnum("lectionary", ["PRINCIPAL", "SECOND", "THIR
 export const readingPositionEnum = pgEnum("reading_position", [
   "OLD_TESTAMENT", "PSALM", "NEW_TESTAMENT", "GOSPEL", "CANTICLE",
 ]);
+// Ordinary Time Principal Service psalm tracks — toggles the psalm only, not
+// the OT/epistle/gospel (see lectionary/types.ts).
+export const readingTrackEnum = pgEnum("reading_track", ["CONTINUOUS", "RELATED"]);
 export const serviceTypeEnum = pgEnum("service_type", [
   "SUNG_EUCHARIST", "CHORAL_EVENSONG", "SAID_EUCHARIST", "CHORAL_MATINS",
   "FAMILY_SERVICE", "COMPLINE", "CUSTOM",
@@ -110,6 +113,10 @@ export const readings = pgTable("readings", {
   liturgicalDayId: uuid("liturgical_day_id").notNull().references(() => liturgicalDays.id, { onDelete: "cascade" }),
   lectionary: lectionaryEnum("lectionary").notNull(),
   position: readingPositionEnum("position").notNull(),
+  // Set ONLY on Ordinary Time Principal psalms (CONTINUOUS/RELATED). null on
+  // every other reading — OT, epistle, gospel, and all non-Ordinary days —
+  // which show regardless of the chosen track. The active track is per service.
+  track: readingTrackEnum("track"),
   reference: text("reference").notNull(),
   bookName: text("book_name"),
   readingText: text("reading_text"), // Actual scripture text from Oremus Bible API
@@ -158,6 +165,9 @@ export const services = pgTable("services", {
   collectId: uuid("collect_id").references(() => collects.id),
   collectOverride: text("collect_override"),
   includeReadingText: boolean("include_reading_text").default(true).notNull(),
+  // Per-service Ordinary Time psalm-track override; null = use the church
+  // default (church.settings.lectionaryTrack), which itself defaults to CONTINUOUS.
+  lectionaryTrack: readingTrackEnum("lectionary_track"),
   sheetMode: text("sheet_mode").default("summary").notNull(),
   liturgicalOverrides: json("liturgical_overrides").default({}).$type<Record<string, string>>(),
   presetId: uuid("preset_id").references(() => churchServicePresets.id, { onDelete: "set null" }),

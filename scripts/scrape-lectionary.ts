@@ -19,6 +19,7 @@ import type {
   LectionaryData,
   LectionaryReading,
   LectionarySunday,
+  ReadingTrack,
   ServiceReadings,
 } from "../src/lib/lectionary/types";
 
@@ -83,15 +84,10 @@ function cleanRef(ref: string): string {
 }
 
 /**
- * Parse readings from an HTML cell.
- * The C of E page separates readings with <br> tags.
+ * Extract the <br>-separated lines of text from an HTML cell.
  */
-function parseReadingsFromCell(
-  cellHtml: string,
-  _$: cheerio.CheerioAPI,
-): LectionaryReading[] {
+function cellToLines(cellHtml: string): string[] {
   if (!cellHtml) return [];
-
   // Replace <br> with newlines for splitting
   const html = cellHtml.replace(/<br\s*\/?>/gi, "\n");
   const temp = cheerio.load(`<div>${html}</div>`);
@@ -99,14 +95,41 @@ function parseReadingsFromCell(
     .text()
     .replace(/\u00a0/g, " ")
     .trim();
-
   if (!text) return [];
+  return text.split("\n").map((l) => l.trim()).filter(Boolean);
+}
 
-  // Split on newlines
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-
-  const allRefs: string[] = [];
+/**
+ * The C of E page sometimes breaks a single reference across a <br>, e.g.
+ * "Romans 1.16,17;" / "3.22b-28[29-31]". A line that starts with a verse
+ * fragment (digit or "[") with no book name, following a line that ended
+ * mid-reference (trailing ";" or ","), is a continuation \u2014 rejoin them.
+ * ("or" alternatives are rejoined later in linesToReadings, after book-split.)
+ */
+function joinSplitReferences(lines: string[]): string[] {
+  const out: string[] = [];
   for (const line of lines) {
+    const prev = out[out.length - 1];
+    const isContinuation =
+      prev !== undefined &&
+      /^[0-9[]/.test(line) &&
+      !/[A-Za-z]{3,}/.test(line) &&
+      /[;,]\s*$/.test(prev);
+    if (isContinuation) {
+      out[out.length - 1] = `${prev} ${line}`.replace(/\s+/g, " ");
+    } else {
+      out.push(line);
+    }
+  }
+  return out;
+}
+
+/**
+ * Turn cell lines into classified readings.
+ */
+function linesToReadings(lines: string[]): LectionaryReading[] {
+  const allRefs: string[] = [];
+  for (const line of joinSplitReferences(lines)) {
     // Skip instructional/label text
     if (/^(?:Any of the following|A minimum of|The reading from|Readings\s+for|if it has not)/i.test(line)) continue;
 
@@ -125,7 +148,20 @@ function parseReadingsFromCell(
     allRefs.push(...parts);
   }
 
-  return allRefs
+  // splitByBookNames splits "Psalm 146.4-10 or Canticle: Magnificat" at the
+  // "Canticle" book boundary, leaving a dangling "… or". Re-merge a reference
+  // ending in " or" with the alternative that follows it.
+  const mergedRefs: string[] = [];
+  for (const ref of allRefs) {
+    const prev = mergedRefs[mergedRefs.length - 1];
+    if (prev !== undefined && /\bor\s*$/i.test(prev)) {
+      mergedRefs[mergedRefs.length - 1] = `${prev} ${ref}`.replace(/\s+/g, " ");
+    } else {
+      mergedRefs.push(ref);
+    }
+  }
+
+  return mergedRefs
     .map((ref) => cleanRef(ref))
     .filter((ref) => ref.length > 2)
     .filter((ref) => !/^(?:Evening|Morning)\s+Psalms?\s*$/i.test(ref))
@@ -133,6 +169,79 @@ function parseReadingsFromCell(
       reference: ref,
       position: classifyReading(ref),
     }));
+}
+
+/**
+ * Parse readings from an HTML cell.
+ * The C of E page separates readings with <br> tags.
+ */
+function parseReadingsFromCell(
+  cellHtml: string,
+  _$: cheerio.CheerioAPI,
+): LectionaryReading[] {
+  return linesToReadings(cellToLines(cellHtml));
+}
+
+// Liturgical order within a Principal Service (used to keep readings sorted
+// after the Continuous + Related psalms are merged together).
+const PRINCIPAL_POSITION_ORDER: Record<string, number> = {
+  OLD_TESTAMENT: 0, PSALM: 1, NEW_TESTAMENT: 2, GOSPEL: 3, CANTICLE: 4,
+};
+
+/**
+ * Collapse a track cell's messy psalmody to ONE clean psalm. In Ordinary Time
+ * the psalm slot can be "Psalm X or Canticle/Psalm Y", split across <br> into
+ * fragments. We keep the OT reading(s) before the psalm, extract the single
+ * numbered "Psalm …" reference (tagged with the track), then the epistle and
+ * gospel — dropping canticle alternatives and split fragments so nothing leaks
+ * into the other track and no garbage reference survives.
+ */
+function rebuildTrackReadings(readings: LectionaryReading[], track: ReadingTrack): LectionaryReading[] {
+  const psalmodyIdx = readings.findIndex((r) => /Psalm\s+\d|^Canticle/i.test(r.reference));
+  const psalmMatch = psalmodyIdx === -1
+    ? null
+    : readings
+        .slice(psalmodyIdx)
+        .map((r) => r.reference)
+        .join(" ")
+        .match(/Psalm\s+\d+[\d.,;:\-\[\]*\s]*?(?:and\s+\d+[\d.,;:\-\[\]*]*)?(?=\s+(?:or\b|Canticle|[1-3]?\s?[A-Z][a-z]{2,}\s+\d)|\s*$)/i);
+
+  if (psalmodyIdx === -1 || !psalmMatch) {
+    // No recognisable numbered psalm — leave readings as-is, tag any PSALM.
+    for (const r of readings) if (r.position === "PSALM") r.track = track;
+    return readings;
+  }
+
+  const otBefore = readings.slice(0, psalmodyIdx).filter((r) => r.position === "OLD_TESTAMENT");
+  const epistleGospel = readings.filter((r) => r.position === "NEW_TESTAMENT" || r.position === "GOSPEL");
+  const psalm: LectionaryReading = { reference: cleanRef(psalmMatch[0]), position: "PSALM", track };
+  return [...otBefore, psalm, ...epistleGospel];
+}
+
+/**
+ * Parse a Principal Service cell that may carry a "Continuous" or "Related"
+ * track label (Ordinary Time). The track toggles ONLY the psalm: the OT reading
+ * is always the Continuous track's and the epistle/gospel are shared, so the
+ * psalm is the sole track-tagged reading. Because the Related cell's caller
+ * keeps only its tagged readings, the Related OT/epistle/gospel are discarded
+ * and just its psalm survives.
+ */
+function parsePrincipalCellWithTrack(
+  cellHtml: string,
+): { track: ReadingTrack | null; readings: LectionaryReading[] } {
+  const lines = cellToLines(cellHtml);
+  let track: ReadingTrack | null = null;
+  if (lines.length && /^continuous\b/i.test(lines[0])) {
+    track = "CONTINUOUS";
+    lines.shift();
+  } else if (lines.length && /^related\b/i.test(lines[0])) {
+    track = "RELATED";
+    lines.shift();
+  }
+
+  const readings = linesToReadings(lines);
+  if (!track) return { track, readings };
+  return { track, readings: rebuildTrackReadings(readings, track) };
 }
 
 /**
@@ -512,19 +621,58 @@ function parseTable(
     const yearB = emptyService();
     const yearC = emptyService();
 
+    // Collect rows into an array so the Principal Service handler can look
+    // ahead: in Ordinary Time the Principal cell holds the "Continuous" track
+    // and a following row (after an "(or)" separator) holds the "Related"
+    // track in a cell whose label column is blank.
+    const rowList: { label: string; getHtml: (i: number) => string }[] = [];
     rows.each((_i, tr) => {
       const cells = $(tr).find("td");
       if (cells.length < 2) return;
-
       const label = $(cells[0]).text().replace(/\u00a0/g, " ").trim().toLowerCase();
-      if (!label || /year [abc]/i.test(label)) return; // header
+      if (/year [abc]/i.test(label)) return; // header
+      rowList.push({
+        label,
+        getHtml: (idx: number) => (cells.length > idx ? ($(cells[idx]).html() || "") : ""),
+      });
+    });
 
-      const getHtml = (idx: number) => cells.length > idx ? ($(cells[idx]).html() || "") : "";
+    for (let r = 0; r < rowList.length; r++) {
+      const { label, getHtml } = rowList[r];
 
       if (/principal\s*service/i.test(label)) {
-        yearA.principal = parseReadingsFromCell(getHtml(1), $);
-        yearB.principal = parseReadingsFromCell(getHtml(2), $);
-        yearC.principal = parseReadingsFromCell(getHtml(3), $);
+        const a = parsePrincipalCellWithTrack(getHtml(1));
+        const b = parsePrincipalCellWithTrack(getHtml(2));
+        const c = parsePrincipalCellWithTrack(getHtml(3));
+        yearA.principal.push(...a.readings);
+        yearB.principal.push(...b.readings);
+        yearC.principal.push(...c.readings);
+
+        // Two-track Sunday: gather the Related row(s) that follow, until the
+        // next named service. Only the track-tagged readings (OT/Psalm) are
+        // merged \u2014 the Related cell's Epistle/Gospel duplicate the Continuous
+        // cell's shared readings.
+        if (a.track || b.track || c.track) {
+          for (let k = r + 1; k < rowList.length; k++) {
+            const nxt = rowList[k];
+            if (/second\s*service|third\s*service|evening\s*prayer/i.test(nxt.label)) break;
+            const ra = parsePrincipalCellWithTrack(nxt.getHtml(1));
+            const rb = parsePrincipalCellWithTrack(nxt.getHtml(2));
+            const rc = parsePrincipalCellWithTrack(nxt.getHtml(3));
+            if (ra.track) yearA.principal.push(...ra.readings.filter((x) => x.track));
+            if (rb.track) yearB.principal.push(...rb.readings.filter((x) => x.track));
+            if (rc.track) yearC.principal.push(...rc.readings.filter((x) => x.track));
+            if (ra.track || rb.track || rc.track) r = k; // consume the Related row
+          }
+          // The Related psalm was appended after the gospel; restore liturgical
+          // order (OT, both psalms, epistle, gospel). Array.sort is stable, so
+          // the Continuous psalm stays before the Related one.
+          const sortByPosition = (svc: LectionaryReading[]) =>
+            svc.sort((x, y) => (PRINCIPAL_POSITION_ORDER[x.position] ?? 9) - (PRINCIPAL_POSITION_ORDER[y.position] ?? 9));
+          sortByPosition(yearA.principal);
+          sortByPosition(yearB.principal);
+          sortByPosition(yearC.principal);
+        }
       } else if (/second\s*service/i.test(label)) {
         yearA.second = parseReadingsFromCell(getHtml(1), $);
         yearB.second = parseReadingsFromCell(getHtml(2), $);
@@ -539,7 +687,7 @@ function parseTable(
         yearB.second.push(...parseReadingsFromCell(getHtml(2), $));
         yearC.second.push(...parseReadingsFromCell(getHtml(3), $));
       }
-    });
+    }
 
     const hasAny = yearA.principal.length > 0 || yearB.principal.length > 0 || yearC.principal.length > 0;
     if (!hasAny) return;

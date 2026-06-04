@@ -9,12 +9,15 @@ import {
   availability,
   rotaEntries,
   serviceSections,
+  churches,
 } from '@/lib/db/schema'
 import { eq, and, asc, inArray } from 'drizzle-orm'
 import type { InferSelectModel } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 import { requireChurchRole, hasMinRole, coerceMemberRole } from '@/lib/auth/permissions'
 import { logger } from '@/lib/logger'
+import { readLectionaryTrack } from '@/lib/churches/settings'
+import { resolveLectionaryTrack, filterReadingsByTrack, hasTrackChoice } from '@/lib/lectionary/track'
 import type { AdjacentDayLinks, PopulatedMusicSlot } from '@/types/service-views'
 import { getAdjacentLiturgicalDays } from '@/lib/services/adjacent-liturgical-days'
 import { MemberServiceView } from './member-service-view'
@@ -49,6 +52,10 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
   // Editor data: per-service sections and raw music slots
   const editorSectionsMap: Record<string, InferSelectModel<typeof serviceSections>[]> = {}
   const editorSlotsMap: Record<string, InferSelectModel<typeof musicSlots>[]> = {}
+  // Ordinary Time Continuous/Related track: does this day offer the choice, and
+  // which track is active for the primary service?
+  let trackChoiceAvailable = false
+  let resolvedTrack: 'CONTINUOUS' | 'RELATED' = 'CONTINUOUS'
 
   try {
     const [days, adjacentResult] = await Promise.all([
@@ -76,6 +83,23 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
         )
 
       const service = dayServices[0] ?? null
+
+      // Resolve the Continuous/Related psalm track (per-service override →
+      // church default → CONTINUOUS) and show only that track's psalm. The OT
+      // reading, epistle, gospel and Second/Third services are untouched.
+      trackChoiceAvailable = hasTrackChoice(dayReadings)
+      if (trackChoiceAvailable) {
+        const churchRow = await db
+          .select({ settings: churches.settings })
+          .from(churches)
+          .where(eq(churches.id, churchId))
+          .limit(1)
+        resolvedTrack = resolveLectionaryTrack(
+          service?.lectionaryTrack,
+          readLectionaryTrack(churchRow[0]?.settings),
+        )
+        dayReadings = filterReadingsByTrack(dayReadings, resolvedTrack)
+      }
 
       if (service) {
         const avail = await db
@@ -197,6 +221,11 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
       }}
       service={service}
       readings={dayReadings as Parameters<typeof MemberServiceView>[0]['readings']}
+      trackChoice={
+        trackChoiceAvailable && service
+          ? { active: resolvedTrack, usingDefault: !dayServices[0]?.lectionaryTrack }
+          : null
+      }
       musicSlots={populatedSlots}
       userAvailability={userAvail}
       role={role}

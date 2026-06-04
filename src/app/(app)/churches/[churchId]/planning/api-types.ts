@@ -17,6 +17,7 @@ export interface ApiService {
   serviceType: string;
   time: string | null;
   notes: string | null;
+  lectionaryTrack: string | null;
   updatedAt: string | Date;
 }
 
@@ -53,6 +54,7 @@ export interface ApiReading {
   reference: string;
   bookName: string | null;
   readingText: string | null;
+  track: string | null;
 }
 
 export interface ApiResponse {
@@ -61,4 +63,5 @@ export interface ApiResponse {
   slots: ApiSlot[];
   readings: ApiReading[];
   patterns: PatternInput[];
+  lectionaryTrackDefault: "CONTINUOUS" | "RELATED";
 }

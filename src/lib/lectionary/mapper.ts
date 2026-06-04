@@ -48,6 +48,7 @@ export function buildReadingRows(
     liturgicalDayId: string;
     lectionary: LectionaryValue;
     position: PositionValue;
+    track: "CONTINUOUS" | "RELATED" | null;
     reference: string;
     bookName: string | null;
     readingText: string | null;
@@ -75,6 +76,7 @@ export function buildReadingRows(
         liturgicalDayId,
         lectionary,
         position: position as PositionValue,
+        track: reading.track ?? null,
         reference: reading.reference,
         bookName: parseBookName(reading.reference),
         readingText: text || null,
