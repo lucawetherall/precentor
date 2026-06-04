@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 import Link from "next/link";
 import { ChurchSettingsForm } from "./settings-form";
-import { readSheetMusicLink } from "@/lib/churches/settings";
+import { readSheetMusicLink, readLectionaryTrack } from "@/lib/churches/settings";
 import { getAuthUser, getChurchMembership, hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 
 interface Props {
@@ -40,6 +40,7 @@ export default async function ChurchSettingsPage({ params }: Props) {
     address: church.address,
     ccliNumber: church.ccliNumber,
     sheetMusicLink: readSheetMusicLink(church.settings),
+    lectionaryTrack: readLectionaryTrack(church.settings),
   };
 
   return (

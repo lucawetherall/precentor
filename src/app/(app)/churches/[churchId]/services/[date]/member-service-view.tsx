@@ -8,6 +8,7 @@ import { AvailabilityWidget } from '@/components/availability-widget'
 import { ServiceMusicList } from './service-music-list'
 import { ReadingsByLectionary } from './readings-by-lectionary'
 import { ServiceNav } from './service-nav'
+import { LectionaryTrackToggle } from './lectionary-track-toggle'
 import { formatLiturgicalDayName } from '@/lib/liturgical-display'
 
 interface Reading {
@@ -35,6 +36,8 @@ interface MemberServiceViewProps {
   }
   service: ServiceInfo | null
   readings: Reading[]
+  /** Ordinary Time psalm-track picker state; null when the day offers no choice. */
+  trackChoice: { active: 'CONTINUOUS' | 'RELATED'; usingDefault: boolean } | null
   musicSlots: PopulatedMusicSlot[]
   userAvailability: 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | null
   role: MemberRole
@@ -48,6 +51,7 @@ export function MemberServiceView({
   day,
   service,
   readings,
+  trackChoice,
   musicSlots,
   userAvailability,
   role,
@@ -130,6 +134,16 @@ export function MemberServiceView({
                 Readings
               </h2>
             </div>
+            {isEditor && service && trackChoice && (
+              <div className="px-4 pt-3">
+                <LectionaryTrackToggle
+                  churchId={churchId}
+                  serviceId={service.id}
+                  active={trackChoice.active}
+                  usingDefault={trackChoice.usingDefault}
+                />
+              </div>
+            )}
             <ReadingsByLectionary readings={readings} />
           </div>
         )}

@@ -10,6 +10,10 @@ export interface SheetMusicLink {
   label?: string;
 }
 
+/** Ordinary Time psalm track a church reads by default (toggles the psalm only). */
+export type LectionaryTrack = "CONTINUOUS" | "RELATED";
+export const DEFAULT_LECTIONARY_TRACK: LectionaryTrack = "CONTINUOUS";
+
 type Settings = Record<string, unknown> | null | undefined;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -51,5 +55,27 @@ export function writeSheetMusicLink(
   const next: SheetMusicLink = { url: value.url };
   if (value.label && value.label.trim().length > 0) next.label = value.label.trim();
   base.sheetMusicLink = next;
+  return base;
+}
+
+/**
+ * Read the church's default Ordinary Time lectionary track from `settings`.
+ * Falls back to CONTINUOUS (the more common parish choice) when unset/invalid.
+ */
+export function readLectionaryTrack(settings: Settings): LectionaryTrack {
+  if (!isRecord(settings)) return DEFAULT_LECTIONARY_TRACK;
+  return settings.lectionaryTrack === "RELATED" ? "RELATED" : DEFAULT_LECTIONARY_TRACK;
+}
+
+/**
+ * Return a new settings object with `lectionaryTrack` updated. Other keys are
+ * preserved verbatim.
+ */
+export function writeLectionaryTrack(
+  settings: Settings,
+  value: LectionaryTrack,
+): Record<string, unknown> {
+  const base: Record<string, unknown> = isRecord(settings) ? { ...settings } : {};
+  base.lectionaryTrack = value === "RELATED" ? "RELATED" : "CONTINUOUS";
   return base;
 }

@@ -2,10 +2,11 @@ import "server-only";
 import { db } from "@/lib/db";
 import {
   services, musicSlots, hymns, anthems, massSettings, canticleSettings,
-  responsesSettings, liturgicalDays, readings,
+  responsesSettings, liturgicalDays, readings, churches,
 } from "@/lib/db/schema";
 import { and, eq, gte, lte, inArray, asc, sql } from "drizzle-orm";
 import lectionaryData from "@/data/lectionary-coe.json";
+import { readLectionaryTrack, type LectionaryTrack } from "@/lib/churches/settings";
 
 export interface PlanningDayProjection {
   id: string;
@@ -58,10 +59,20 @@ async function loadServices(churchId: string, dayIds: string[]) {
       time: services.time,
       status: services.status,
       notes: services.notes,
+      lectionaryTrack: services.lectionaryTrack,
       updatedAt: services.updatedAt,
     })
     .from(services)
     .where(and(eq(services.churchId, churchId), inArray(services.liturgicalDayId, dayIds)));
+}
+
+async function loadChurchTrackDefault(churchId: string): Promise<LectionaryTrack> {
+  const rows = await db
+    .select({ settings: churches.settings })
+    .from(churches)
+    .where(eq(churches.id, churchId))
+    .limit(1);
+  return readLectionaryTrack(rows[0]?.settings);
 }
 
 async function loadSlots(serviceIds: string[]) {
@@ -110,6 +121,7 @@ async function loadReadings(dayIds: string[]) {
 }
 
 // db.execute<T>(sql) returns T[] directly (see commit 398d419).
+// Phase D: patterns reference a preset; serviceType/defaultTime come from it.
 async function loadPatterns(churchId: string) {
   return db.execute<{
     id: string;
@@ -118,9 +130,11 @@ async function loadPatterns(churchId: string) {
     time: string | null;
     enabled: boolean;
   }>(sql`
-    SELECT id, day_of_week AS "dayOfWeek", service_type AS "serviceType", time, enabled
-    FROM church_service_patterns
-    WHERE church_id = ${churchId}
+    SELECT p.id, p.day_of_week AS "dayOfWeek",
+           pr.service_type AS "serviceType", pr.default_time AS "time", p.enabled
+    FROM church_service_patterns p
+    JOIN church_service_presets pr ON pr.id = p.preset_id
+    WHERE p.church_id = ${churchId}
   `);
 }
 
@@ -130,6 +144,8 @@ export interface PlanningDataResponse {
   slots: Awaited<ReturnType<typeof loadSlots>>;
   readings: Awaited<ReturnType<typeof loadReadings>>;
   patterns: Awaited<ReturnType<typeof loadPatterns>>;
+  /** Church default Ordinary Time psalm track, applied when a service has no override. */
+  lectionaryTrackDefault: LectionaryTrack;
 }
 
 export async function getPlanningData(
@@ -144,5 +160,6 @@ export async function getPlanningData(
   const slotRows = await loadSlots(serviceIds);
   const readingRows = await loadReadings(dayIds);
   const patterns = await loadPatterns(churchId);
-  return { days, services: serviceRows, slots: slotRows, readings: readingRows, patterns };
+  const lectionaryTrackDefault = await loadChurchTrackDefault(churchId);
+  return { days, services: serviceRows, slots: slotRows, readings: readingRows, patterns, lectionaryTrackDefault };
 }

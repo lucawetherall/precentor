@@ -73,6 +73,9 @@ export const serviceUpdateSchema = z.object({
   sheetMode: z.string().max(50).optional(),
   defaultMassSettingId: z.string().uuid().nullable().optional(),
   liturgicalOverrides: liturgicalOverridesSchema.optional(),
+  // Ordinary Time psalm track for this service; null clears the override and
+  // falls back to the church default.
+  lectionaryTrack: z.enum(["CONTINUOUS", "RELATED"]).nullable().optional(),
 }).strict();
 
 export const sectionCreateSchema = z.object({
@@ -127,6 +130,8 @@ export const churchUpdateSchema = z.object({
   ccliNumber: z.string().max(50).nullable().optional(),
   // `null` clears the existing link; `undefined` leaves it unchanged.
   sheetMusicLink: sheetMusicLinkSchema.nullable().optional(),
+  // Church-wide default Ordinary Time psalm track.
+  lectionaryTrack: z.enum(["CONTINUOUS", "RELATED"]).optional(),
 }).strict();
 
 /** Top-20 most commonly used passwords (NCSC/HIBP deny list guidance). Blocked per ICO guidance. */

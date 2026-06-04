@@ -285,11 +285,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Baruch 5.1-9 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Zephaniah 3.14-20",
+              "reference": "Baruch 5.1-9 or Zephaniah 3.14-20",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -301,11 +297,7 @@
         "C": {
           "principal": [
             {
-              "reference": "Baruch 5.1-9 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Malachi 3.1-4",
+              "reference": "Baruch 5.1-9 or Malachi 3.1-4",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -365,11 +357,7 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Psalm 146.4-10 or",
-              "position": "PSALM"
-            },
-            {
-              "reference": "Canticle: Magnificat",
+              "reference": "Psalm 146.4-10 or Canticle: Magnificat",
               "position": "CANTICLE"
             },
             {
@@ -421,11 +409,7 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Psalm 126 or",
-              "position": "PSALM"
-            },
-            {
-              "reference": "Canticle: Magnificat",
+              "reference": "Psalm 126 or Canticle: Magnificat",
               "position": "CANTICLE"
             },
             {
@@ -589,12 +573,8 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Canticle: Magnificat or",
+              "reference": "Canticle: Magnificat or Psalm 89.1-4,19-26",
               "position": "CANTICLE"
-            },
-            {
-              "reference": "Psalm 89.1-4,19-26",
-              "position": "PSALM"
             },
             {
               "reference": "Romans 16.25-27",
@@ -641,12 +621,8 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Canticle: Magnificat or",
+              "reference": "Canticle: Magnificat or Psalm 80.1-8",
               "position": "CANTICLE"
-            },
-            {
-              "reference": "Psalm 80.1-8",
-              "position": "PSALM"
             },
             {
               "reference": "Hebrews 10.5-10",
@@ -1059,12 +1035,8 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Colossians 1.9-20 or",
+              "reference": "Colossians 1.9-20 or Luke 2.41-52",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Luke 2.41-52",
-              "position": "GOSPEL"
             }
           ],
           "third": [
@@ -1327,11 +1299,7 @@
           ],
           "second": [
             {
-              "reference": "Baruch 4.36 - 5.9 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 60.1-9",
+              "reference": "Baruch 4.36 - 5.9 or Isaiah 60.1-9",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -1379,11 +1347,7 @@
           ],
           "second": [
             {
-              "reference": "Baruch 4.36 - 5.9 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 60.1-9",
+              "reference": "Baruch 4.36 - 5.9 or Isaiah 60.1-9",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -1431,11 +1395,7 @@
           ],
           "second": [
             {
-              "reference": "Baruch 4.36 - 5.9 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 60.1-9",
+              "reference": "Baruch 4.36 - 5.9 or Isaiah 60.1-9",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -2407,11 +2367,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Wisdom 6.1-21 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Hosea 1",
+              "reference": "Wisdom 6.1-21 or Hosea 1",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -2449,11 +2405,7 @@
         "A": {
           "principal": [
             {
-              "reference": "Deuteronomy 30.15-20 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 15.15-20",
+              "reference": "Deuteronomy 30.15-20 or Ecclesiasticus 15.15-20",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -2733,12 +2685,8 @@
               "position": "PSALM"
             },
             {
-              "reference": "1 Corinthians 15.35-38,",
+              "reference": "1 Corinthians 15.35-38, 42-50",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "42-50",
-              "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Luke 6.27-38",
@@ -2793,11 +2741,7 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Psalm 136 or",
-              "position": "PSALM"
-            },
-            {
-              "reference": "Psalm 136.1-9,23-26",
+              "reference": "Psalm 136 or Psalm 136.1-9,23-26",
               "position": "PSALM"
             },
             {
@@ -3117,11 +3061,7 @@
         "A": {
           "principal": [
             {
-              "reference": "Joel 2.1-2,12-17 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 58.1-12",
+              "reference": "Joel 2.1-2,12-17 or Isaiah 58.1-12",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -3173,11 +3113,7 @@
         "B": {
           "principal": [
             {
-              "reference": "Joel 2.1-2,12-17 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 58.1-12",
+              "reference": "Joel 2.1-2,12-17 or Isaiah 58.1-12",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -3229,11 +3165,7 @@
         "C": {
           "principal": [
             {
-              "reference": "Joel 2.1-2,12-17 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 58.1-12",
+              "reference": "Joel 2.1-2,12-17 or Isaiah 58.1-12",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -3367,12 +3299,8 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Romans 5.12-19 or",
+              "reference": "Romans 5.12-19 or Luke 13.31-35",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Luke 13.31-35",
-              "position": "GOSPEL"
             }
           ],
           "third": [
@@ -3683,12 +3611,8 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Philippians 3.4b-14 or",
+              "reference": "Philippians 3.4b-14 or Matthew 10.16-22",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Matthew 10.16-22",
-              "position": "GOSPEL"
             }
           ],
           "third": [
@@ -3883,35 +3807,19 @@
         "A": {
           "principal": [
             {
-              "reference": "Exodus 2.1-10 or",
+              "reference": "Exodus 2.1-10 or 1 Samuel 1.20-28",
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "1 Samuel 1.20-28",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Psalm 34.11-20 or",
+              "reference": "Psalm 34.11-20 or Psalm 127.1-4",
               "position": "PSALM"
             },
             {
-              "reference": "Psalm 127.1-4",
-              "position": "PSALM"
-            },
-            {
-              "reference": "2 Corinthians 1.3-7 or",
+              "reference": "2 Corinthians 1.3-7 or Colossians 3.12-17",
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Colossians 3.12-17",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Luke 2.33-35 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "John 19.25-27",
+              "reference": "Luke 2.33-35 or John 19.25-27",
               "position": "GOSPEL"
             }
           ],
@@ -3921,35 +3829,19 @@
         "B": {
           "principal": [
             {
-              "reference": "Exodus 2.1-10 or",
+              "reference": "Exodus 2.1-10 or 1 Samuel 1.20-28",
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "1 Samuel 1.20-28",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Psalm 34.11-20 or",
+              "reference": "Psalm 34.11-20 or Psalm 127.1-4",
               "position": "PSALM"
             },
             {
-              "reference": "Psalm 127.1-4",
-              "position": "PSALM"
-            },
-            {
-              "reference": "2 Corinthians 1.3-7 or",
+              "reference": "2 Corinthians 1.3-7 or Colossians 3.12-17",
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Colossians 3.12-17",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Luke 2.33-35 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "John 19.25-27",
+              "reference": "Luke 2.33-35 or John 19.25-27",
               "position": "GOSPEL"
             }
           ],
@@ -3959,35 +3851,19 @@
         "C": {
           "principal": [
             {
-              "reference": "Exodus 2.1-10 or",
+              "reference": "Exodus 2.1-10 or 1 Samuel 1.20-28",
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "1 Samuel 1.20-28",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Psalm 34.11-20 or",
+              "reference": "Psalm 34.11-20 or Psalm 127.1-4",
               "position": "PSALM"
             },
             {
-              "reference": "Psalm 127.1-4",
-              "position": "PSALM"
-            },
-            {
-              "reference": "2 Corinthians 1.3-7 or",
+              "reference": "2 Corinthians 1.3-7 or Colossians 3.12-17",
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Colossians 3.12-17",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Luke 2.33-35 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "John 19.25-27",
+              "reference": "Luke 2.33-35 or John 19.25-27",
               "position": "GOSPEL"
             }
           ],
@@ -4057,11 +3933,7 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Psalm 51.1-13 or",
-              "position": "PSALM"
-            },
-            {
-              "reference": "Psalm 119.9-16",
+              "reference": "Psalm 51.1-13 or Psalm 119.9-16",
               "position": "PSALM"
             },
             {
@@ -4213,11 +4085,7 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Mark 11.1-11 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "John 12.12-16",
+              "reference": "Mark 11.1-11 or John 12.12-16",
               "position": "GOSPEL"
             },
             {
@@ -4391,11 +4259,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Hebrews 10.16-25 or",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Hebrews 4.14-16; 5.7-9",
+              "reference": "Hebrews 10.16-25 or Hebrews 4.14-16; 5.7-9",
               "position": "NEW_TESTAMENT"
             },
             {
@@ -4417,11 +4281,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Hebrews 10.16-25 or",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Hebrews 4.14-16; 5.7-9",
+              "reference": "Hebrews 10.16-25 or Hebrews 4.14-16; 5.7-9",
               "position": "NEW_TESTAMENT"
             },
             {
@@ -4443,11 +4303,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Hebrews 10.16-25 or",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Hebrews 4.14-16; 5.7-9",
+              "reference": "Hebrews 10.16-25 or Hebrews 4.14-16; 5.7-9",
               "position": "NEW_TESTAMENT"
             },
             {
@@ -4469,11 +4325,7 @@
         "A": {
           "principal": [
             {
-              "reference": "Job 14.1-14 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Lamentations 3.1-9,19-24",
+              "reference": "Job 14.1-14 or Lamentations 3.1-9,19-24",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -4485,11 +4337,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Matthew 27.57-66 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "John 19.38-42",
+              "reference": "Matthew 27.57-66 or John 19.38-42",
               "position": "GOSPEL"
             }
           ],
@@ -4499,11 +4347,7 @@
         "B": {
           "principal": [
             {
-              "reference": "Job 14.1-14 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Lamentations 3.1-9,19-24",
+              "reference": "Job 14.1-14 or Lamentations 3.1-9,19-24",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -4515,11 +4359,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Matthew 27.57-66 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "John 19.38-42",
+              "reference": "Matthew 27.57-66 or John 19.38-42",
               "position": "GOSPEL"
             }
           ],
@@ -4529,11 +4369,7 @@
         "C": {
           "principal": [
             {
-              "reference": "Job 14.1-14 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Lamentations 3.1-9,19-24",
+              "reference": "Job 14.1-14 or Lamentations 3.1-9,19-24",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -4545,11 +4381,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Matthew 27.57-66 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "John 19.38-42",
+              "reference": "Matthew 27.57-66 or John 19.38-42",
               "position": "GOSPEL"
             }
           ],
@@ -4567,31 +4399,19 @@
         "A": {
           "principal": [
             {
-              "reference": "Acts 10.34-43 or",
+              "reference": "Acts 10.34-43 or Jeremiah 31.1-6",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Jeremiah 31.1-6",
-              "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 118.1-2,14-24",
               "position": "PSALM"
             },
             {
-              "reference": "Colossians 3.1-4 or",
+              "reference": "Colossians 3.1-4 or Acts 10.34-43",
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Acts 10.34-43",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "John 20.1-18 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "Matthew 28.1-10",
+              "reference": "John 20.1-18 or Matthew 28.1-10",
               "position": "GOSPEL"
             }
           ],
@@ -4609,12 +4429,8 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Service or",
+              "reference": "Service or Revelation 1.12-18",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Revelation 1.12-18",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalms 105 or 66.1-11",
@@ -4639,12 +4455,8 @@
         "B": {
           "principal": [
             {
-              "reference": "Acts 10.34-43 or",
+              "reference": "Acts 10.34-43 or Isaiah 25.6-9",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 25.6-9",
-              "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 118.1-2,14-24",
@@ -4659,11 +4471,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "John 20.1-18 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "Mark 16.1-8",
+              "reference": "John 20.1-18 or Mark 16.1-8",
               "position": "GOSPEL"
             }
           ],
@@ -4699,12 +4507,8 @@
         "C": {
           "principal": [
             {
-              "reference": "Acts 10.34-43 or",
+              "reference": "Acts 10.34-43 or Isaiah 65.17-25",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 65.17-25",
-              "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 118.1-2,14-24",
@@ -4719,11 +4523,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "John 20.1-18 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "Luke 24.1-12",
+              "reference": "John 20.1-18 or Luke 24.1-12",
               "position": "GOSPEL"
             }
           ],
@@ -4871,11 +4671,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Psalm 118.14-29 or",
-              "position": "PSALM"
-            },
-            {
-              "reference": "Psalm 150",
+              "reference": "Psalm 118.14-29 or Psalm 150",
               "position": "PSALM"
             },
             {
@@ -4893,11 +4689,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Isaiah 52.13 - 53.12 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "53.1-6,9-12",
+              "reference": "Isaiah 52.13 - 53.12 or 53.1-6,9-12",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -5343,11 +5135,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "2 Maccabees 7.7-14 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Daniel 3.16-28",
+              "reference": "2 Maccabees 7.7-14 or Daniel 3.16-28",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -5535,11 +5323,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "John 14.23-29 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "John 5.1-9",
+              "reference": "John 14.23-29 or John 5.1-9",
               "position": "GOSPEL"
             }
           ],
@@ -5583,27 +5367,15 @@
         "A": {
           "principal": [
             {
-              "reference": "Acts 1.1-11 or",
+              "reference": "Acts 1.1-11 or Daniel 7.9-14",
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Daniel 7.9-14",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Psalm 47 or",
+              "reference": "Psalm 47 or Psalm 93",
               "position": "PSALM"
             },
             {
-              "reference": "Psalm 93",
-              "position": "PSALM"
-            },
-            {
-              "reference": "Ephesians 1.15-23 or",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Acts 1.1-11",
+              "reference": "Ephesians 1.15-23 or Acts 1.1-11",
               "position": "NEW_TESTAMENT"
             },
             {
@@ -5651,27 +5423,15 @@
         "B": {
           "principal": [
             {
-              "reference": "Acts 1.1-11 or",
+              "reference": "Acts 1.1-11 or Daniel 7.9-14",
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Daniel 7.9-14",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Psalm 47 or",
+              "reference": "Psalm 47 or Psalm 93",
               "position": "PSALM"
             },
             {
-              "reference": "Psalm 93",
-              "position": "PSALM"
-            },
-            {
-              "reference": "Ephesians 1.15-23 or",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Acts 1.1-11",
+              "reference": "Ephesians 1.15-23 or Acts 1.1-11",
               "position": "NEW_TESTAMENT"
             },
             {
@@ -5719,27 +5479,15 @@
         "C": {
           "principal": [
             {
-              "reference": "Acts 1.1-11 or",
+              "reference": "Acts 1.1-11 or Daniel 7.9-14",
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Daniel 7.9-14",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Psalm 47 or",
+              "reference": "Psalm 47 or Psalm 93",
               "position": "PSALM"
             },
             {
-              "reference": "Psalm 93",
-              "position": "PSALM"
-            },
-            {
-              "reference": "Ephesians 1.15-23 or",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Acts 1.1-11",
+              "reference": "Ephesians 1.15-23 or Acts 1.1-11",
               "position": "NEW_TESTAMENT"
             },
             {
@@ -5903,12 +5651,8 @@
               "position": "PSALM"
             },
             {
-              "reference": "Revelation 22.12-14,",
+              "reference": "Revelation 22.12-14, 16,17,20,21",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "16,17,20,21",
-              "position": "OLD_TESTAMENT"
             },
             {
               "reference": "John 17.20-26",
@@ -5943,12 +5687,8 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Luke 24.44-53 or",
+              "reference": "Luke 24.44-53 or Acts 1.1-8",
               "position": "GOSPEL"
-            },
-            {
-              "reference": "Acts 1.1-8",
-              "position": "NEW_TESTAMENT"
             }
           ]
         }
@@ -5963,12 +5703,8 @@
         "A": {
           "principal": [
             {
-              "reference": "Acts 2.1-21 or",
+              "reference": "Acts 2.1-21 or Numbers 11.24-30",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Numbers 11.24-30",
-              "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 104.26-36,37b",
@@ -5983,11 +5719,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "John 20.19-23 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "John 7.37-39",
+              "reference": "John 20.19-23 or John 7.37-39",
               "position": "GOSPEL"
             }
           ],
@@ -6027,23 +5759,15 @@
         "B": {
           "principal": [
             {
-              "reference": "Acts 2.1-21 or",
+              "reference": "Acts 2.1-21 or Ezekiel 37.1-14",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Ezekiel 37.1-14",
-              "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 104.26-36,37b",
               "position": "PSALM"
             },
             {
-              "reference": "Romans 8.22-27 or",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Acts 2.1-21",
+              "reference": "Romans 8.22-27 or Acts 2.1-21",
               "position": "NEW_TESTAMENT"
             },
             {
@@ -6075,11 +5799,7 @@
           ],
           "third": [
             {
-              "reference": "Isaiah 11.1-9 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Wisdom 7.15-23 [24-27]",
+              "reference": "Isaiah 11.1-9 or Wisdom 7.15-23 [24-27]",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -6095,23 +5815,15 @@
         "C": {
           "principal": [
             {
-              "reference": "Acts 2.1-21 or",
+              "reference": "Acts 2.1-21 or Genesis 11.1-9",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Genesis 11.1-9",
-              "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 104.26-36,37b",
               "position": "PSALM"
             },
             {
-              "reference": "Romans 8.14-17 or",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Acts 2.1-21",
+              "reference": "Romans 8.14-17 or Acts 2.1-21",
               "position": "NEW_TESTAMENT"
             },
             {
@@ -6139,11 +5851,7 @@
           ],
           "third": [
             {
-              "reference": "Isaiah 40.12-23 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Wisdom 9.9-17",
+              "reference": "Isaiah 40.12-23 or Wisdom 9.9-17",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -6323,24 +6031,22 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 6.9-22; 7.24; 8.14-19",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 46",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
             },
             {
-              "reference": "Romans 1.16,17;",
+              "reference": "Psalm 31.1-5,19-24",
+              "position": "PSALM",
+              "track": "RELATED"
+            },
+            {
+              "reference": "Romans 1.16,17; 3.22b-28[29-31]",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "3.22b-28[29-31]",
-              "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Matthew 7.21-29",
@@ -6379,16 +6085,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "1 Samuel 3.1-10 [11-20]",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 139.1-5,12-18",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 81.1-10",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "2 Corinthians 4.5-12",
@@ -6435,10 +6143,6 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "1 Kings 18.20,21",
               "position": "OLD_TESTAMENT"
             },
@@ -6448,7 +6152,13 @@
             },
             {
               "reference": "Psalm 96",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 96.1-9",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Galatians 1.1-12",
@@ -6499,16 +6209,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 12.1-9",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 33.1-12",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 50.7-15",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 4.13-25",
@@ -6551,10 +6263,6 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "1 Samuel 8.4-11[12-15]",
               "position": "OLD_TESTAMENT"
             },
@@ -6564,7 +6272,13 @@
             },
             {
               "reference": "Psalm 138",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 130",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "2 Corinthians 4.13 - 5.1",
@@ -6611,16 +6325,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "1 Kings 17.8-16[17-24]",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 146",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 30",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Galatians 1.11-24",
@@ -6671,16 +6387,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 18.1-15 [21.1-7]",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 116.1,10-17",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 100",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 5.1-8",
@@ -6723,24 +6441,22 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "1 Samuel 15.34 - 16.13",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 20",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 92.1-4,12-15",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "2 Corinthians 5.6-10",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "[11-13]14-17",
-              "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Mark 4.26-34",
@@ -6783,16 +6499,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "1 Kings 21.1-10[11-14] 15-21a",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 5.1-8",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 32",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Galatians 2.15-21",
@@ -6843,16 +6561,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 21.8-21",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 86.1-10,16-17",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 69.8-11[12-17]18-20",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 6.1b-11",
@@ -6895,32 +6615,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
+              "reference": "1 Samuel 17.[1a,4-11, 19-23]32-49",
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "1 Samuel 17.[1a,4-11,",
-              "position": "OLD_TESTAMENT"
+              "reference": "Psalm 9.9-20",
+              "position": "PSALM",
+              "track": "CONTINUOUS"
             },
             {
-              "reference": "19-23]32-49",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Psalm 9.9-20 or",
-              "position": "PSALM"
-            },
-            {
-              "reference": "1 Samuel 17.57 - 18.5,",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "10-16",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Psalm 133",
-              "position": "PSALM"
+              "reference": "Psalm 107.1-3,23-32",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "2 Corinthians 6.1-13",
@@ -6967,10 +6673,6 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "1 Kings 19.1-4[5-7]",
               "position": "OLD_TESTAMENT"
             },
@@ -6980,7 +6682,13 @@
             },
             {
               "reference": "Psalms 42, 43",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 22.19-28",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Galatians 3.23-29",
@@ -7031,16 +6739,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 22.1-14",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 13",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 89.1-4,15-18",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 6.12-23",
@@ -7083,16 +6793,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "2 Samuel 1.1,17-27",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 130",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 30",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "2 Corinthians 8.7-15",
@@ -7139,16 +6851,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "2 Kings 2.1-2,6-14",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 77.1-2,11-20",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 16",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Galatians 5.1,13-25",
@@ -7199,24 +6913,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 24.34-38,42-49, 58-67",
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Psalm 45.10-17 or",
-              "position": "PSALM"
+              "reference": "Psalm 45.10-17",
+              "position": "PSALM",
+              "track": "CONTINUOUS"
             },
             {
-              "reference": "Canticle: Song of",
-              "position": "CANTICLE"
-            },
-            {
-              "reference": "Solomon 2.8-13",
-              "position": "OLD_TESTAMENT"
+              "reference": "Psalm 145.8-15",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 7.15-25a",
@@ -7259,16 +6967,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "2 Samuel 5.1-5,9-10",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 48",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 123",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "2 Corinthians 12.2-10",
@@ -7315,16 +7025,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "2 Kings 5.1-14",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 30",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 66.1-8",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Galatians 6.[1-6]7-16",
@@ -7375,16 +7087,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 25.19-34",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 119.105-112",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 65.[1-7]8-13",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 8.1-11",
@@ -7427,16 +7141,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "2 Samuel 6.1-5,12b-19",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 24",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 85.8-13",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Ephesians 1.3-14",
@@ -7453,11 +7169,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Job 4.1; 5.6-27 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 4.11-31",
+              "reference": "Job 4.1; 5.6-27 or Ecclesiasticus 4.11-31",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -7487,16 +7199,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Amos 7.7-17",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 82",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 25.1-10",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Colossians 1.1-14",
@@ -7547,16 +7261,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 28.10-19a",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 139.1-11,23,24",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 86.11-17",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 8.12-25",
@@ -7603,16 +7319,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "2 Samuel 7.1-14a",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 89.20-37",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 23",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Ephesians 2.11-22",
@@ -7629,11 +7347,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Job 13.13 - 14.6 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 18.1-14",
+              "reference": "Job 13.13 - 14.6 or Ecclesiasticus 18.1-14",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -7663,16 +7377,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Amos 8.1-12",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 52",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 15",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Colossians 1.15-28",
@@ -7727,20 +7443,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 29.15-28",
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Psalm 105.1-11,45b* or",
-              "position": "PSALM"
+              "reference": "Psalm 128",
+              "position": "PSALM",
+              "track": "CONTINUOUS"
             },
             {
-              "reference": "Psalm 128",
-              "position": "PSALM"
+              "reference": "Psalm 119.129-136",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 8.26-39",
@@ -7775,11 +7489,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Song of Solomon 2 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "1 Maccabees 2.[1-14]15-22",
+              "reference": "Song of Solomon 2 or 1 Maccabees 2.[1-14]15-22",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -7791,16 +7501,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "2 Samuel 11.1-15",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 14",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 145.10-19",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Ephesians 3.14-21",
@@ -7817,11 +7529,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Job 19.1-27a or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 38.24-34",
+              "reference": "Job 19.1-27a or Ecclesiasticus 38.24-34",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -7839,11 +7547,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Song of Solomon 2 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "1 Maccabees 2.[1-14]15-22",
+              "reference": "Song of Solomon 2 or 1 Maccabees 2.[1-14]15-22",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -7855,16 +7559,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Hosea 1.2-10",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 85",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 138",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Colossians 2.6-15[16-19]",
@@ -7899,11 +7605,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Song of Solomon 2 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "1 Maccabees 2.[1-14]15-22",
+              "reference": "Song of Solomon 2 or 1 Maccabees 2.[1-14]15-22",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -7923,16 +7625,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 32.22-31",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 17.1-7,16",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 145.8-9,15-22",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 9.1-5",
@@ -7967,11 +7671,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Song of Solomon 5.2-16 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "1 Maccabees 3.1-12",
+              "reference": "Song of Solomon 5.2-16 or 1 Maccabees 3.1-12",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -7983,16 +7683,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "2 Samuel 11.26 - 12.13a",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 51.1-13",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 78.23-29",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Ephesians 4.1-16",
@@ -8009,11 +7711,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Job 28 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 42.15-25",
+              "reference": "Job 28 or Ecclesiasticus 42.15-25",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8031,11 +7729,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Song of Solomon 5.2-16 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "1 Maccabees 3.1-12",
+              "reference": "Song of Solomon 5.2-16 or 1 Maccabees 3.1-12",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8047,16 +7741,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Hosea 11.1-11",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 107.1-9,43",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 49.1-12",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Colossians 3.1-11",
@@ -8091,11 +7787,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Song of Solomon 5.2-16 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "1 Maccabees 3.1-12",
+              "reference": "Song of Solomon 5.2-16 or 1 Maccabees 3.1-12",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8115,16 +7807,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 37.1-4,12-28",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 105.1-6,16-22,45b",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 85.8-13",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 10.5-15",
@@ -8175,16 +7869,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "2 Samuel 18.5-9,15,31-33",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 130",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 34.1-8",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Ephesians 4.25 - 5.2",
@@ -8201,11 +7897,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Job 39.1 - 40.4 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 43.13-33",
+              "reference": "Job 39.1 - 40.4 or Ecclesiasticus 43.13-33",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8239,16 +7931,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Isaiah 1.1,10-20",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 50.1-8, 23,24",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 33.12-22",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Hebrews 11.1-3,8-16",
@@ -8307,16 +8001,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Genesis 45.1-15",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 133",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 67",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 11.1-2a, 29-32",
@@ -8351,11 +8047,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 1 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 3.1-15",
+              "reference": "Jonah 1 or Ecclesiasticus 3.1-15",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8367,16 +8059,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "1 Kings 2.10-12; 3.3-14",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 111",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 34.9-14",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Ephesians 5.15-20",
@@ -8411,11 +8105,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 1 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 3.1-15",
+              "reference": "Jonah 1 or Ecclesiasticus 3.1-15",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8427,16 +8117,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Isaiah 5.1-7",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 80.1-2,9-20",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 82",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Hebrews 11.29 - 12.2",
@@ -8471,11 +8163,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 1 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 3.1-15",
+              "reference": "Jonah 1 or Ecclesiasticus 3.1-15",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8495,16 +8183,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Exodus 1.8 - 2.10",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 124",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 138",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 12.1-8",
@@ -8539,11 +8229,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 2 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 3.17-29",
+              "reference": "Jonah 2 or Ecclesiasticus 3.17-29",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8555,10 +8241,6 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "1 Kings 8.[1,6,10-11]",
               "position": "OLD_TESTAMENT"
             },
@@ -8568,7 +8250,13 @@
             },
             {
               "reference": "Psalm 84",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 34.15-22",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Ephesians 6.10-20",
@@ -8603,11 +8291,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 2 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 3.17-29",
+              "reference": "Jonah 2 or Ecclesiasticus 3.17-29",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8619,16 +8303,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Jeremiah 1.4-10",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 71.1-6",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 103.1-8",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Hebrews 12.18-29",
@@ -8663,11 +8349,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 2 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 3.17-29",
+              "reference": "Jonah 2 or Ecclesiasticus 3.17-29",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8687,16 +8369,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Exodus 3.1-15",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 105.1-6,23-26,45b",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 26.1-8",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 12.9-21",
@@ -8731,11 +8415,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 3.1-9 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 11.7-28",
+              "reference": "Jonah 3.1-9 or Ecclesiasticus 11.7-28",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8751,16 +8431,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Song of Solomon 2.8-13",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 45.1-2,6-9",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 15",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "James 1.17-27",
@@ -8791,11 +8473,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 3.1-9 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 11.7-28",
+              "reference": "Jonah 3.1-9 or Ecclesiasticus 11.7-28",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8811,16 +8489,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Jeremiah 2.4-13",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 81.1,10-16",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 112",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Hebrews 13.1-8,15,16",
@@ -8851,11 +8531,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 3.1-9 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 11.[7-17]18-28",
+              "reference": "Jonah 3.1-9 or Ecclesiasticus 11.[7-17]18-28",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8875,16 +8551,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Exodus 12.1-14",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 149",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 119.33-40",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 13.8-14",
@@ -8919,11 +8597,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 3.10 - 4.11 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 27.30 - 28.9",
+              "reference": "Jonah 3.10 - 4.11 or Ecclesiasticus 27.30 - 28.9",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8935,16 +8609,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Proverbs 22.1-2,8,9,22,23",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 125",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 146",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "James 2.1-10[11-13] 14-17",
@@ -8975,11 +8651,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 3.10 - 4.11 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 27.30 - 28.9",
+              "reference": "Jonah 3.10 - 4.11 or Ecclesiasticus 27.30 - 28.9",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -8991,16 +8663,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Jeremiah 18.1-11",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 139.1-5,12-18",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 1",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Philemon 1-21",
@@ -9031,11 +8705,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Jonah 3.10 - 4.11 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 27.30 - 28.9",
+              "reference": "Jonah 3.10 - 4.11 or Ecclesiasticus 27.30 - 28.9",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -9055,28 +8725,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Exodus 14.19-31",
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Psalm 114 or",
-              "position": "PSALM"
+              "reference": "Psalm 114",
+              "position": "PSALM",
+              "track": "CONTINUOUS"
             },
             {
-              "reference": "Canticle:",
-              "position": "CANTICLE"
-            },
-            {
-              "reference": "Exodus",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "15.1b-11, 20,21",
-              "position": "OLD_TESTAMENT"
+              "reference": "Psalm 103.[1-7]8-13",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Romans 14.1-12",
@@ -9123,28 +8783,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Proverbs 1.20-33",
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Psalm 19* or",
-              "position": "PSALM"
+              "reference": "Psalm 19",
+              "position": "PSALM",
+              "track": "CONTINUOUS"
             },
             {
-              "reference": "Canticle:",
-              "position": "CANTICLE"
-            },
-            {
-              "reference": "Wisdom of",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Solomon 7.26 - 8.1",
-              "position": "OLD_TESTAMENT"
+              "reference": "Psalm 116.1-8",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "James 3.1-12",
@@ -9187,16 +8837,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Jeremiah 4.11-12,22-28",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 14",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 51.1-11",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "1 Timothy 1.12-17",
@@ -9247,16 +8899,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Exodus 16.2-15",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 105.1-6,37-45",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 145.1-8",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Philippians 1.21-30",
@@ -9303,16 +8957,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Proverbs 31.10-31",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 1",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 54",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "James 3.13 - 4.3,7-8a",
@@ -9355,16 +9011,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Jeremiah 8.18 - 9.1",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 79.1-9",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 113",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "1 Timothy 2.1-7",
@@ -9415,16 +9073,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Exodus 17.1-7",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 78.1-4,12-16",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 25.1-8",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Philippians 2.1-13",
@@ -9471,16 +9131,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Esther 7.1-6,9,10; 9.20-22",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 124",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 19.7-14",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "James 5.13-20",
@@ -9523,16 +9185,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Jeremiah 32.1-3a,6-15",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 91.1-6,14-16",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 146",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "1 Timothy 6.6-19",
@@ -9583,16 +9247,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Exodus 20.1-4,7-9,12-20",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 19",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 80.9-17",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Philippians 3.4b-14",
@@ -9639,16 +9305,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Job 1.1; 2.1-10",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 26",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 8",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Hebrews 1.1-4; 2.5-12",
@@ -9691,24 +9359,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Lamentations 1.1-6",
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Canticle:",
-              "position": "CANTICLE"
-            },
-            {
-              "reference": "Lamentations 3.19-26",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Psalm 137",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 37.1-9",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "2 Timothy 1.1-14",
@@ -9759,16 +9421,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Exodus 32.1-14",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 106.1-6,19-23",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 23",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Philippians 4.1-9",
@@ -9815,16 +9479,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Job 23.1-9,16,17",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 22.1-15",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 90.12-17",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Hebrews 4.12-16",
@@ -9867,16 +9533,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Jeremiah 29.1,4-7",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 66.1-11",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 111",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "2 Timothy 2.8-15",
@@ -9927,16 +9595,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Exodus 33.12-23",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 99.1-9",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 96.1-9[10-13]",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "1 Thessalonians 1.1-10",
@@ -9983,16 +9653,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Job 38.1-7[34-41]",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 104.1-10,26,35c",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 91.9-16",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Hebrews 5.1-10",
@@ -10035,16 +9707,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Jeremiah 31.27-34",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 119.97-104",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 121",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "2 Timothy 3.14 - 4.5",
@@ -10095,16 +9769,18 @@
         "A": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Deuteronomy 34.1-12",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 90.1-6,13-17",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 1",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "1 Thessalonians 2.1-8",
@@ -10151,16 +9827,18 @@
         "B": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Job 42.1-6,10-17",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 34.1-8,19-22",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 126",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "Hebrews 7.23-28",
@@ -10207,16 +9885,18 @@
         "C": {
           "principal": [
             {
-              "reference": "Continuous",
-              "position": "OLD_TESTAMENT"
-            },
-            {
               "reference": "Joel 2.23-32",
               "position": "OLD_TESTAMENT"
             },
             {
               "reference": "Psalm 65",
-              "position": "PSALM"
+              "position": "PSALM",
+              "track": "CONTINUOUS"
+            },
+            {
+              "reference": "Psalm 84.1-7",
+              "position": "PSALM",
+              "track": "RELATED"
             },
             {
               "reference": "2 Timothy 4.6-8,16-18",
@@ -10363,11 +10043,7 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Matthew 24.30-35 or",
-              "position": "GOSPEL"
-            },
-            {
-              "reference": "Luke 14.1-14",
+              "reference": "Matthew 24.30-35 or Luke 14.1-14",
               "position": "GOSPEL"
             }
           ]
@@ -10419,12 +10095,8 @@
               "position": "OLD_TESTAMENT"
             },
             {
-              "reference": "Romans 15.4-13 or",
+              "reference": "Romans 15.4-13 or Luke 14.1-14",
               "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Luke 14.1-14",
-              "position": "GOSPEL"
             }
           ]
         }
@@ -10439,11 +10111,23 @@
         "A": {
           "principal": [
             {
-              "reference": "Isaiah 56.3-8 or",
-              "position": "OLD_TESTAMENT"
+              "reference": "Revelation 7.9-17",
+              "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "2 Esdras 2.42-48",
+              "reference": "Psalm 34.1-10",
+              "position": "PSALM"
+            },
+            {
+              "reference": "1 John 3.1-3",
+              "position": "NEW_TESTAMENT"
+            },
+            {
+              "reference": "Matthew 5.1-12",
+              "position": "GOSPEL"
+            },
+            {
+              "reference": "Isaiah 56.3-8 or 2 Esdras 2.42-48",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -10475,11 +10159,7 @@
           ],
           "third": [
             {
-              "reference": "Wisdom 5.1-16 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Jeremiah 31.31-34",
+              "reference": "Wisdom 5.1-16 or Jeremiah 31.31-34",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -10493,12 +10173,46 @@
           ]
         },
         "B": {
-          "principal": [],
+          "principal": [
+            {
+              "reference": "Wisdom 3.1-9 or Isaiah 25.6-9",
+              "position": "OLD_TESTAMENT"
+            },
+            {
+              "reference": "Psalm 24.1-6",
+              "position": "PSALM"
+            },
+            {
+              "reference": "Revelation 21.1-6a",
+              "position": "NEW_TESTAMENT"
+            },
+            {
+              "reference": "John 11.32-44",
+              "position": "GOSPEL"
+            }
+          ],
           "second": [],
           "third": []
         },
         "C": {
-          "principal": [],
+          "principal": [
+            {
+              "reference": "Daniel 7.1-3,15-18",
+              "position": "OLD_TESTAMENT"
+            },
+            {
+              "reference": "Psalm 149",
+              "position": "PSALM"
+            },
+            {
+              "reference": "Ephesians 1.11-23",
+              "position": "NEW_TESTAMENT"
+            },
+            {
+              "reference": "Luke 6.20-31",
+              "position": "GOSPEL"
+            }
+          ],
           "second": [],
           "third": []
         }
@@ -10921,11 +10635,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "1 Samuel 9.27 - 10.2a;",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "10.17-26",
+              "reference": "1 Samuel 9.27 - 10.2a; 10.17-26",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -11011,11 +10721,7 @@
           ],
           "second": [
             {
-              "reference": "2 Samuel 23.1-7 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "1 Maccabees 2.15-29",
+              "reference": "2 Samuel 23.1-7 or 1 Maccabees 2.15-29",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -11383,11 +11089,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Ecclesiasticus 39.1-10 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 56.1-8",
+              "reference": "Ecclesiasticus 39.1-10 or Isaiah 56.1-8",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -11463,11 +11165,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Ecclesiasticus 39.1-10 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 56.1-8",
+              "reference": "Ecclesiasticus 39.1-10 or Isaiah 56.1-8",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -11543,11 +11241,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Ecclesiasticus 39.1-10 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 56.1-8",
+              "reference": "Ecclesiasticus 39.1-10 or Isaiah 56.1-8",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -11795,11 +11489,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Wisdom 9.1-12 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Genesis 3.8-15",
+              "reference": "Wisdom 9.1-12 or Genesis 3.8-15",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -11859,11 +11549,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Wisdom 9.1-12 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Genesis 3.8-15",
+              "reference": "Wisdom 9.1-12 or Genesis 3.8-15",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -11923,11 +11609,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Wisdom 9.1-12 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Genesis 3.8-15",
+              "reference": "Wisdom 9.1-12 or Genesis 3.8-15",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -11973,12 +11655,8 @@
         "A": {
           "principal": [
             {
-              "reference": "1 Maccabees 2.59-64 or",
+              "reference": "1 Maccabees 2.59-64 or Revelation 12.7-12",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Revelation 12.7-12",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 126",
@@ -12037,12 +11715,8 @@
         "B": {
           "principal": [
             {
-              "reference": "1 Maccabees 2.59-64 or",
+              "reference": "1 Maccabees 2.59-64 or Revelation 12.7-12",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Revelation 12.7-12",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 126",
@@ -12101,12 +11775,8 @@
         "C": {
           "principal": [
             {
-              "reference": "1 Maccabees 2.59-64 or",
+              "reference": "1 Maccabees 2.59-64 or Revelation 12.7-12",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Revelation 12.7-12",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 126",
@@ -12173,12 +11843,8 @@
         "A": {
           "principal": [
             {
-              "reference": "Proverbs 15.28-33 or",
+              "reference": "Proverbs 15.28-33 or Acts 15.35-41",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Acts 15.35-41",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 119.9-16",
@@ -12221,11 +11887,7 @@
           ],
           "third": [
             {
-              "reference": "Isaiah 62.6-10 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 51.13-30",
+              "reference": "Isaiah 62.6-10 or Ecclesiasticus 51.13-30",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -12241,12 +11903,8 @@
         "B": {
           "principal": [
             {
-              "reference": "Proverbs 15.28-33 or",
+              "reference": "Proverbs 15.28-33 or Acts 15.35-41",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Acts 15.35-41",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 119.9-16",
@@ -12289,11 +11947,7 @@
           ],
           "third": [
             {
-              "reference": "Isaiah 62.6-10 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 51.13-30",
+              "reference": "Isaiah 62.6-10 or Ecclesiasticus 51.13-30",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -12309,12 +11963,8 @@
         "C": {
           "principal": [
             {
-              "reference": "Proverbs 15.28-33 or",
+              "reference": "Proverbs 15.28-33 or Acts 15.35-41",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Acts 15.35-41",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 119.9-16",
@@ -12357,11 +12007,7 @@
           ],
           "third": [
             {
-              "reference": "Isaiah 62.6-10 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 51.13-30",
+              "reference": "Isaiah 62.6-10 or Ecclesiasticus 51.13-30",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -13043,11 +12689,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Ecclesiastes 12.9-14 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Tobit 4.5-11",
+              "reference": "Ecclesiastes 12.9-14 or Tobit 4.5-11",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -13123,11 +12765,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Ecclesiastes 12.9-14 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Tobit 4.5-11",
+              "reference": "Ecclesiastes 12.9-14 or Tobit 4.5-11",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -13203,11 +12841,7 @@
               "position": "NEW_TESTAMENT"
             },
             {
-              "reference": "Ecclesiastes 12.9-14 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Tobit 4.5-11",
+              "reference": "Ecclesiastes 12.9-14 or Tobit 4.5-11",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -13253,11 +12887,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Acts 13.14b-26 or",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Galatians 3.23-29",
+              "reference": "Acts 13.14b-26 or Galatians 3.23-29",
               "position": "NEW_TESTAMENT"
             },
             {
@@ -13321,11 +12951,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Acts 13.14b-26 or",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Galatians 3.23-29",
+              "reference": "Acts 13.14b-26 or Galatians 3.23-29",
               "position": "NEW_TESTAMENT"
             },
             {
@@ -13389,11 +13015,7 @@
               "position": "PSALM"
             },
             {
-              "reference": "Acts 13.14b-26 or",
-              "position": "NEW_TESTAMENT"
-            },
-            {
-              "reference": "Galatians 3.23-29",
+              "reference": "Acts 13.14b-26 or Galatians 3.23-29",
               "position": "NEW_TESTAMENT"
             },
             {
@@ -13973,11 +13595,7 @@
           ],
           "third": [
             {
-              "reference": "2 Samuel 15.17-21 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 2",
+              "reference": "2 Samuel 15.17-21 or Ecclesiasticus 2",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -14037,11 +13655,7 @@
           ],
           "third": [
             {
-              "reference": "2 Samuel 15.17-21 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 2",
+              "reference": "2 Samuel 15.17-21 or Ecclesiasticus 2",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -14101,11 +13715,7 @@
           ],
           "third": [
             {
-              "reference": "2 Samuel 15.17-21 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 2",
+              "reference": "2 Samuel 15.17-21 or Ecclesiasticus 2",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -14597,11 +14207,7 @@
           ],
           "third": [
             {
-              "reference": "Ecclesiasticus 48.1-10 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "1 Kings 19.1-16",
+              "reference": "Ecclesiasticus 48.1-10 or 1 Kings 19.1-16",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -14661,11 +14267,7 @@
           ],
           "third": [
             {
-              "reference": "Ecclesiasticus 48.1-10 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "1 Kings 19.1-16",
+              "reference": "Ecclesiasticus 48.1-10 or 1 Kings 19.1-16",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -14725,11 +14327,7 @@
           ],
           "third": [
             {
-              "reference": "Ecclesiasticus 48.1-10 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "1 Kings 19.1-16",
+              "reference": "Ecclesiasticus 48.1-10 or 1 Kings 19.1-16",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -14753,12 +14351,8 @@
         "A": {
           "principal": [
             {
-              "reference": "Isaiah 61.10,11 or",
+              "reference": "Isaiah 61.10,11 or Revelation 11.19 - 12.6,10",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Revelation 11.19 - 12.6,10",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 45.10-17",
@@ -14817,12 +14411,8 @@
         "B": {
           "principal": [
             {
-              "reference": "Isaiah 61.10,11 or",
+              "reference": "Isaiah 61.10,11 or Revelation 11.19 - 12.6,10",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Revelation 11.19 - 12.6,10",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 45.10-17",
@@ -14881,12 +14471,8 @@
         "C": {
           "principal": [
             {
-              "reference": "Isaiah 61.10,11 or",
+              "reference": "Isaiah 61.10,11 or Revelation 11.19 - 12.6,10",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Revelation 11.19 - 12.6,10",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 45.10-17",
@@ -15637,11 +15223,7 @@
           ],
           "third": [
             {
-              "reference": "Tobit 12.6-22 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Daniel 12.1-4",
+              "reference": "Tobit 12.6-22 or Daniel 12.1-4",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -15717,11 +15299,7 @@
           ],
           "third": [
             {
-              "reference": "Tobit 12.6-22 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Daniel 12.1-4",
+              "reference": "Tobit 12.6-22 or Daniel 12.1-4",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -15797,11 +15375,7 @@
           ],
           "third": [
             {
-              "reference": "Tobit 12.6-22 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Daniel 12.1-4",
+              "reference": "Tobit 12.6-22 or Daniel 12.1-4",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -15825,12 +15399,8 @@
         "A": {
           "principal": [
             {
-              "reference": "Isaiah 35.3-6 or",
+              "reference": "Isaiah 35.3-6 or Acts 16.6-12a",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Acts 16.6-12a",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 147.1-7",
@@ -15893,12 +15463,8 @@
         "B": {
           "principal": [
             {
-              "reference": "Isaiah 35.3-6 or",
+              "reference": "Isaiah 35.3-6 or Acts 16.6-12a",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Acts 16.6-12a",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 147.1-7",
@@ -15961,12 +15527,8 @@
         "C": {
           "principal": [
             {
-              "reference": "Isaiah 35.3-6 or",
+              "reference": "Isaiah 35.3-6 or Acts 16.6-12a",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Acts 16.6-12a",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 147.1-7",
@@ -16085,11 +15647,7 @@
           ],
           "third": [
             {
-              "reference": "Wisdom 5.1-16 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 45.18-26",
+              "reference": "Wisdom 5.1-16 or Isaiah 45.18-26",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -16153,11 +15711,7 @@
           ],
           "third": [
             {
-              "reference": "Wisdom 5.1-16 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 45.18-26",
+              "reference": "Wisdom 5.1-16 or Isaiah 45.18-26",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -16221,11 +15775,7 @@
           ],
           "third": [
             {
-              "reference": "Wisdom 5.1-16 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Isaiah 45.18-26",
+              "reference": "Wisdom 5.1-16 or Isaiah 45.18-26",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -16293,11 +15843,7 @@
           ],
           "third": [
             {
-              "reference": "Ezekiel 47.1-12 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 14.20-27",
+              "reference": "Ezekiel 47.1-12 or Ecclesiasticus 14.20-27",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -16357,11 +15903,7 @@
           ],
           "third": [
             {
-              "reference": "Ezekiel 47.1-12 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 14.20-27",
+              "reference": "Ezekiel 47.1-12 or Ecclesiasticus 14.20-27",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -16421,11 +15963,7 @@
           ],
           "third": [
             {
-              "reference": "Ezekiel 47.1-12 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Ecclesiasticus 14.20-27",
+              "reference": "Ezekiel 47.1-12 or Ecclesiasticus 14.20-27",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -16833,11 +16371,7 @@
           ],
           "third": [
             {
-              "reference": "Baruch 4.21-27 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Genesis 37.13-20",
+              "reference": "Baruch 4.21-27 or Genesis 37.13-20",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -16885,11 +16419,7 @@
           ],
           "third": [
             {
-              "reference": "Baruch 4.21-27 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Genesis 37.13-20",
+              "reference": "Baruch 4.21-27 or Genesis 37.13-20",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -16937,11 +16467,7 @@
           ],
           "third": [
             {
-              "reference": "Baruch 4.21-27 or",
-              "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Genesis 37.13-20",
+              "reference": "Baruch 4.21-27 or Genesis 37.13-20",
               "position": "OLD_TESTAMENT"
             },
             {
@@ -16965,12 +16491,8 @@
         "A": {
           "principal": [
             {
-              "reference": "1 Kings 8.22-30 or",
+              "reference": "1 Kings 8.22-30 or Revelation 21.9-14",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Revelation 21.9-14",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 122",
@@ -17021,12 +16543,8 @@
         "B": {
           "principal": [
             {
-              "reference": "Genesis 28.11-18 or",
+              "reference": "Genesis 28.11-18 or Revelation 21.9-14",
               "position": "OLD_TESTAMENT"
-            },
-            {
-              "reference": "Revelation 21.9-14",
-              "position": "NEW_TESTAMENT"
             },
             {
               "reference": "Psalm 122",

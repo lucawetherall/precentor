@@ -64,6 +64,7 @@ export async function PATCH(
   if ("status" in data) updates.status = data.status;
   if ("notes" in data) updates.notes = data.notes;
   if ("liturgicalOverrides" in data) updates.liturgicalOverrides = data.liturgicalOverrides;
+  if ("lectionaryTrack" in data) updates.lectionaryTrack = data.lectionaryTrack;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
