@@ -22,15 +22,19 @@ interface ChurchSettings {
 async function main() {
   console.log("Seeding lectionary data...");
 
+  // Seed two full lectionary cycles (A,B,C,A,B,C) starting from the current
+  // church year. Liturgical days are keyed by date, so each church year adds a
+  // distinct set of dated rows carrying that year's readings — no overwriting.
+  // Re-run this to roll the window forward as years pass.
+  const CYCLE_YEARS = 6;
   const now = new Date();
-  const currentYear = getChurchYear(now);
-  const nextYear = { startYear: currentYear.endYear, endYear: currentYear.endYear + 1 };
+  let churchYear = getChurchYear(now);
 
-  const result1 = await seedLectionaryData(currentYear);
-  console.log(`Current year ${result1.churchYear} (Year ${result1.lectionaryYear}): ${result1.imported} days, ${result1.errors} errors`);
-
-  const result2 = await seedLectionaryData(nextYear);
-  console.log(`Next year ${result2.churchYear} (Year ${result2.lectionaryYear}): ${result2.imported} days, ${result2.errors} errors`);
+  for (let i = 0; i < CYCLE_YEARS; i++) {
+    const result = await seedLectionaryData(churchYear);
+    console.log(`${result.churchYear} (Year ${result.lectionaryYear}): ${result.imported} days, ${result.errors} errors`);
+    churchYear = { startYear: churchYear.endYear, endYear: churchYear.endYear + 1 };
+  }
 
   console.log("Creating default services for churches...");
   const allChurches = await db.select().from(churches);
