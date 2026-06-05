@@ -1,0 +1,28 @@
+{
+  "$comment": "Shared, committed project settings. Allowlists safe, read-only and verification commands so agents aren't prompted for them on every run. Anything that mutates external state (git push, drizzle-kit push, deploys) is deliberately NOT here and still requires explicit approval.",
+  "permissions": {
+    "allow": [
+      "Bash(npm ci)",
+      "Bash(npm install)",
+      "Bash(npm run check)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run test)",
+      "Bash(npm run test:*)",
+      "Bash(npm run build)",
+      "Bash(npm run dev)",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx playwright:*)",
+      "Bash(git status)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Read(//Users/lucawetherall/Documents/GitHub/precentor/**)"
+    ]
+  }
+}

@@ -50,6 +50,39 @@ For confirmations specifically, use `useConfirm()` from `@/components/ui/use-con
 
 ---
 
+## Database / schema changes
+
+Full detail lives in [`src/lib/db/AGENTS.md`](../src/lib/db/AGENTS.md) — it auto-loads when an agent works in that folder. The short version:
+
+- [ ] Edit the table in `src/lib/db/schema-base.ts` (core) or `schema-liturgy.ts` (liturgy/templates), or a new `schema-<area>.ts` re-exported from `schema.ts`. **Never** hand-edit the `.sql` files in `drizzle/` — they're snapshots, not source of truth.
+- [ ] Import schema from `@/lib/db/schema` (the barrel), not from the split files.
+- [ ] Keep the change **additive** — new nullable columns, tables, or indexes. Renames, drops, type changes, and `NOT NULL`-without-default can break the drifted production DB or lose legacy data; flag those for a human instead of pushing.
+- [ ] Apply with `npx drizzle-kit push` (inspect the generated SQL before confirming). If `DATABASE_URL` isn't set, append the change to `docs/superpowers/plans/DEFERRED_DB_PUSHES.md` and note the pending push in your summary.
+
+---
+
+## Server vs. client components
+
+- [ ] Components are React **Server Components by default**. Only add `"use client"` when the file needs interactivity (state, effects, event handlers, browser APIs). Pushing `"use client"` to the leaf keeps server components — and their data fetching — out of the client bundle.
+- [ ] Server-only modules (anything importing `@/lib/db`, `@/lib/auth/*`, secrets) start with `import "server-only";` so they can never be pulled into a client bundle. Keep that line when you edit them.
+- [ ] Fetch data in server components and pass it down as props; don't fetch from `useEffect` when a server component could load it.
+
+---
+
+## Environment variables
+
+- [ ] Read config through the `env` proxy from `@/lib/env` — **never** `process.env.X` directly. The proxy validates that required vars are present and gives them types.
+- [ ] Adding a new variable means: add it to the `env` proxy in `src/lib/env.ts` **and** to `.env.example` (with a safe placeholder and a one-line comment). Only `NEXT_PUBLIC_*` vars are safe for client bundles.
+
+---
+
+## Tests
+
+- [ ] Put tests in a `__tests__/` folder next to the code they cover (e.g. `src/lib/auth/__tests__/`). Unit tests run under Vitest (`npm run test`); end-to-end specs live in `e2e/` and run under Playwright (`npm run test:e2e`).
+- [ ] New API routes and `lib` helpers should ship with at least one test. Run `npm run check` before claiming done.
+
+---
+
 ## Lint rules summary
 
 | Rule | What it catches | Where defined |

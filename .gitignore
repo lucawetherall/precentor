@@ -41,6 +41,10 @@ yarn-error.log*
 .env*
 !.env.example
 
+# claude code — commit shared config (.claude/settings.json, .claude/commands/),
+# keep personal/local overrides out
+.claude/settings.local.json
+
 # vercel
 .vercel
 
