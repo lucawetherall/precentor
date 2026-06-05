@@ -97,7 +97,7 @@ export const liturgicalDays = pgTable("liturgical_days", {
   colour: liturgicalColourEnum("colour").notNull(),
   cwName: text("cw_name").notNull(),
   transferredFrom: text("transferred_from"),
-  icalUid: text("ical_uid").unique(), // Repurposed: stores the sundayKey from lectionary JSON
+  icalUid: text("ical_uid"), // Repurposed: stores the sundayKey from lectionary JSON. NOT unique — the same named Sunday recurs every church year (A/B/C) on a different date; uniqueness is on `date`.
   rawDescription: text("raw_description"),
   collect: text("collect"),
   postCommunion: text("post_communion"),
