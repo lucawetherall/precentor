@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { Button } from "@/components/ui/button";
 
 interface Role { id: string; key: string; defaultName: string; category: string; }
@@ -28,38 +29,76 @@ export function InstitutionClient({
   members: Member[];
 }) {
   const { addToast } = useToast();
+  const confirm = useConfirm();
   const [appointees, setAppointees] = useState(initialAppointees);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [pending, setPending] = useState<Set<string>>(new Set());
 
   const byCategory: Record<string, Role[]> = {};
   for (const r of institutionalRoles) {
     (byCategory[r.category] ??= []).push(r);
   }
 
-  async function assign(userId: string, catalogRoleId: string) {
-    const res = await fetch(`/api/churches/${churchId}/members/${userId}/roles`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ catalogRoleId }),
+  function withPending(key: string, on: boolean) {
+    setPending((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
     });
-    if (!res.ok) return addToast("Failed to assign role", "error");
-    const created = await res.json();
-    const member = members.find((m) => m.id === userId);
-    setAppointees((prev) => [...prev, {
-      assignmentId: created.id,
-      userId,
-      catalogRoleId,
-      userName: member?.name ?? null,
-      userEmail: member?.email ?? "",
-    }]);
-    addToast("Appointee added", "success");
   }
 
-  async function revoke(assignmentId: string, userId: string) {
-    const res = await fetch(`/api/churches/${churchId}/members/${userId}/roles/${assignmentId}`, { method: "DELETE" });
-    if (!res.ok) return addToast("Failed to remove appointee", "error");
-    setAppointees((prev) => prev.filter((a) => a.assignmentId !== assignmentId));
-    addToast("Appointee removed", "success");
+  async function assign(userId: string, catalogRoleId: string) {
+    const key = `assign:${userId}:${catalogRoleId}`;
+    if (pending.has(key)) return;
+    withPending(key, true);
+    try {
+      const res = await fetch(`/api/churches/${churchId}/members/${userId}/roles`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ catalogRoleId }),
+      });
+      if (!res.ok) return addToast("Failed to assign role", "error");
+      const created = await res.json();
+      const member = members.find((m) => m.id === userId);
+      setAppointees((prev) => [...prev, {
+        assignmentId: created.id,
+        userId,
+        catalogRoleId,
+        userName: member?.name ?? null,
+        userEmail: member?.email ?? "",
+      }]);
+      addToast("Appointee added", "success");
+    } catch {
+      addToast("Failed to assign role", "error");
+    } finally {
+      withPending(key, false);
+    }
+  }
+
+  async function revoke(assignmentId: string, userId: string, label: string) {
+    if (pending.has(assignmentId)) return;
+    if (
+      !(await confirm({
+        title: "Remove this appointee?",
+        description: `${label} will no longer hold this role.`,
+        confirmLabel: "Remove",
+        destructive: true,
+      }))
+    ) {
+      return;
+    }
+    withPending(assignmentId, true);
+    try {
+      const res = await fetch(`/api/churches/${churchId}/members/${userId}/roles/${assignmentId}`, { method: "DELETE" });
+      if (!res.ok) return addToast("Failed to remove appointee", "error");
+      setAppointees((prev) => prev.filter((a) => a.assignmentId !== assignmentId));
+      addToast("Appointee removed", "success");
+    } catch {
+      addToast("Failed to remove appointee", "error");
+    } finally {
+      withPending(assignmentId, false);
+    }
   }
 
   return (
@@ -97,9 +136,10 @@ export function InstitutionClient({
                           <span key={a.assignmentId} className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs">
                             {a.userName ?? a.userEmail}
                             <button
-                              onClick={() => revoke(a.assignmentId, a.userId)}
+                              onClick={() => revoke(a.assignmentId, a.userId, a.userName ?? a.userEmail)}
+                              disabled={pending.has(a.assignmentId)}
                               aria-label={`Remove ${a.userName ?? a.userEmail}`}
-                              className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                              className="ml-1 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               ×
                             </button>

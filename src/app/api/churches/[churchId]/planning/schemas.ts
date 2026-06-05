@@ -6,6 +6,21 @@ import { MAX_CELL_TEXT_LEN } from "./_write-cell";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+const calendarDate = z
+  .string()
+  .regex(ISO_DATE, "must be YYYY-MM-DD")
+  .refine(isRealCalendarDate, "must be a real calendar date");
+
+/**
+ * Validates the `from`/`to` query range before it reaches the DATE column.
+ * Without this a value like `2026-13-99` flows straight into a SQL comparison
+ * and surfaces as an unhandled 500 instead of a clean 400.
+ */
+export const dateRangeSchema = z.object({
+  from: calendarDate,
+  to: calendarDate,
+});
+
 const ghostSchema = z.object({
   date: z
     .string()

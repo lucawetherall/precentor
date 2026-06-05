@@ -330,6 +330,9 @@ export const performanceLogs = pgTable("performance_logs", {
 }, (t) => [
   index("perf_log_church_idx").on(t.churchId),
   index("perf_log_date_idx").on(t.date),
+  // The cron unlogged-slot scan LEFT JOINs performance_logs on musicSlotId; without
+  // this index that join scans the whole table. Also covers the FK lookup.
+  index("perf_log_slot_idx").on(t.musicSlotId),
 ]);
 
 // ─── Service Sheet Templates ──────────────────────────────────

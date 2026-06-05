@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { format, parseISO } from "date-fns";
 import type { PlanningRow, CellDisplay, GridColumn } from "./types";
 import type { ApiResponse } from "./api-types";
@@ -11,11 +12,16 @@ import { PlanningCell } from "./planning-cell";
 import { getColumnSearch } from "./column-search";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { CsvImportModal } from "./csv-import-modal";
 import { buildRowsFromApi } from "./build-rows";
 import { serviceLabel } from "./derive-cells";
 import { COLUMN_ORDER } from "@/lib/planning/columns";
 import type { PlanningDataResponse } from "@/lib/planning/data";
+
+// CSV import (and its papaparse dependency, ~45KB) is a rarely-used action
+// behind a button, so load it on demand instead of in the Planning bundle.
+const CsvImportModal = dynamic(() =>
+  import("./csv-import-modal").then((m) => m.CsvImportModal),
+);
 
 const COLUMNS: { key: GridColumn; label: string }[] = [
   { key: "introit", label: "Introit" },
@@ -72,7 +78,28 @@ export function PlanningGrid({ churchId, from, to, initialData }: Props) {
       });
   }, [churchId, from, to, dispatch]);
 
-  async function persistCell(row: PlanningRow, column: GridColumn, value: CellDisplay) {
+  // Refetch the grid silently (no full-screen loading state) to resync optimistic
+  // state with the server — used after a save conflict so stale rows and their
+  // concurrency tokens are replaced with the server's current truth.
+  async function reloadGrid() {
+    try {
+      const res = await fetch(`/api/churches/${churchId}/planning?from=${from}&to=${to}`);
+      if (res.ok) {
+        const data = await res.json() as ApiResponse;
+        setHasNoPatterns(data.patterns.length === 0);
+        dispatch({ type: "SET_ROWS", rows: buildRowsFromApi(data, from, to) });
+      }
+    } catch {
+      // Leave the existing rows in place; the error status already signals trouble.
+    }
+  }
+
+  async function persistCell(
+    row: PlanningRow,
+    column: GridColumn,
+    value: CellDisplay,
+    previous: CellDisplay,
+  ) {
     dispatch({ type: "SAVE_STATUS", status: "saving" });
     const body = row.kind === "real"
       ? { serviceId: row.serviceId, column, value: { text: value.displayText, refId: value.refId ?? null }, expectedUpdatedAt: row.updatedAt }
@@ -93,9 +120,16 @@ export function PlanningGrid({ churchId, from, to, initialData }: Props) {
         dispatch({ type: "SAVE_STATUS", status: "saved" });
         setTimeout(() => dispatch({ type: "SAVE_STATUS", status: "idle" }), 1500);
       } else {
+        // The save was rejected: roll the optimistic edit back so the user isn't
+        // shown a value that didn't persist. On a 409 the server has a newer row
+        // than we do, so resync the whole grid to pick up its fresh value + token
+        // (otherwise every later edit to this row keeps conflicting).
+        dispatch({ type: "REVERT_CELL", rowKey: rowKey(row), column, previous });
         dispatch({ type: "SAVE_STATUS", status: "error" });
+        if (res.status === 409) void reloadGrid();
       }
     } catch {
+      dispatch({ type: "REVERT_CELL", rowKey: rowKey(row), column, previous });
       dispatch({ type: "SAVE_STATUS", status: "error" });
     }
   }
@@ -108,8 +142,11 @@ export function PlanningGrid({ churchId, from, to, initialData }: Props) {
           const row = state.rows.find((r) => rowKey(r) === rk);
           if (row) {
             e.preventDefault();
+            // Capture the on-screen value before UNDO so a failed persist can
+            // restore it rather than stranding the cell on the undone value.
+            const beforeUndo = getCell(row, column);
             dispatch({ type: "UNDO" });
-            void persistCell(row, column, previous);
+            void persistCell(row, column, previous, beforeUndo);
           }
         }
         return;
@@ -197,25 +234,34 @@ export function PlanningGrid({ churchId, from, to, initialData }: Props) {
 
       if (changes.length === 0) return;
       dispatch({ type: "SAVE_STATUS", status: "saving" });
-      const res = await fetch(`/api/churches/${churchId}/planning/bulk`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ changes }),
-      });
-      if (res.ok) {
-        dispatch({ type: "SAVE_STATUS", status: "saved" });
-        setTimeout(() => dispatch({ type: "SAVE_STATUS", status: "idle" }), 1500);
-        const refetch = await fetch(`/api/churches/${churchId}/planning?from=${from}&to=${to}`);
-        if (refetch.ok) {
-          const data = await refetch.json() as ApiResponse;
-          dispatch({ type: "SET_ROWS", rows: buildRowsFromApi(data, from, to) });
+      try {
+        const res = await fetch(`/api/churches/${churchId}/planning/bulk`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ changes }),
+        });
+        if (res.ok) {
+          dispatch({ type: "SAVE_STATUS", status: "saved" });
+          setTimeout(() => dispatch({ type: "SAVE_STATUS", status: "idle" }), 1500);
+        } else {
+          dispatch({ type: "SAVE_STATUS", status: "error" });
         }
-      } else {
+      } catch {
+        // Network failure: fall through to a resync so the optimistic paste
+        // doesn't stay applied locally while unsaved on the server.
         dispatch({ type: "SAVE_STATUS", status: "error" });
       }
+      // Always resync from the server: on success to reconcile matched refs, on
+      // failure to discard optimistic edits that didn't persist. Without this the
+      // grid could otherwise sit on "Saving…"/stale values forever.
+      await reloadGrid();
     }
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
+    // reloadGrid/persistCell are stable for our purposes (recreated each render
+    // but only read the current props/dispatch); listing them would re-bind the
+    // paste listener on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.editing, state.focus, state.rows, churchId, from, to, dispatch, getCell]);
 
   if (loading) {
@@ -346,7 +392,7 @@ export function PlanningGrid({ churchId, from, to, initialData }: Props) {
                       onCommit={(next) => {
                         const previous = cellValue;
                         dispatch({ type: "COMMIT_CELL", rowKey: rk, column: col.key, value: next, previous });
-                        void persistCell(row, col.key, next);
+                        void persistCell(row, col.key, next, previous);
                       }}
                     />
                   );

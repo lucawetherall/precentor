@@ -4,6 +4,8 @@ import { PresetDetailClient } from "../preset-detail-client";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/components/ui/toast", () => ({ useToast: () => ({ addToast: vi.fn() }) }));
+// Auto-confirm so the remove-slot flow proceeds without the ConfirmDialogProvider.
+vi.mock("@/components/ui/use-confirm", () => ({ useConfirm: () => () => Promise.resolve(true) }));
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 

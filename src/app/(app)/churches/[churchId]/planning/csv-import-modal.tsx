@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useId } from "react";
+import { useState, useId } from "react";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { parseCsvToRows, type CsvParsedRow } from "./csv-parse";
 import { downloadCsvTemplate } from "./csv-template";
 import { useToast } from "@/components/ui/toast";
@@ -19,15 +19,6 @@ export function CsvImportModal({ churchId, onClose, onImported }: Props) {
   const [busy, setBusy] = useState(false);
   const titleId = useId();
   const { addToast } = useToast();
-
-  // Close on Escape so the modal matches the rest of the app's dialogs.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -77,28 +68,12 @@ export function CsvImportModal({ churchId, onClose, onImported }: Props) {
   const invalidCount = rows?.filter((r) => r.status === "invalid").length ?? 0;
 
   return (
-    <div
-      className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent
         aria-labelledby={titleId}
-        className="bg-background border rounded shadow-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-auto"
+        className="max-w-2xl max-h-[80vh] overflow-auto"
       >
-        <div className="flex justify-between items-center mb-4">
-          <h2 id={titleId} className="text-lg font-semibold">Import CSV</h2>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            aria-label="Close"
-            onClick={onClose}
-          >
-            <X aria-hidden="true" className="h-4 w-4" />
-          </Button>
-        </div>
+        <DialogTitle id={titleId} className="mb-4">Import CSV</DialogTitle>
         {!rows && (
           <div className="space-y-3">
             <input type="file" accept=".csv" onChange={onFile} aria-label="Upload CSV file" />
@@ -142,7 +117,7 @@ export function CsvImportModal({ churchId, onClose, onImported }: Props) {
             </div>
           </>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
