@@ -23,7 +23,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
+    // In CI, serve the production build (built in the workflow before this
+    // runs) — `next start` precompiles every route, so navigations are fast
+    // and stable. Locally, keep the dev server for fast iteration.
+    command: process.env.CI ? "npm run start" : "npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
