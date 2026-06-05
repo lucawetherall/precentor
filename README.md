@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Precentor
 
-## Getting Started
+A planning tool for church musicians — manage services, the lectionary, music and
+hymn selection, and rotas, and generate printable service sheets.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router) · React 19 · Drizzle ORM (Postgres via Supabase) ·
+Tailwind 4 · Zod · Vitest + Playwright.
+
+> **Working in this repo with an AI agent?** Start with [`AGENTS.md`](AGENTS.md) and
+> [`docs/conventions.md`](docs/conventions.md) — they cover the project map, commands,
+> and the conventions CI enforces.
+
+## Getting started
+
+Requires **Node 24** and **npm** (the repo ships a `package-lock.json`; don't use
+yarn/pnpm/bun).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm ci                 # install
+cp .env.example .env    # then fill in the values (Supabase, Resend, Gemini…)
+npm run dev             # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Pages live under `src/app`; start at `src/app/(app)`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Common commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Task | Command |
+|------|---------|
+| Dev server | `npm run dev` |
+| **Verify (lint + typecheck + unit tests)** | `npm run check` |
+| Unit tests (watch) | `npm run test:watch` |
+| E2E tests | `npm run test:e2e` |
+| Production build | `npm run build` |
+| Apply schema changes to the DB | `npx drizzle-kit push` (see [`src/lib/db/AGENTS.md`](src/lib/db/AGENTS.md)) |
+| Seed data | `npm run db:seed*` (see `package.json`) |
 
-## Learn More
+Run `npm run check` before opening a PR — CI runs the same checks plus the build and
+E2E suite.
 
-To learn more about Next.js, take a look at the following resources:
+## Documentation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [`AGENTS.md`](AGENTS.md) — orientation for contributors and AI agents
+- [`docs/conventions.md`](docs/conventions.md) — checklists for pages, routes, dialogs, DB changes
+- [`docs/glossary.md`](docs/glossary.md) — liturgical and musical vocabulary
+- [`docs/superpowers/`](docs/superpowers/) — historical specs and plans
