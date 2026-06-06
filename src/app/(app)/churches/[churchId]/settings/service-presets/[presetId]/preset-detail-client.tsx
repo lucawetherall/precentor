@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectItem } from "@/components/ui/select";
@@ -21,10 +22,13 @@ interface Props {
 export function PresetDetailClient({ churchId, preset, slots: initialSlots, catalog }: Props) {
   const router = useRouter();
   const { addToast } = useToast();
+  const confirm = useConfirm();
   const [name, setName] = useState(preset.name);
   const [defaultTime, setDefaultTime] = useState(preset.defaultTime ?? "");
   const [saving, setSaving] = useState(false);
   const [slots, setSlots] = useState(initialSlots);
+  const [addingSlot, setAddingSlot] = useState(false);
+  const [removingSlotId, setRemovingSlotId] = useState<string | null>(null);
   const [showAddSlot, setShowAddSlot] = useState(false);
   const [addingRoleId, setAddingRoleId] = useState("");
   const [addingMin, setAddingMin] = useState(1);
@@ -55,38 +59,63 @@ export function PresetDetailClient({ churchId, preset, slots: initialSlots, cata
   }
 
   async function addSlot() {
-    if (!addingRoleId) return;
+    if (!addingRoleId || addingSlot) return;
     const exclusive = addingIsVoice ? false : addingExclusive;
-    const res = await fetch(`/api/churches/${churchId}/presets/${preset.id}/slots`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        catalogRoleId: addingRoleId,
-        minCount: addingMin,
-        maxCount: addingMax === "" ? null : parseInt(addingMax, 10),
-        exclusive,
-        displayOrder: (slots.length + 1) * 10,
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      return addToast(err.error ?? "Failed to add slot", "error");
+    setAddingSlot(true);
+    try {
+      const res = await fetch(`/api/churches/${churchId}/presets/${preset.id}/slots`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          catalogRoleId: addingRoleId,
+          minCount: addingMin,
+          maxCount: addingMax === "" ? null : parseInt(addingMax, 10),
+          exclusive,
+          displayOrder: (slots.length + 1) * 10,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        return addToast(err.error ?? "Failed to add slot", "error");
+      }
+      const created = await res.json();
+      setSlots((prev) => [...prev, created]);
+      setShowAddSlot(false);
+      setAddingRoleId("");
+      setAddingMin(1);
+      setAddingMax("");
+      setAddingExclusive(true);
+      addToast("Slot added", "success");
+    } catch {
+      addToast("Failed to add slot", "error");
+    } finally {
+      setAddingSlot(false);
     }
-    const created = await res.json();
-    setSlots((prev) => [...prev, created]);
-    setShowAddSlot(false);
-    setAddingRoleId("");
-    setAddingMin(1);
-    setAddingMax("");
-    setAddingExclusive(true);
-    addToast("Slot added", "success");
   }
 
-  async function removeSlot(slotId: string) {
-    const res = await fetch(`/api/churches/${churchId}/presets/${preset.id}/slots/${slotId}`, { method: "DELETE" });
-    if (!res.ok) return addToast("Failed to remove slot", "error");
-    setSlots((prev) => prev.filter((s) => s.id !== slotId));
-    addToast("Slot removed", "success");
+  async function removeSlot(slotId: string, roleName: string) {
+    if (removingSlotId) return;
+    if (
+      !(await confirm({
+        title: "Remove this role slot?",
+        description: `The “${roleName}” slot will be removed from this preset.`,
+        confirmLabel: "Remove",
+        destructive: true,
+      }))
+    ) {
+      return;
+    }
+    setRemovingSlotId(slotId);
+    try {
+      const res = await fetch(`/api/churches/${churchId}/presets/${preset.id}/slots/${slotId}`, { method: "DELETE" });
+      if (!res.ok) return addToast("Failed to remove slot", "error");
+      setSlots((prev) => prev.filter((s) => s.id !== slotId));
+      addToast("Slot removed", "success");
+    } catch {
+      addToast("Failed to remove slot", "error");
+    } finally {
+      setRemovingSlotId(null);
+    }
   }
 
   return (
@@ -155,10 +184,11 @@ export function PresetDetailClient({ churchId, preset, slots: initialSlots, cata
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeSlot(slot.id)}
+                        disabled={removingSlotId === slot.id}
+                        onClick={() => removeSlot(slot.id, role?.defaultName ?? slot.catalogRoleId)}
                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
-                        Remove
+                        {removingSlotId === slot.id ? "Removing…" : "Remove"}
                       </Button>
                     </td>
                   </tr>
@@ -224,7 +254,9 @@ export function PresetDetailClient({ churchId, preset, slots: initialSlots, cata
               <p className="text-xs text-muted-foreground">Voice part slots are never exclusive.</p>
             )}
             <div className="flex gap-2">
-              <Button size="sm" onClick={addSlot} disabled={!addingRoleId}>Add slot</Button>
+              <Button size="sm" onClick={addSlot} disabled={!addingRoleId || addingSlot}>
+                {addingSlot ? "Adding…" : "Add slot"}
+              </Button>
               <Button size="sm" variant="outline" onClick={() => { setShowAddSlot(false); setAddingRoleId(""); }}>
                 Cancel
               </Button>

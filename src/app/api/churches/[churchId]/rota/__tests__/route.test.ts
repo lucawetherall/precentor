@@ -6,6 +6,7 @@ vi.mock("@/lib/db", () => ({
     select: vi.fn(),
     insert: vi.fn(),
     delete: vi.fn(),
+    transaction: vi.fn(),
   },
 }));
 vi.mock("@/lib/logger", () => ({
@@ -28,6 +29,12 @@ describe("POST rota", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "editor1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    // The route now runs the slot capacity check + insert inside a transaction
+    // that locks the slot row. Run the callback against the same mocked `db` so
+    // the per-test `db.select`/`db.insert` sequences continue to apply in order.
+    vi.mocked(db.transaction).mockImplementation(
+      (async (cb: (tx: typeof db) => unknown) => cb(db)) as unknown as typeof db.transaction,
+    );
   });
 
   it("returns 403 for non-editors", async () => {
@@ -94,9 +101,9 @@ describe("POST rota", () => {
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
       } as unknown as ReturnType<typeof db.select>)
-      // slot not found
+      // slot not found (locked via .for("update"))
       .mockReturnValueOnce({
-        from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }),
+        from: () => ({ where: () => ({ limit: () => ({ for: () => Promise.resolve([]) }) }) }),
       } as unknown as ReturnType<typeof db.select>);
     const res = await POST(makeReq({ userId: "u1", serviceId: "s1", confirmed: true, catalogRoleId: "r1" }), {
       params: Promise.resolve({ churchId: "c1" }),
@@ -116,9 +123,9 @@ describe("POST rota", () => {
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
       } as unknown as ReturnType<typeof db.select>)
-      // slot found: exclusive, maxCount null
+      // slot found: exclusive, maxCount null (locked via .for("update"))
       .mockReturnValueOnce({
-        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "sl1", exclusive: true, maxCount: null }]) }) }),
+        from: () => ({ where: () => ({ limit: () => ({ for: () => Promise.resolve([{ id: "sl1", exclusive: true, maxCount: null }]) }) }) }),
       } as unknown as ReturnType<typeof db.select>)
       // existing entries: one exists
       .mockReturnValueOnce({
@@ -142,9 +149,9 @@ describe("POST rota", () => {
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
       } as unknown as ReturnType<typeof db.select>)
-      // slot found: not exclusive, maxCount=2
+      // slot found: not exclusive, maxCount=2 (locked via .for("update"))
       .mockReturnValueOnce({
-        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "sl1", exclusive: false, maxCount: 2 }]) }) }),
+        from: () => ({ where: () => ({ limit: () => ({ for: () => Promise.resolve([{ id: "sl1", exclusive: false, maxCount: 2 }]) }) }) }),
       } as unknown as ReturnType<typeof db.select>)
       // existing entries: 2 exist
       .mockReturnValueOnce({
@@ -169,9 +176,9 @@ describe("POST rota", () => {
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
       } as unknown as ReturnType<typeof db.select>)
-      // slot found: not exclusive, no maxCount
+      // slot found: not exclusive, no maxCount (locked via .for("update"))
       .mockReturnValueOnce({
-        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "sl1", exclusive: false, maxCount: null }]) }) }),
+        from: () => ({ where: () => ({ limit: () => ({ for: () => Promise.resolve([{ id: "sl1", exclusive: false, maxCount: null }]) }) }) }),
       } as unknown as ReturnType<typeof db.select>)
       // existing entries for capacity check: empty
       .mockReturnValueOnce({
@@ -204,9 +211,9 @@ describe("POST rota", () => {
       .mockReturnValueOnce({
         from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "mr1" }]) }) }),
       } as unknown as ReturnType<typeof db.select>)
-      // slot found: not exclusive, no maxCount
+      // slot found: not exclusive, no maxCount (locked via .for("update"))
       .mockReturnValueOnce({
-        from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "sl1", exclusive: false, maxCount: null }]) }) }),
+        from: () => ({ where: () => ({ limit: () => ({ for: () => Promise.resolve([{ id: "sl1", exclusive: false, maxCount: null }]) }) }) }),
       } as unknown as ReturnType<typeof db.select>)
       // existing entries for capacity check: empty
       .mockReturnValueOnce({

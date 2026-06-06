@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 const DAY_NAMES = [
   "Sunday",
@@ -42,7 +43,9 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
   });
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   function showToast(msg: string) {
     setToast(msg);
@@ -70,15 +73,34 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
   }
 
   async function handleDelete(patternId: string) {
-    const res = await fetch(
-      `/api/churches/${churchId}/service-patterns/${patternId}`,
-      { method: "DELETE" },
-    );
+    if (
+      !(await confirm({
+        title: "Delete this service pattern?",
+        description:
+          "Future services will no longer be generated from this pattern. Services already generated are not affected.",
+        confirmLabel: "Delete",
+        destructive: true,
+      }))
+    ) {
+      return;
+    }
 
-    if (res.ok) {
-      setPatterns((prev) => prev.filter((p) => p.id !== patternId));
-    } else {
+    setDeletingId(patternId);
+    try {
+      const res = await fetch(
+        `/api/churches/${churchId}/service-patterns/${patternId}`,
+        { method: "DELETE" },
+      );
+
+      if (res.ok) {
+        setPatterns((prev) => prev.filter((p) => p.id !== patternId));
+      } else {
+        showToast("Failed to delete pattern.");
+      }
+    } catch {
       showToast("Failed to delete pattern.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -179,9 +201,10 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
                 </label>
                 <button
                   onClick={() => handleDelete(pattern.id)}
-                  className="text-sm text-destructive hover:underline"
+                  disabled={deletingId === pattern.id}
+                  className="text-sm text-destructive hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
                 >
-                  Delete
+                  {deletingId === pattern.id ? "Deleting…" : "Delete"}
                 </button>
               </div>
             </div>

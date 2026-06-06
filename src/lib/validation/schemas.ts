@@ -203,6 +203,26 @@ export const presetCreateSchema = z.object({
 
 export const presetUpdateSchema = presetCreateSchema.partial().strict();
 
+/**
+ * Cross-field invariants for a role slot's count configuration. Shared between
+ * the create schema and the PATCH route so an update can't persist a state the
+ * create path forbids (e.g. an exclusive slot with maxCount 5, or maxCount <
+ * minCount). Returns an error message, or null when the slot is valid.
+ */
+export function validateSlotCounts(s: {
+  minCount: number;
+  maxCount?: number | null;
+  exclusive: boolean;
+}): string | null {
+  if (s.exclusive && !(s.minCount <= 1 && (s.maxCount == null || s.maxCount === 1))) {
+    return "Exclusive slots must have minCount ≤ 1 and maxCount ≤ 1";
+  }
+  if (s.maxCount != null && s.maxCount < s.minCount) {
+    return "maxCount must be >= minCount";
+  }
+  return null;
+}
+
 export const presetSlotCreateSchema = z.object({
   catalogRoleId: z.string().uuid(),
   minCount: z.number().int().min(0),

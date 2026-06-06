@@ -20,6 +20,7 @@ type Action =
   | { type: "ENTER_EDIT" }
   | { type: "CANCEL_EDIT" }
   | { type: "COMMIT_CELL"; rowKey: string; column: GridColumn; value: CellDisplay; previous: CellDisplay }
+  | { type: "REVERT_CELL"; rowKey: string; column: GridColumn; previous: CellDisplay }
   | { type: "UNDO" }
   | { type: "SAVE_STATUS"; status: SaveStatus }
   | { type: "REPLACE_ROW_ID"; ghostId: string; serviceId: string; updatedAt: string }
@@ -38,6 +39,16 @@ function reducer(state: State, action: Action): State {
         dirty: { ...state.dirty, [action.rowKey]: { ...existing, [action.column]: action.value } },
         editing: false,
         lastEdit: { rowKey: action.rowKey, column: action.column, previous: action.previous },
+      };
+    }
+    // Roll a single cell back to the value it held before an optimistic edit,
+    // used when the server rejects the save (409 conflict, 404, network error).
+    // Other dirty cells on the row are preserved.
+    case "REVERT_CELL": {
+      const existing = state.dirty[action.rowKey] ?? {};
+      return {
+        ...state,
+        dirty: { ...state.dirty, [action.rowKey]: { ...existing, [action.column]: action.previous } },
       };
     }
     case "UNDO": {

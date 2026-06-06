@@ -70,17 +70,17 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
     adjacent = adjacentResult
 
     if (day) {
-      dayReadings = await db
-        .select()
-        .from(readings)
-        .where(eq(readings.liturgicalDayId, day.id))
-
-      dayServices = await db
-        .select()
-        .from(services)
-        .where(
-          and(eq(services.churchId, churchId), eq(services.liturgicalDayId, day.id))
-        )
+      // Wave 1: readings and services are independent — fetch in parallel.
+      const dayId = day.id
+      ;[dayReadings, dayServices] = await Promise.all([
+        db.select().from(readings).where(eq(readings.liturgicalDayId, dayId)),
+        db
+          .select()
+          .from(services)
+          .where(
+            and(eq(services.churchId, churchId), eq(services.liturgicalDayId, dayId))
+          ),
+      ])
 
       const service = dayServices[0] ?? null
 
@@ -88,86 +88,115 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
       // church default → CONTINUOUS) and show only that track's psalm. The OT
       // reading, epistle, gospel and Second/Third services are untouched.
       trackChoiceAvailable = hasTrackChoice(dayReadings)
-      if (trackChoiceAvailable) {
-        const churchRow = await db
-          .select({ settings: churches.settings })
-          .from(churches)
-          .where(eq(churches.id, churchId))
-          .limit(1)
+
+      // Wave 2: every remaining read keys off `day`/`service`/`dayServices`
+      // and none depend on each other, so issue them as a single parallel wave
+      // instead of a serial chain.
+      const churchRowPromise = trackChoiceAvailable
+        ? db
+            .select({ settings: churches.settings })
+            .from(churches)
+            .where(eq(churches.id, churchId))
+            .limit(1)
+        : null
+      const availPromise = service
+        ? db
+            .select()
+            .from(availability)
+            .where(
+              and(
+                eq(availability.userId, userId),
+                eq(availability.serviceId, service.id)
+              )
+            )
+            .limit(1)
+        : null
+      const slotsPromise = service
+        ? db
+            .select({
+              id: musicSlots.id,
+              slotType: musicSlots.slotType,
+              positionOrder: musicSlots.positionOrder,
+              freeText: musicSlots.freeText,
+              notes: musicSlots.notes,
+              hymnBook: hymns.book,
+              hymnNumber: hymns.number,
+              hymnFirstLine: hymns.firstLine,
+              hymnTuneName: hymns.tuneName,
+              anthemTitle: anthems.title,
+              anthemComposer: anthems.composer,
+              anthemVoicing: anthems.voicing,
+            })
+            .from(musicSlots)
+            .leftJoin(hymns, eq(musicSlots.hymnId, hymns.id))
+            .leftJoin(anthems, eq(musicSlots.anthemId, anthems.id))
+            .where(eq(musicSlots.serviceId, service.id))
+            .orderBy(asc(musicSlots.positionOrder))
+        : null
+      const rotaPromise =
+        service && isEditor
+          ? db
+              .select()
+              .from(rotaEntries)
+              .where(
+                and(
+                  eq(rotaEntries.serviceId, service.id),
+                  eq(rotaEntries.confirmed, true)
+                )
+              )
+          : null
+      // Editor mode needs every service's sections and raw slots.
+      const svcIds = dayServices.map((s) => s.id)
+      const editorPromise =
+        isEditMode && svcIds.length > 0
+          ? Promise.all([
+              db
+                .select()
+                .from(serviceSections)
+                .where(inArray(serviceSections.serviceId, svcIds))
+                .orderBy(asc(serviceSections.positionOrder)),
+              db
+                .select()
+                .from(musicSlots)
+                .where(inArray(musicSlots.serviceId, svcIds))
+                .orderBy(asc(musicSlots.positionOrder)),
+            ])
+          : null
+
+      const [churchRow, avail, slots, rota, editorData] = await Promise.all([
+        churchRowPromise,
+        availPromise,
+        slotsPromise,
+        rotaPromise,
+        editorPromise,
+      ])
+
+      if (trackChoiceAvailable && churchRow) {
         resolvedTrack = resolveLectionaryTrack(
           service?.lectionaryTrack,
           readLectionaryTrack(churchRow[0]?.settings),
         )
         dayReadings = filterReadingsByTrack(dayReadings, resolvedTrack)
       }
-
-      if (service) {
-        const avail = await db
-          .select()
-          .from(availability)
-          .where(
-            and(
-              eq(availability.userId, userId),
-              eq(availability.serviceId, service.id)
-            )
-          )
-          .limit(1)
-        userAvail = (avail[0]?.status as 'AVAILABLE' | 'UNAVAILABLE' | 'TENTATIVE' | undefined) ?? null
-
-        populatedSlots = (await db
-          .select({
-            id: musicSlots.id,
-            slotType: musicSlots.slotType,
-            positionOrder: musicSlots.positionOrder,
-            freeText: musicSlots.freeText,
-            notes: musicSlots.notes,
-            hymnBook: hymns.book,
-            hymnNumber: hymns.number,
-            hymnFirstLine: hymns.firstLine,
-            hymnTuneName: hymns.tuneName,
-            anthemTitle: anthems.title,
-            anthemComposer: anthems.composer,
-            anthemVoicing: anthems.voicing,
-          })
-          .from(musicSlots)
-          .leftJoin(hymns, eq(musicSlots.hymnId, hymns.id))
-          .leftJoin(anthems, eq(musicSlots.anthemId, anthems.id))
-          .where(eq(musicSlots.serviceId, service.id))
-          .orderBy(asc(musicSlots.positionOrder))) as PopulatedMusicSlot[]
-
-        if (isEditor) {
-          const rota = await db
-            .select()
-            .from(rotaEntries)
-            .where(
-              and(
-                eq(rotaEntries.serviceId, service.id),
-                eq(rotaEntries.confirmed, true)
-              )
-            )
-          confirmedCount = rota.length
-        }
+      if (avail) {
+        userAvail =
+          (avail[0]?.status as
+            | 'AVAILABLE'
+            | 'UNAVAILABLE'
+            | 'TENTATIVE'
+            | undefined) ?? null
       }
-
-      // Fetch sections and raw slots for all services (for editor mode)
-      if (isEditMode && dayServices.length > 0) {
-        const svcIds = dayServices.map((s) => s.id);
-        const [allSections, allSlots] = await Promise.all([
-          db
-            .select()
-            .from(serviceSections)
-            .where(inArray(serviceSections.serviceId, svcIds))
-            .orderBy(asc(serviceSections.positionOrder)),
-          db
-            .select()
-            .from(musicSlots)
-            .where(inArray(musicSlots.serviceId, svcIds))
-            .orderBy(asc(musicSlots.positionOrder)),
-        ]);
-        // Group by serviceId
+      if (slots) {
+        populatedSlots = slots as PopulatedMusicSlot[]
+      }
+      if (rota) {
+        confirmedCount = rota.length
+      }
+      if (editorData) {
+        const [allSections, allSlots] = editorData
         for (const svc of dayServices) {
-          editorSectionsMap[svc.id] = allSections.filter((s) => s.serviceId === svc.id);
-          editorSlotsMap[svc.id] = allSlots.filter((s) => s.serviceId === svc.id);
+          editorSectionsMap[svc.id] = allSections.filter((s) => s.serviceId === svc.id)
+          editorSlotsMap[svc.id] = allSlots.filter((s) => s.serviceId === svc.id)
         }
       }
     }

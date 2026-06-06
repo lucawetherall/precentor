@@ -2,7 +2,7 @@ import { requireChurchRole } from "@/lib/auth/permissions";
 import { apiError, apiSuccess, ErrorCodes } from "@/lib/api-helpers";
 import { db } from "@/lib/db";
 import { presetRoleSlots, churchServicePresets } from "@/lib/db/schema";
-import { presetSlotUpdateSchema } from "@/lib/validation/schemas";
+import { presetSlotUpdateSchema, validateSlotCounts } from "@/lib/validation/schemas";
 import { parseJsonBody } from "@/lib/api/parse-body";
 import { and, eq } from "drizzle-orm";
 
@@ -18,12 +18,27 @@ export async function PATCH(
   if (bodyError) return bodyError;
 
   const [slot] = await db
-    .select({ id: presetRoleSlots.id })
+    .select({
+      id: presetRoleSlots.id,
+      minCount: presetRoleSlots.minCount,
+      maxCount: presetRoleSlots.maxCount,
+      exclusive: presetRoleSlots.exclusive,
+    })
     .from(presetRoleSlots)
     .innerJoin(churchServicePresets, eq(churchServicePresets.id, presetRoleSlots.presetId))
     .where(and(eq(presetRoleSlots.id, slotId), eq(churchServicePresets.churchId, churchId)))
     .limit(1);
   if (!slot) return apiError("Slot not found", 404, { code: ErrorCodes.NOT_FOUND });
+
+  // A PATCH may touch only some count fields, so validate the *merged* slot —
+  // otherwise an update could persist a state the create schema forbids (e.g.
+  // flipping exclusive on while maxCount stays at 5).
+  const countError = validateSlotCounts({
+    minCount: data.minCount ?? slot.minCount,
+    maxCount: data.maxCount === undefined ? slot.maxCount : data.maxCount,
+    exclusive: data.exclusive ?? slot.exclusive,
+  });
+  if (countError) return apiError(countError, 400, { code: ErrorCodes.INVALID_SLOT_CARDINALITY });
 
   const [updated] = await db
     .update(presetRoleSlots)

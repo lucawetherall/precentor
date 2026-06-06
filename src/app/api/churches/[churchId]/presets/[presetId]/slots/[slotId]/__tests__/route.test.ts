@@ -25,6 +25,18 @@ describe("PATCH /presets/[presetId]/slots/[slotId]", () => {
     expect(res.status).toBe(200);
   });
 
+  it("rejects (400) flipping exclusive on when the stored maxCount exceeds 1", async () => {
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    // Existing slot is non-exclusive with maxCount 5; the PATCH only sets exclusive:true.
+    vi.mocked(db.select).mockReturnValue({ from: () => ({ innerJoin: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "sl1", minCount: 0, maxCount: 5, exclusive: false }]) }) }) }) } as unknown as ReturnType<typeof db.select>);
+    const updateSpy = vi.fn();
+    vi.mocked(db.update).mockReturnValue({ set: updateSpy } as unknown as ReturnType<typeof db.update>);
+    const res = await PATCH(new Request("http://x", { method: "PATCH", body: JSON.stringify({ exclusive: true }), headers: { "content-type": "application/json" } }), { params: Promise.resolve({ churchId: "c1", presetId: "p1", slotId: "sl1" }) });
+    expect(res.status).toBe(400);
+    // The merged-state guard must run before any write.
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
   it("returns 404 (not a misleading 200) when the slot is in the church but under a different preset", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     // Existence check passes (slot belongs to this church) ...

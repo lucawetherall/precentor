@@ -58,14 +58,22 @@ jobs:
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    # Safety net: the real run takes a few minutes. Without this, a stalled
-    # browser install (the historic failure mode) hangs until GitHub's 6h
-    # ceiling instead of failing fast.
+    # Run inside the official Playwright image: the browsers (and their system
+    # libraries) are baked in, so we never hit the CDN browser download that
+    # repeatedly stalled this job. Pin the tag to the installed
+    # @playwright/test version so the bundled browser revision matches.
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble
+    # Safety net so a hung server/test fails fast instead of running to GitHub's
+    # 6h ceiling.
     timeout-minutes: 20
     needs: [lint-and-typecheck, test, build]
     env:
       NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
       NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-for-ci
+      # The image already ships the matching browsers at this path; point
+      # Playwright at them so it never tries to download into ~/.cache.
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -73,43 +81,6 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-
-      # Cache the downloaded browser binaries, keyed on the installed
-      # Playwright version. On a hit we skip the (historically flaky) CDN
-      # download entirely.
-      - name: Resolve Playwright version
-        id: playwright-version
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
-
-      # System (apt) libraries are not part of the cached browser dir, so
-      # install them on every run. This is fast and reliable.
-      - name: Install Playwright system dependencies
-        run: npx playwright install-deps chromium
-
-      # Only download the browser on a cache miss. Wrap each attempt in a
-      # hard timeout + retry so a stalled download fails in minutes and
-      # recovers automatically instead of hanging the whole job.
-      - name: Install Playwright browser (Chromium)
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: |
-          for attempt in 1 2 3; do
-            echo "::group::Chromium install attempt $attempt"
-            if timeout 300 npx playwright install chromium; then
-              echo "::endgroup::"
-              exit 0
-            fi
-            echo "::endgroup::"
-            echo "::warning::Chromium install attempt $attempt stalled or failed; retrying"
-            sleep 5
-          done
-          echo "::error::Playwright Chromium install failed after 3 attempts"
-          exit 1
 
       # Build once and serve the production server during the tests
       # (playwright.config.ts runs `npm run start` under CI). This avoids the

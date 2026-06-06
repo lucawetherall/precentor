@@ -39,30 +39,44 @@ export async function POST(
     )).limit(1);
   if (!memberRole) return apiError("User does not hold this role", 403, { code: ErrorCodes.USER_LACKS_ROLE });
 
-  const [slot] = await db.select().from(serviceRoleSlots)
-    .where(and(eq(serviceRoleSlots.serviceId, serviceId), eq(serviceRoleSlots.catalogRoleId, catalogRoleId)))
-    .limit(1);
-  if (!slot) return apiError("Slot not on service", 404, { code: ErrorCodes.SLOT_NOT_ON_SERVICE });
+  // Lock the slot row, re-read its current occupancy, enforce capacity, and
+  // insert — all in one transaction. Without the row lock, two concurrent
+  // requests could both read `existing` before either inserts and both pass the
+  // exclusive/maxCount guard, overfilling the slot. Locking serviceRoleSlots
+  // serialises inserts for this slot even when it starts empty (a plain
+  // SELECT ... FOR UPDATE on rotaEntries would lock nothing in that case).
+  const result = await db.transaction(async (tx) => {
+    const [slot] = await tx.select().from(serviceRoleSlots)
+      .where(and(eq(serviceRoleSlots.serviceId, serviceId), eq(serviceRoleSlots.catalogRoleId, catalogRoleId)))
+      .limit(1)
+      .for("update");
+    if (!slot) return { notOnService: true as const };
 
-  const existing = await db.select().from(rotaEntries)
-    .where(and(
-      eq(rotaEntries.serviceId, serviceId),
-      eq(rotaEntries.catalogRoleId, catalogRoleId),
-      isNull(rotaEntries.quarantinedAt),
-    ));
-  if (slot.exclusive && existing.length > 0) {
-    return apiError("Slot already filled", 409, { code: ErrorCodes.SLOT_ALREADY_FILLED });
-  }
-  if (slot.maxCount != null && existing.length >= slot.maxCount) {
-    return apiError("Slot at capacity", 409, { code: ErrorCodes.SLOT_AT_CAPACITY });
-  }
+    const existing = await tx.select().from(rotaEntries)
+      .where(and(
+        eq(rotaEntries.serviceId, serviceId),
+        eq(rotaEntries.catalogRoleId, catalogRoleId),
+        isNull(rotaEntries.quarantinedAt),
+      ));
+    if (slot.exclusive && existing.length > 0) {
+      return { filled: true as const };
+    }
+    if (slot.maxCount != null && existing.length >= slot.maxCount) {
+      return { atCapacity: true as const };
+    }
 
-  await db.insert(rotaEntries).values({ userId, serviceId, confirmed: true, catalogRoleId });
+    await tx.insert(rotaEntries).values({ userId, serviceId, confirmed: true, catalogRoleId });
 
-  const allSlots = await db.select().from(rotaEntries)
-    .where(and(eq(rotaEntries.serviceId, serviceId), eq(rotaEntries.userId, userId), isNull(rotaEntries.quarantinedAt)));
-  const warnings = allSlots.length > 1
-    ? [{ code: "DUAL_ROLE", userId, serviceId, allHeldSlots: allSlots.map((e) => ({ catalogRoleId: e.catalogRoleId })) }]
-    : [];
-  return apiSuccess({ success: true, warnings }, 201);
+    const allSlots = await tx.select().from(rotaEntries)
+      .where(and(eq(rotaEntries.serviceId, serviceId), eq(rotaEntries.userId, userId), isNull(rotaEntries.quarantinedAt)));
+    const warnings = allSlots.length > 1
+      ? [{ code: "DUAL_ROLE", userId, serviceId, allHeldSlots: allSlots.map((e) => ({ catalogRoleId: e.catalogRoleId })) }]
+      : [];
+    return { warnings };
+  });
+
+  if ("notOnService" in result) return apiError("Slot not on service", 404, { code: ErrorCodes.SLOT_NOT_ON_SERVICE });
+  if ("filled" in result) return apiError("Slot already filled", 409, { code: ErrorCodes.SLOT_ALREADY_FILLED });
+  if ("atCapacity" in result) return apiError("Slot at capacity", 409, { code: ErrorCodes.SLOT_AT_CAPACITY });
+  return apiSuccess({ success: true, warnings: result.warnings }, 201);
 }

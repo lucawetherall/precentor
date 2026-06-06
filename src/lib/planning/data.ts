@@ -153,13 +153,20 @@ export async function getPlanningData(
   from: string,
   to: string,
 ): Promise<PlanningDataResponse> {
-  const days = await loadDays(from, to);
+  // Three dependency waves instead of six serial round-trips:
+  // patterns + track default don't depend on the days, and readings depend only
+  // on the day ids (not on services), so they parallelise.
+  const [days, patterns, lectionaryTrackDefault] = await Promise.all([
+    loadDays(from, to),
+    loadPatterns(churchId),
+    loadChurchTrackDefault(churchId),
+  ]);
   const dayIds = days.map((d) => d.id);
-  const serviceRows = await loadServices(churchId, dayIds);
+  const [serviceRows, readingRows] = await Promise.all([
+    loadServices(churchId, dayIds),
+    loadReadings(dayIds),
+  ]);
   const serviceIds = serviceRows.map((s) => s.id);
   const slotRows = await loadSlots(serviceIds);
-  const readingRows = await loadReadings(dayIds);
-  const patterns = await loadPatterns(churchId);
-  const lectionaryTrackDefault = await loadChurchTrackDefault(churchId);
   return { days, services: serviceRows, slots: slotRows, readings: readingRows, patterns, lectionaryTrackDefault };
 }

@@ -1,7 +1,9 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 interface Preset {
@@ -17,12 +19,31 @@ interface Preset {
 export function PresetsClient({ churchId, presets }: { churchId: string; presets: Preset[] }) {
   const router = useRouter();
   const { addToast } = useToast();
+  const confirm = useConfirm();
+  const [archivingId, setArchivingId] = useState<string | null>(null);
 
-  async function archive(id: string) {
-    const res = await fetch(`/api/churches/${churchId}/presets/${id}/archive`, { method: "POST" });
-    if (!res.ok) return addToast("Failed to archive preset", "error");
-    addToast("Preset archived", "success");
-    router.refresh();
+  async function archive(id: string, name: string) {
+    if (archivingId) return;
+    if (
+      !(await confirm({
+        title: "Archive this preset?",
+        description: `“${name}” will be hidden from the preset list and stop generating new services. Existing services are unaffected.`,
+        confirmLabel: "Archive",
+      }))
+    ) {
+      return;
+    }
+    setArchivingId(id);
+    try {
+      const res = await fetch(`/api/churches/${churchId}/presets/${id}/archive`, { method: "POST" });
+      if (!res.ok) return addToast("Failed to archive preset", "error");
+      addToast("Preset archived", "success");
+      router.refresh();
+    } catch {
+      addToast("Failed to archive preset", "error");
+    } finally {
+      setArchivingId(null);
+    }
   }
 
   return (
@@ -58,9 +79,10 @@ export function PresetsClient({ churchId, presets }: { churchId: string; presets
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => archive(p.id)}
+                  disabled={archivingId === p.id}
+                  onClick={() => archive(p.id, p.name)}
                 >
-                  Archive
+                  {archivingId === p.id ? "Archiving…" : "Archive"}
                 </Button>
               </div>
             </li>
