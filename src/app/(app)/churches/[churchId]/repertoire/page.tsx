@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { performanceLogs, churches } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { RepertoireList } from "./repertoire-list";
@@ -19,9 +19,12 @@ export default async function RepertoirePage({ params }: Props) {
 
   interface PerformanceLogRow { id: string; date: string; freeText: string | null; createdAt: Date; }
   let logs: PerformanceLogRow[] = [];
+  let pieces: { name: string; count: number; lastDate: string }[] = [];
   let churchSettings: Record<string, unknown> | null = null;
+  // Normalise null/empty free text to "Unknown" once, reused for the GROUP BY key.
+  const pieceName = sql<string>`coalesce(nullif(${performanceLogs.freeText}, ''), 'Unknown')`;
   try {
-    [logs, churchSettings] = await Promise.all([
+    [logs, pieces, churchSettings] = await Promise.all([
       db
         .select({
           id: performanceLogs.id,
@@ -33,6 +36,18 @@ export default async function RepertoirePage({ params }: Props) {
         .where(eq(performanceLogs.churchId, churchId))
         .orderBy(desc(performanceLogs.date))
         .limit(200),
+      // Aggregate repeat counts in SQL across the church's *whole* history. The
+      // old in-JS grouping only saw the 200 most-recent rows, so a frequently
+      // sung piece could be undercounted.
+      db
+        .select({
+          name: pieceName,
+          count: sql<number>`count(*)::int`,
+          lastDate: sql<string>`max(${performanceLogs.date})`,
+        })
+        .from(performanceLogs)
+        .where(eq(performanceLogs.churchId, churchId))
+        .groupBy(pieceName),
       db
         .select({ settings: churches.settings })
         .from(churches)
@@ -43,25 +58,6 @@ export default async function RepertoirePage({ params }: Props) {
   } catch (err) { logger.error("[repertoire/page] Failed to load logs/settings", err); }
 
   const sheetMusicLink = readSheetMusicLink(churchSettings);
-
-  // Group by piece for repeat detection
-  const pieceCounts: Record<string, { count: number; lastDate: string }> = {};
-  for (const log of logs) {
-    const key = log.freeText || "Unknown";
-    if (!pieceCounts[key]) {
-      pieceCounts[key] = { count: 0, lastDate: log.date };
-    }
-    pieceCounts[key].count++;
-    if (log.date > pieceCounts[key].lastDate) {
-      pieceCounts[key].lastDate = log.date;
-    }
-  }
-
-  const pieces = Object.entries(pieceCounts).map(([name, data]) => ({
-    name,
-    count: data.count,
-    lastDate: data.lastDate,
-  }));
 
   const logEntries = logs.map((l) => ({
     id: l.id,
