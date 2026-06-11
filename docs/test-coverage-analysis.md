@@ -17,8 +17,24 @@ _Date: 2026-06-11_
 >   `invites/[token]/accept` (auth + email guards + response mapping), and
 >   `members/[memberId]` (PATCH/DELETE authorization + last-admin guard).
 >
-> The remaining items below (other untested routes, interactive UI primitives,
-> a CI coverage ratchet) are still open follow-ups.
+> **Update 2 (same day):** the remaining lower-risk follow-ups have now also
+> landed:
+> - **Every API route is now tested.** All 55 `route.ts` handlers have a
+>   colocated suite (was ~20). The new ones cover auth/role-gating, body
+>   validation, not-found/conflict paths, and error mapping for the search
+>   routes, church/user/cron/AI endpoints, planning bulk+cell, music-list,
+>   sheets, service detail, sections (×3), service-patterns (×2) and
+>   templates (×2).
+> - **Interactive UI primitives:** added tests for the toast system
+>   (`useToast` guard, auto-dismiss, error-toast persistence + a11y roles,
+>   manual dismiss) and the `ErrorBoundary` (fallback rendering, custom
+>   fallback, no message leak, reset-to-children). `useConfirm` was already
+>   covered via `confirm-dialog`.
+> - **CI coverage ratchet:** thresholds added to `vitest.config.ts` and CI now
+>   runs `npm run test:coverage`, so coverage can only go up.
+>
+> Coverage rose from ~44% to **67.4%** statements over `src/lib` + `src/app/api`
+> (1018 tests across 136 files, all green).
 
 ## Summary
 

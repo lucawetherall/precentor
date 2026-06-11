@@ -48,6 +48,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated V8 coverage report (HTML + helper JS).
+    "coverage/**",
   ]),
 ]);
 

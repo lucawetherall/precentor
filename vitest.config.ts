@@ -24,6 +24,16 @@ export default defineConfig({
         "src/lib/supabase/**",
       ],
       reporter: ["text-summary", "html"],
+      // Ratchet: thresholds sit just below the current measured coverage so the
+      // numbers can only go up. Raise these when a PR pushes coverage higher;
+      // CI fails if a change drops any metric below its floor. Baseline on
+      // 2026-06-11: stmts 67.4 / branch 56.6 / funcs 59.3 / lines 67.9.
+      thresholds: {
+        statements: 67,
+        branches: 55,
+        functions: 58,
+        lines: 67,
+      },
     },
   },
   resolve: {
