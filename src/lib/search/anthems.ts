@@ -1,10 +1,7 @@
 import { db } from "@/lib/db";
 import { anthems } from "@/lib/db/schema";
 import { ilike, or, eq, and, isNull, type SQL } from "drizzle-orm";
-
-function escapeLike(str: string): string {
-  return str.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
-}
+import { escapeLike } from "./escape-like";
 
 export async function searchAnthems(query: string, churchId?: string, offset = 0) {
   const escaped = escapeLike(query);

@@ -1,10 +1,7 @@
 import { db } from "@/lib/db";
 import { massSettings, churchMassSettings } from "@/lib/db/schema";
 import { ilike, or, eq, and, type SQL } from "drizzle-orm";
-
-function escapeLike(str: string): string {
-  return str.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
-}
+import { escapeLike } from "./escape-like";
 
 export async function searchMassSettings(query: string, churchId: string, offset = 0) {
   const escaped = escapeLike(query);

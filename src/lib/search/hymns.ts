@@ -1,10 +1,7 @@
 import { db } from "@/lib/db";
 import { hymns, hymnVerses } from "@/lib/db/schema";
 import { ilike, or, eq, and, inArray, sql, type SQL } from "drizzle-orm";
-
-function escapeLike(str: string): string {
-  return str.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
-}
+import { escapeLike } from "./escape-like";
 
 export async function searchHymns(query: string, book?: "NEH" | "AM", offset = 0) {
   const escaped = escapeLike(query);

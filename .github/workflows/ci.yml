@@ -36,7 +36,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run test
+      # Run with coverage so the ratchet thresholds in vitest.config.ts are
+      # enforced — CI fails if any metric drops below its floor.
+      - run: npm run test:coverage
 
   build:
     name: Build
