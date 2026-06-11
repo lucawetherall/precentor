@@ -7,6 +7,24 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     exclude: ["node_modules", "e2e"],
+    coverage: {
+      provider: "v8",
+      // Focus the report on the code that carries logic. UI primitives, types,
+      // generated schema, and one-off seed/scrape scripts are excluded so the
+      // numbers track the surface where a regression actually bites.
+      include: ["src/lib/**/*.{ts,tsx}", "src/app/api/**/*.{ts,tsx}"],
+      exclude: [
+        "**/__tests__/**",
+        "**/*.d.ts",
+        "src/lib/db/schema*.ts",
+        "src/lib/db/relations.ts",
+        "src/lib/db/seed*.ts",
+        "src/lib/db/migrate.ts",
+        "src/lib/**/types.ts",
+        "src/lib/supabase/**",
+      ],
+      reporter: ["text-summary", "html"],
+    },
   },
   resolve: {
     alias: {

@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
+import { escapeLike } from "../escape-like";
 
-// Extract the shared escapeLike logic for testing
-// All three search files (hymns, anthems, mass-settings) use the same function
-function escapeLike(str: string): string {
-  return str.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
-}
-
+// Tests the real shared escapeLike used by every search builder (hymns,
+// anthems, mass-settings, canticle-settings, responses-settings). Previously
+// this suite tested an inline copy of the function, so drift in the real
+// implementation went uncaught — it now imports the actual source.
 describe("escapeLike", () => {
   it("escapes percent signs", () => {
     expect(escapeLike("100%")).toBe("100\\%");
@@ -21,6 +20,12 @@ describe("escapeLike", () => {
 
   it("escapes all special chars in combination", () => {
     expect(escapeLike("100% of_this\\path")).toBe("100\\% of\\_this\\\\path");
+  });
+
+  it("escapes backslashes before wildcards so escapes aren't double-escaped", () => {
+    // A backslash already in the input must become "\\\\", and a following
+    // "%" must become "\\%" — never "\\\\%" from re-processing our own escape.
+    expect(escapeLike("\\%")).toBe("\\\\\\%");
   });
 
   it("returns empty string unchanged", () => {

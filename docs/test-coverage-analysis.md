@@ -2,6 +2,24 @@
 
 _Date: 2026-06-11_
 
+> **Update (same day):** the first wave of fixes from this analysis has landed
+> in this PR. Implemented so far:
+> - **Coverage tooling** wired up (`@vitest/coverage-v8`, `coverage` block in
+>   `vitest.config.ts`, `npm run test:coverage`). Baseline is ~44% statements
+>   over `src/lib/**` + `src/app/api/**`.
+> - **Search builders:** `escapeLike` extracted to a single shared module
+>   (`src/lib/search/escape-like.ts`) and imported by all five search files;
+>   the misleading test now imports the real function; added branch tests for
+>   `searchHymns` (numeric/book/verse-count) and `searchAnthems` (scope clause).
+> - **AI quota:** `consumeAiQuota` now tested (boundary, env override,
+>   fail-open).
+> - **Highest-risk routes:** added route tests for `invites/[token]` (GET),
+>   `invites/[token]/accept` (auth + email guards + response mapping), and
+>   `members/[memberId]` (PATCH/DELETE authorization + last-admin guard).
+>
+> The remaining items below (other untested routes, interactive UI primitives,
+> a CI coverage ratchet) are still open follow-ups.
+
 ## Summary
 
 The codebase has a healthy testing **culture** — 95 colocated unit/component
