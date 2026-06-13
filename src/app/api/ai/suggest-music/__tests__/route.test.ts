@@ -66,7 +66,7 @@ describe("POST /api/ai/suggest-music", () => {
     expect((await POST(req())).status).toBe(404);
   });
 
-  it("returns 403 when the caller is not a member of the service's church", async () => {
+  it("returns 403 when the caller is not an editor of the service's church", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("no", { status: 403 }) } as never);
     const res = await POST(req());
     expect(res.status).toBe(403);
