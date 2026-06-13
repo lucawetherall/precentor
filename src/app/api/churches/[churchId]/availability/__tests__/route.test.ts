@@ -44,43 +44,15 @@ describe("POST availability", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns 403 NO_ELIGIBLE_ROLE when no eligible role slot exists", async () => {
-    vi.mocked(db.select)
-      .mockReturnValueOnce({
-        from: () => ({
-          where: () => ({ limit: () => Promise.resolve([{ id: "s1", churchId: "c1" }]) }),
-        }),
-      } as unknown as ReturnType<typeof db.select>)
-      .mockReturnValueOnce({
-        from: () => ({
-          innerJoin: () => ({
-            where: () => ({ limit: () => Promise.resolve([]) }),
-          }),
-        }),
-      } as unknown as ReturnType<typeof db.select>);
-    const res = await POST(makeReq({ serviceId: "s1", status: "AVAILABLE" }), {
-      params: Promise.resolve({ churchId: "c1" }),
-    });
-    expect(res.status).toBe(403);
-    const json = await res.json();
-    expect(json.code).toBe("NO_ELIGIBLE_ROLE");
-  });
-
-  it("allows availability update when user has an eligible role", async () => {
+  it("allows a member with no assigned role to set their own availability", async () => {
+    // Availability is not role-gated: a freshly-invited chorister with no voice
+    // part yet must still be able to submit their availability.
     const upsertMock = vi.fn().mockResolvedValue(undefined);
-    vi.mocked(db.select)
-      .mockReturnValueOnce({
-        from: () => ({
-          where: () => ({ limit: () => Promise.resolve([{ id: "s1", churchId: "c1" }]) }),
-        }),
-      } as unknown as ReturnType<typeof db.select>)
-      .mockReturnValueOnce({
-        from: () => ({
-          innerJoin: () => ({
-            where: () => ({ limit: () => Promise.resolve([{ id: "slot1" }]) }),
-          }),
-        }),
-      } as unknown as ReturnType<typeof db.select>);
+    vi.mocked(db.select).mockReturnValueOnce({
+      from: () => ({
+        where: () => ({ limit: () => Promise.resolve([{ id: "s1", churchId: "c1" }]) }),
+      }),
+    } as unknown as ReturnType<typeof db.select>);
     vi.mocked(db.insert).mockReturnValue({
       values: vi.fn().mockReturnValue({
         onConflictDoUpdate: upsertMock,
@@ -92,5 +64,18 @@ describe("POST availability", () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(true);
+    expect(upsertMock).toHaveBeenCalledOnce();
+  });
+
+  it("returns 404 when the service is not in this church", async () => {
+    vi.mocked(db.select).mockReturnValueOnce({
+      from: () => ({
+        where: () => ({ limit: () => Promise.resolve([]) }),
+      }),
+    } as unknown as ReturnType<typeof db.select>);
+    const res = await POST(makeReq({ serviceId: "other-church-svc", status: "AVAILABLE" }), {
+      params: Promise.resolve({ churchId: "c1" }),
+    });
+    expect(res.status).toBe(404);
   });
 });
