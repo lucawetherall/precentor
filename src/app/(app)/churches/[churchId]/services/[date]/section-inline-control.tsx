@@ -6,6 +6,7 @@ import { MUSIC_SLOT_LABELS } from "@/types";
 import type { MusicSlotType } from "@/types";
 import { HymnPicker } from "./hymn-picker";
 import { MassSettingControl } from "./mass-setting-control";
+import { AnthemControl } from "./anthem-control";
 import { CollectChooser } from "./collect-chooser";
 import { EucharisticPrayerBrowser } from "./eucharistic-prayer-browser";
 import { SectionNotes } from "./section-notes";
@@ -53,8 +54,8 @@ export function SectionInlineControl({ section, churchId }: SectionInlineControl
         />
       )}
 
-      {musicSlotType === "ANTHEM" && (
-        <span className="text-xs text-muted-foreground italic">Anthem</span>
+      {musicSlotType === "ANTHEM" && musicSlotId && (
+        <AnthemControl slotId={musicSlotId} churchId={churchId} />
       )}
 
       {musicSlotType &&

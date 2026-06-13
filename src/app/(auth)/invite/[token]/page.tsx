@@ -141,7 +141,10 @@ export default function InviteAcceptPage() {
       const res = await fetch(`/api/invites/${token}/accept`, { method: "POST" });
       if (res.ok) {
         const data = await res.json();
-        router.push(`/churches/${data.churchId}/services`);
+        // Land on the church Overview, which renders the member-tailored
+        // "This Sunday + your availability" view, rather than the shared
+        // services calendar.
+        router.push(`/churches/${data.churchId}`);
         return; // keep the button disabled while the redirect happens
       }
       const data = await res.json().catch(() => null);

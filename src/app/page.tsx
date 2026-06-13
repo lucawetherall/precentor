@@ -197,7 +197,7 @@ export default function Home() {
               <Church className="h-8 w-8 text-primary mx-auto mb-3" strokeWidth={1.5} aria-hidden="true" />
               <h3 className="font-heading font-semibold mb-2">Vicar</h3>
               <p className="text-sm text-muted-foreground">
-                Review service plans at a glance, see music choices alongside readings, and approve service sheets before print.
+                Review service plans at a glance, see music choices alongside the readings, and preview the service sheet before it&apos;s printed.
               </p>
             </div>
           </div>
