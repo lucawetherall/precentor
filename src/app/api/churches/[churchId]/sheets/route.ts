@@ -38,7 +38,9 @@ export async function POST(
 ) {
   const { churchId } = await params;
 
-  const { error } = await requireChurchRole(churchId, "ADMIN");
+  // Batch sheet export is a planning deliverable; a Director of Music (often an
+  // EDITOR) needs it, consistent with the per-service sheet route (EDITOR).
+  const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
   const { data, error: bodyError } = await parseJsonBody(request, sheetsPostSchema);

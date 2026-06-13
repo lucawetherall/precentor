@@ -1,13 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { services, liturgicalDays, users, churchMemberships } from "@/lib/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { services, liturgicalDays } from "@/lib/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { format, parseISO } from "date-fns";
-import { hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
+import { requirePageAuth } from "@/lib/auth/page-auth";
 import { SERVICE_TYPE_LABELS } from "@/types";
-import type { ServiceType, MemberRole } from "@/types";
+import type { ServiceType } from "@/types";
 import { ServiceSheetActions, BatchDownloadActions } from "./actions-client";
 import { BookOpen, FileText } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
@@ -21,26 +19,10 @@ interface Props {
 export default async function ServiceSheetsPage({ params }: Props) {
   const { churchId } = await params;
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  let userRole: MemberRole = "MEMBER";
-  try {
-    const dbUser = await db.select().from(users).where(eq(users.supabaseId, user.id)).limit(1);
-    if (dbUser.length > 0) {
-      const membership = await db
-        .select()
-        .from(churchMemberships)
-        .where(and(eq(churchMemberships.userId, dbUser[0].id), eq(churchMemberships.churchId, churchId)))
-        .limit(1);
-      if (membership.length > 0) userRole = coerceMemberRole(membership[0].role);
-    }
-  } catch (err) { logger.error("[service-sheets/page] Failed to resolve role", err); }
-
-  if (!hasMinRole(userRole, "ADMIN")) {
-    redirect(`/churches/${churchId}`);
-  }
+  // Service sheets are the Director of Music's headline deliverable, and a
+  // Director is often an EDITOR (not ADMIN). Gate at EDITOR to match the
+  // per-service sheet API (services/[serviceId]/sheet is EDITOR-gated).
+  await requirePageAuth({ churchId, role: "EDITOR" });
 
   interface ServiceSheetRow {
     serviceId: string;

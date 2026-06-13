@@ -21,7 +21,7 @@ beforeEach(() => {
 });
 
 describe("GET /api/churches/[churchId]/music-list", () => {
-  it("returns 403 for non-admins", async () => {
+  it("returns 403 for non-editors", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("no", { status: 403 }) } as never);
     expect((await GET(url("from=2026-01-01&to=2026-02-01"), ctx)).status).toBe(403);
   });

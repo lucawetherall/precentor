@@ -15,8 +15,11 @@ interface Props {
 
 export default async function MembersPage({ params }: Props) {
   const { churchId } = await params;
-  const { membership, error } = await requireChurchRole(churchId, "MEMBER");
-  if (error) redirect("/churches");
+  // Member management is ADMIN-only (matches the nav, which hides this link for
+  // non-admins). Gating at MEMBER would let any member read the full roster —
+  // including every member's email (PII) — via the direct URL.
+  const { membership, error } = await requireChurchRole(churchId, "ADMIN");
+  if (error) redirect(`/churches/${churchId}`);
 
   const userRole: MemberRole = coerceMemberRole(membership!.role);
 

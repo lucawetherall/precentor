@@ -1,6 +1,7 @@
 import "server-only";
 import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
 import { logger } from "@/lib/logger";
+import { env } from "@/lib/env";
 import type { LLMProvider, SuggestionContext, MusicSuggestion } from "./types";
 
 // Cap Gemini latency — a hung external model should not hang an API request.
@@ -33,7 +34,14 @@ export class GeminiProvider implements LLMProvider {
   private genAI: GoogleGenerativeAI;
 
   constructor() {
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const apiKey = env.GEMINI_API_KEY;
+    if (!apiKey) {
+      // Fail clearly at the call site (the route catches and 503s) rather than
+      // surfacing an opaque error from deep inside the Gemini client.
+      logger.error("[gemini] GEMINI_API_KEY is not configured");
+      throw new Error("AI provider is not configured");
+    }
+    this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
   async suggestMusic(context: SuggestionContext): Promise<MusicSuggestion[]> {
