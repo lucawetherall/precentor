@@ -31,12 +31,16 @@ export function RotaGridV2({
   members,
   availabilityData,
   rotaData,
+  currentUserId,
+  canEditOthers,
 }: {
   churchId: string;
   services: ServiceV2[];
   members: MemberV2[];
   availabilityData: AvailabilityEntry[];
   rotaData: RotaEntry[];
+  currentUserId: string;
+  canEditOthers: boolean;
 }) {
   const [viewMode, setViewMode] = useState<"member" | "role">("member");
 
@@ -131,6 +135,7 @@ export function RotaGridV2({
                   {services.map((svc) => {
                     const eligible = isEligible(member, svc);
                     const rosterLabel = getRosterLabel(member, svc);
+                    const isSelf = member.userId === currentUserId;
                     return (
                       <td key={svc.serviceId} className="px-1 py-2 text-center align-top">
                         <AvailabilityWidget
@@ -140,6 +145,9 @@ export function RotaGridV2({
                           size="sm"
                           eligible={eligible}
                           eligibleReason={eligible ? undefined : "NO_ROLE"}
+                          userId={isSelf ? undefined : member.userId}
+                          subjectName={isSelf ? undefined : (member.name ?? member.email)}
+                          readOnly={!isSelf && !canEditOthers}
                         />
                         {rosterLabel && (
                           <div className="mt-0.5 text-xs text-secondary font-medium leading-tight">
@@ -182,6 +190,7 @@ export function RotaGridV2({
                             {services.map((svc) => {
                               const eligible = isEligible(member, svc);
                               const rosterLabel = getRosterLabel(member, svc);
+                              const isSelf = member.userId === currentUserId;
                               return (
                                 <td key={svc.serviceId} className="px-1 py-2 text-center align-top">
                                   <AvailabilityWidget
@@ -191,6 +200,9 @@ export function RotaGridV2({
                                     size="sm"
                                     eligible={eligible}
                                     eligibleReason={eligible ? undefined : "NO_ROLE"}
+                                    userId={isSelf ? undefined : member.userId}
+                                    subjectName={isSelf ? undefined : (member.name ?? member.email)}
+                                    readOnly={!isSelf && !canEditOthers}
                                   />
                                   {rosterLabel && (
                                     <div className="mt-0.5 text-xs text-secondary font-medium leading-tight">

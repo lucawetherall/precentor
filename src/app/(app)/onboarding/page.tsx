@@ -27,20 +27,25 @@ export default function OnboardingPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/churches", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), diocese, address, ccliNumber }),
-    });
+    try {
+      const res = await fetch("/api/churches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), diocese, address, ccliNumber }),
+      });
 
-    if (res.ok) {
-      const church = await res.json();
-      router.push(`/churches/${church.id}/services`);
-    } else {
-      const data = await res.json();
-      setError(data.error || "Failed to create church.");
-      setLoading(false);
+      if (res.ok) {
+        const church = await res.json();
+        router.push(`/churches/${church.id}/services`);
+        return; // keep the button disabled while the redirect happens
+      }
+
+      const data = await res.json().catch(() => null);
+      setError(data?.error || "Failed to create church.");
+    } catch {
+      setError("Something went wrong creating your church. Please check your connection and try again.");
     }
+    setLoading(false);
   };
 
   return (

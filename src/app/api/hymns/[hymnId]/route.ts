@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { hymns, hymnVerses } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { uuidSchema } from "@/lib/validation/schemas";
 
 export async function GET(
   _request: Request,
@@ -15,6 +16,11 @@ export async function GET(
   }
 
   const { hymnId } = await params;
+  // A malformed UUID can't reference an existing row; unvalidated it surfaces
+  // as a DB-level 500.
+  if (!uuidSchema.safeParse(hymnId).success) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const result = await db
     .select()

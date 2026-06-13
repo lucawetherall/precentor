@@ -120,13 +120,20 @@ export function ChurchSidebar({
   const sidebarContent = (
     <>
       <div className="mb-5 pb-4 border-b border-border/70">
-        <Ornament
-          variant="fleur-de-lis"
-          className="my-0 mb-2 justify-start text-primary/75 [&_span]:h-6 [&_span]:w-6"
-        />
-        <h2 className="font-heading text-lg font-semibold leading-tight text-balance" title={churchName}>
-          {churchName}
-        </h2>
+        <Link
+          href="/dashboard"
+          title="All churches"
+          onClick={() => setMobileOpen(false)}
+          className="block hover:text-primary transition-colors"
+        >
+          <Ornament
+            variant="fleur-de-lis"
+            className="my-0 mb-2 justify-start text-primary/75 [&_span]:h-6 [&_span]:w-6"
+          />
+          <h2 className="font-heading text-lg font-semibold leading-tight text-balance">
+            {churchName}
+          </h2>
+        </Link>
         <p className="small-caps text-xs text-muted-foreground mt-0.5">{roleLabel}</p>
       </div>
 

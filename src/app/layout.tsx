@@ -44,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`h-full ${cormorant.variable} ${baskerville.variable} ${jetbrains.variable}`} suppressHydrationWarning>
+    <html lang="en" data-scroll-behavior="smooth" className={`h-full ${cormorant.variable} ${baskerville.variable} ${jetbrains.variable}`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col overflow-x-hidden">
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground">
           Skip to content

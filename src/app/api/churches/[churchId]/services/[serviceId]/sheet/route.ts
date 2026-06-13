@@ -27,7 +27,9 @@ export async function GET(
   const sizeParam = request.nextUrl.searchParams.get("size");
   const modeParam = request.nextUrl.searchParams.get("mode");
 
-  const { error } = await requireChurchRole(churchId, "ADMIN");
+  // Read-only export — editors plan services and need the preview/exports,
+  // not just admins.
+  const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
   try {

@@ -50,30 +50,30 @@ export default function NewChurchPage() {
       .filter(([, v]) => v.enabled)
       .map(([type, v]) => ({ type, time: v.time }));
 
-    const res = await fetch("/api/churches", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        diocese: formData.get("diocese"),
-        address: formData.get("address"),
-        ccliNumber: formData.get("ccliNumber"),
-        defaultServices,
-      }),
-    });
+    try {
+      const res = await fetch("/api/churches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          diocese: formData.get("diocese"),
+          address: formData.get("address"),
+          ccliNumber: formData.get("ccliNumber"),
+          defaultServices,
+        }),
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      router.push(`/churches/${data.id}/services`);
-    } else {
-      try {
+      if (res.ok) {
         const data = await res.json();
-        setError(data.error || "Failed to create church.");
-      } catch {
-        setError("Failed to create church.");
+        router.push(`/churches/${data.id}/services`);
+        return; // keep the button disabled while the redirect happens
       }
-      setLoading(false);
+      const data = await res.json().catch(() => null);
+      setError(data?.error || "Failed to create church.");
+    } catch {
+      setError("Something went wrong creating the church. Please check your connection and try again.");
     }
+    setLoading(false);
   };
 
   return (

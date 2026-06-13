@@ -48,4 +48,11 @@ export interface PopulatedMusicSlot {
   anthemTitle: string | null
   anthemComposer: string | null
   anthemVoicing: string | null
+  massSettingName: string | null
+  massSettingComposer: string | null
+  canticleSettingName: string | null
+  canticleSettingComposer: string | null
+  canticleSettingCanticle: string | null
+  responsesSettingName: string | null
+  responsesSettingComposer: string | null
 }

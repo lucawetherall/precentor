@@ -1,5 +1,6 @@
 import { BookMarked } from "lucide-react";
 import { POSITION_LABELS } from "@/types";
+import { lectionaryForServiceType } from "@/lib/lectionary/for-service";
 
 export interface Reading {
   id: string;
@@ -14,12 +15,7 @@ const LECTIONARY_LABELS: Record<string, string> = {
   SECOND: "Second Service",
 };
 
-export function lectionaryForServiceType(serviceType: string): string {
-  // Choral Evensong is the only service that uses the Second Service
-  // lectionary; everything else (Eucharist, Matins, Family) reads from
-  // Principal Service.
-  return serviceType === "CHORAL_EVENSONG" ? "SECOND" : "PRINCIPAL";
-}
+export { lectionaryForServiceType };
 
 interface Props {
   readings: Reading[];

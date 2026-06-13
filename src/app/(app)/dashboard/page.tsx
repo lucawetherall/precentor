@@ -33,6 +33,7 @@ export default async function DashboardPage() {
   }
   let userChurches: UserChurch[] = [];
   let dbUserExists = false;
+  let dbError = false;
   try {
     const dbUser = await db
       .select()
@@ -53,15 +54,44 @@ export default async function DashboardPage() {
         .where(eq(churchMemberships.userId, dbUser[0].id));
     }
   } catch (err) {
+    dbError = true;
     logger.error("[dashboard/page] Failed to load user/churches", err);
   }
 
   // redirect() throws NEXT_REDIRECT; must be called outside try/catch.
+  // No DB row for this user means they haven't completed onboarding yet —
+  // only send them there when the lookup actually succeeded.
+  if (!dbUserExists && !dbError) {
+    redirect("/onboarding");
+  }
   if (dbUserExists && userChurches.length === 0) {
     redirect("/onboarding");
   }
   if (userChurches.length === 1) {
     redirect(`/churches/${userChurches[0].churchId}`);
+  }
+
+  const userName = user.user_metadata?.name || user.email?.split("@")[0] || "there";
+
+  if (dbError) {
+    return (
+      <main id="main-content" className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+        <PageHeader
+          eyebrow={format(new Date(), "EEEE, d MMMM yyyy")}
+          title={`Welcome, ${userName}`}
+          subtitle="What is coming up across your churches"
+        />
+        <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-6">
+          <p className="font-heading text-lg font-semibold mb-1">
+            We couldn&apos;t load your dashboard
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Something went wrong on our side. Please refresh the page to try again, or
+            contact support if this keeps happening.
+          </p>
+        </div>
+      </main>
+    );
   }
 
   // Fetch upcoming services across all churches
@@ -108,8 +138,6 @@ export default async function DashboardPage() {
   } catch (err) {
     logger.error("[dashboard/page] Failed to load upcoming services", err);
   }
-
-  const userName = user.user_metadata?.name || user.email?.split("@")[0] || "there";
 
   return (
     <main id="main-content" className="p-4 sm:p-6 lg:p-8 max-w-4xl">
@@ -213,6 +241,21 @@ export default async function DashboardPage() {
           </Link>
         </div>
         <Ornament variant="rule" className="my-0 mb-4 text-primary/40" />
+        {userChurches.length === 0 ? (
+          <EmptyState
+            icon={Church}
+            title="No churches yet"
+            description="Create a church to start planning services, music, and rotas."
+            action={
+              <Link
+                href="/churches/new"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Create a church
+              </Link>
+            }
+          />
+        ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {userChurches.map((uc) => (
             <Link
@@ -230,6 +273,7 @@ export default async function DashboardPage() {
             </Link>
           ))}
         </div>
+        )}
       </div>
     </main>
   );

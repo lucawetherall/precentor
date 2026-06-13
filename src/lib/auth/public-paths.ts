@@ -10,6 +10,14 @@ export const PUBLIC_PATHS = [
   "/contact",
   "/about",
   "/faq",
+  // Metadata files — crawlers and browsers fetch these without a session.
+  // The proxy matcher also excludes them; this keeps the fallback path safe.
+  "/robots.txt",
+  "/sitemap.xml",
+  "/manifest.webmanifest",
+  "/opengraph-image",
+  "/icon-192.png",
+  "/icon-512.png",
 ];
 
 /** Paths where authenticated users should be redirected away (e.g. to /dashboard). */

@@ -6,12 +6,19 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { passwordSchema } from "@/lib/validation/schemas";
 
 interface InviteData {
   churchName: string;
   role: string;
   email: string | null;
 }
+
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: "an Admin",
+  EDITOR: "an Editor",
+  MEMBER: "a Member",
+};
 
 export default function InviteAcceptPage() {
   const router = useRouter();
@@ -64,8 +71,10 @@ export default function InviteAcceptPage() {
       setError("Please enter your email address.");
       return;
     }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    // Same password rules as the main signup form.
+    const passwordCheck = passwordSchema.safeParse(password);
+    if (!passwordCheck.success) {
+      setError(passwordCheck.error.issues[0].message);
       return;
     }
     if (password !== confirmPassword) {
@@ -102,7 +111,9 @@ export default function InviteAcceptPage() {
         await acceptInvite();
         return;
       } else {
-        setError(signUpError.message);
+        // Don't surface raw Supabase errors — they can leak internals.
+        console.error("[invite] signUp failed:", signUpError.message);
+        setError("We couldn't create your account. Please check your details and try again.");
         setLoading(false);
         return;
       }
@@ -126,15 +137,19 @@ export default function InviteAcceptPage() {
   };
 
   const acceptInvite = async () => {
-    const res = await fetch(`/api/invites/${token}/accept`, { method: "POST" });
-    if (res.ok) {
-      const data = await res.json();
-      router.push(`/churches/${data.churchId}/services`);
-    } else {
-      const data = await res.json();
-      setError(data.error || "Failed to accept invite.");
-      setLoading(false);
+    try {
+      const res = await fetch(`/api/invites/${token}/accept`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        router.push(`/churches/${data.churchId}/services`);
+        return; // keep the button disabled while the redirect happens
+      }
+      const data = await res.json().catch(() => null);
+      setError(data?.error || "Failed to accept invite.");
+    } catch {
+      setError("Something went wrong accepting the invite. Please check your connection and try again.");
     }
+    setLoading(false);
   };
 
   if (pageError) {
@@ -180,7 +195,7 @@ export default function InviteAcceptPage() {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-heading font-semibold">You&apos;re Invited</h1>
           <p className="text-sm text-muted-foreground">
-            Join <strong>{invite.churchName}</strong> as <strong>{invite.role}</strong>
+            Join <strong>{invite.churchName}</strong> as <strong>{ROLE_LABELS[invite.role] ?? invite.role.toLowerCase()}</strong>
           </p>
         </div>
 
@@ -236,9 +251,9 @@ export default function InviteAcceptPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 8 characters"
+                placeholder="Min. 10 characters"
                 required
-                minLength={8}
+                minLength={10}
                 autoComplete="new-password"
               />
             </div>
@@ -252,7 +267,7 @@ export default function InviteAcceptPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your password"
                 required
-                minLength={8}
+                minLength={10}
                 autoComplete="new-password"
               />
             </div>

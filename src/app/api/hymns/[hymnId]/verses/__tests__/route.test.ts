@@ -15,7 +15,8 @@ vi.mock("@/lib/db", () => {
 import { GET } from "../route";
 import { requireAuth } from "@/lib/auth/permissions";
 
-const ctx = { params: Promise.resolve({ hymnId: "h1" }) };
+// The route validates hymnId is a UUID, so use a syntactically valid one.
+const ctx = { params: Promise.resolve({ hymnId: "11111111-1111-4111-8111-111111111111" }) };
 
 beforeEach(() => {
   vi.clearAllMocks();

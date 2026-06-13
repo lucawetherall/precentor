@@ -29,7 +29,8 @@ export const ServicesList = memo(function ServicesList({ churchId, days }: Servi
     return (
       <div className="border border-border bg-card p-8 text-center">
         <p className="text-muted-foreground">
-          No liturgical calendar data available. Run the database seed to populate the calendar.
+          The church calendar isn&apos;t available right now. Please try again shortly, or
+          contact support if this persists.
         </p>
       </div>
     )
