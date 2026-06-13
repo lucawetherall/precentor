@@ -261,9 +261,17 @@ export function RotaGridV2({
           <tbody className="divide-y">
             {viewMode === "member" ? (
               members.map((member) => (
-                <tr key={member.userId} className="hover:bg-muted/20">
+                <tr
+                  key={member.userId}
+                  className={member.userId === currentUserId ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : "hover:bg-muted/20"}
+                >
                   <td className="px-3 py-2">
-                    <div className="font-medium text-sm">{member.name ?? member.email}</div>
+                    <div className="font-medium text-sm">
+                      {member.name ?? member.email}
+                      {member.userId === currentUserId && (
+                        <span className="ml-1.5 rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-medium align-middle">You</span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {member.roles.map((r) => (
                         <span key={r.id} className="rounded-full bg-muted px-2 py-0.5 text-xs">
@@ -296,9 +304,15 @@ export function RotaGridV2({
                       {roleMembers.map((member) => {
                         const otherRoles = member.roles.filter((r) => r.catalogRoleId !== role.catalogRoleId);
                         return (
-                          <tr key={`${role.catalogRoleId}-${member.userId}`} className="hover:bg-muted/20">
+                          <tr
+                            key={`${role.catalogRoleId}-${member.userId}`}
+                            className={member.userId === currentUserId ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : "hover:bg-muted/20"}
+                          >
                             <td className="px-3 py-2 text-sm">
                               <span className="font-medium">{member.name ?? member.email}</span>
+                              {member.userId === currentUserId && (
+                                <span className="ml-1.5 rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-medium align-middle">You</span>
+                              )}
                               {otherRoles.length > 0 && (
                                 <span className="ml-1.5 text-xs text-muted-foreground">
                                   also {otherRoles.map((r) => r.catalogRoleName).join(", ")}
