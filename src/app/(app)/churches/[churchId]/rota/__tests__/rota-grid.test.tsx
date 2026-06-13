@@ -6,6 +6,10 @@ vi.mock("@/components/availability-widget", () => ({
   AvailabilityWidget: ({ eligible }: { eligible: boolean }) => <div data-testid="avail" data-eligible={String(eligible)} />,
 }));
 
+vi.mock("@/components/ui/toast", () => ({
+  useToast: () => ({ addToast: () => {} }),
+}));
+
 const services = [{
   serviceId: "s1", serviceType: "SUNG_EUCHARIST", time: "10:00", date: "2026-05-01", cwName: "Easter 4",
   slots: [{ catalogRoleId: "r1", catalogRoleKey: "SOPRANO" }],
@@ -35,6 +39,8 @@ describe("RotaGridV2", () => {
   it("toggles to role-grouped view", () => {
     render(<RotaGridV2 churchId="c1" services={services} members={members} availabilityData={[]} rotaData={[]} currentUserId="u1" canEditOthers />);
     fireEvent.click(screen.getByText("By role"));
-    expect(screen.getByText("Soprano")).toBeInTheDocument(); // role header
+    // The role-grouped header is a <td>; an eligible singer now also gets a
+    // "+ Soprano" assign button, so scope the assertion to the header cell.
+    expect(screen.getByText("Soprano", { selector: "td" })).toBeInTheDocument();
   });
 });
