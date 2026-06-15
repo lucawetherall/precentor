@@ -27,7 +27,12 @@ export async function GET(
   const sizeParam = request.nextUrl.searchParams.get("size");
   const modeParam = request.nextUrl.searchParams.get("mode");
 
-  const { error } = await requireChurchRole(churchId, "ADMIN");
+  // Read-only export of the service sheet — the least-sensitive artifact
+  // (it's what's printed and handed to the congregation), showing only music a
+  // member already sees on the service detail page. Allow MEMBER so choir
+  // members can download/print what they're singing, and a reviewing vicar (a
+  // member) can preview the sheet before print.
+  const { error } = await requireChurchRole(churchId, "MEMBER");
   if (error) return error;
 
   try {

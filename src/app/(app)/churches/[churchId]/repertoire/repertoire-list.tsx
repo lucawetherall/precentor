@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Music, Search, ArrowUpDown } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { EmptyState } from "@/components/empty-state";
 
 interface PieceData {
   name: string;
@@ -51,12 +52,11 @@ export function RepertoireList({
 
   if (pieces.length === 0) {
     return (
-      <div className="border border-border bg-card p-8 text-center">
-        <Music className="h-10 w-10 mx-auto text-muted-foreground mb-3" strokeWidth={1.5} />
-        <p className="text-muted-foreground">
-          No performance history yet. Music will be logged automatically after services are marked as archived.
-        </p>
-      </div>
+      <EmptyState
+        icon={Music}
+        title="No performance history yet"
+        description="Once a planned service's date has passed, its music is logged here automatically."
+      />
     );
   }
 

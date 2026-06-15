@@ -41,8 +41,8 @@ export default async function ChurchOverviewPage({ params }: Props) {
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
         <EmptyState
           icon={Calendar}
-          title="No liturgical calendar data"
-          description="Run the database seed to populate the calendar."
+          title="The church calendar isn't available right now"
+          description="Please try again shortly, or contact support if this persists."
         />
       </div>
     );

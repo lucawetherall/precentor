@@ -32,6 +32,24 @@ export async function POST(
 
   try {
     const result = await db.transaction(async (tx) => {
+    // Pre-validate every explicit serviceId in one query — a stale or
+    // foreign id is a client-visible 404, not a 500, and per-change SELECTs
+    // would cost one round-trip per row.
+    const explicitIds = Array.from(new Set(
+      body.changes.filter((c) => c.serviceId).map((c) => c.serviceId!),
+    ));
+    const serviceTypesById = new Map<string, string>();
+    if (explicitIds.length > 0) {
+      const rows = await tx
+        .select({ id: services.id, serviceType: services.serviceType })
+        .from(services)
+        .where(and(inArray(services.id, explicitIds), eq(services.churchId, churchId)));
+      for (const row of rows) serviceTypesById.set(row.id, row.serviceType);
+      if (serviceTypesById.size < explicitIds.length) {
+        return { status: 404 as const };
+      }
+    }
+
     for (const change of body.changes) {
       let serviceId = change.serviceId;
       let serviceType: string;
@@ -73,13 +91,8 @@ export async function POST(
           resolvedIds[key] = { id: serviceId!, serviceType };
         }
       } else if (serviceId) {
-        const [row] = await tx
-          .select({ id: services.id, serviceType: services.serviceType })
-          .from(services)
-          .where(and(eq(services.id, serviceId), eq(services.churchId, churchId)))
-          .limit(1);
-        if (!row) throw new Error(`service ${serviceId} not found`);
-        serviceType = row.serviceType;
+        // Validated by the inArray pre-check above.
+        serviceType = serviceTypesById.get(serviceId)!;
       } else {
         throw new Error("change requires either serviceId or ghost");
       }
@@ -97,9 +110,17 @@ export async function POST(
         .where(inArray(services.id, touchedIds));
     }
 
-    return { written: body.changes.length, resolvedGhosts: Object.keys(resolvedIds).length };
+    return {
+      status: 200 as const,
+      written: body.changes.length,
+      resolvedGhosts: Object.keys(resolvedIds).length,
+    };
     });
-    return NextResponse.json(result);
+
+    if (result.status === 404) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
+    return NextResponse.json({ written: result.written, resolvedGhosts: result.resolvedGhosts });
   } catch (err) {
     logger.error("Planning bulk write failed", err);
     return NextResponse.json({ error: "Failed to apply changes" }, { status: 500 });

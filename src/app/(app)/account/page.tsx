@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -58,6 +59,7 @@ export default function AccountPage() {
   return (
     <main id="main-content" className="max-w-2xl mx-auto px-4 py-10 space-y-10">
       <div className="space-y-2">
+        <BackLink href="/dashboard">Back to dashboard</BackLink>
         <h1 className="text-2xl font-heading font-semibold">Account Settings</h1>
         <p className="text-sm text-muted-foreground">
           Manage your personal data in accordance with your rights under UK data protection law.

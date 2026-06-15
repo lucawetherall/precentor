@@ -3,9 +3,8 @@ import { z } from "zod";
 import { requireChurchRole, hasMinRole, coerceMemberRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { availability, services, churchMemberships, availabilityStatusEnum, serviceRoleSlots, churchMemberRoles } from "@/lib/db/schema";
+import { availability, services, churchMemberships, availabilityStatusEnum } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { apiError, ErrorCodes } from "@/lib/api-helpers";
 import { parseJsonBody } from "@/lib/api/parse-body";
 
 const availabilityPostSchema = z.object({
@@ -49,23 +48,12 @@ export async function POST(
       return NextResponse.json({ error: "Service not found in this church" }, { status: 404 });
     }
 
-    // Enforce role eligibility — always required in Phase D
-    const eligible = await db
-      .select({ id: serviceRoleSlots.id })
-      .from(serviceRoleSlots)
-      .innerJoin(
-        churchMemberRoles,
-        and(
-          eq(churchMemberRoles.catalogRoleId, serviceRoleSlots.catalogRoleId),
-          eq(churchMemberRoles.userId, targetUserId),
-          eq(churchMemberRoles.churchId, churchId),
-        ),
-      )
-      .where(eq(serviceRoleSlots.serviceId, serviceId))
-      .limit(1);
-    if (eligible.length === 0) {
-      return apiError("No eligible role for this service", 403, { code: ErrorCodes.NO_ELIGIBLE_ROLE });
-    }
+    // Availability is "can this person sing on this date", keyed by
+    // (userId, serviceId) — independent of role. We deliberately do NOT require
+    // a matching role slot here: a newly-invited chorister has no voice part
+    // assigned yet, and the headline promise is that they can submit their
+    // availability. Role eligibility governs *rostering* (see the rota route),
+    // not availability collection.
 
     // Verify target user is a member of this church
     if (targetUserId !== user!.id) {

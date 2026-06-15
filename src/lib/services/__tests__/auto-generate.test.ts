@@ -55,16 +55,28 @@ describe("generateServicesForChurch — batched inserts", () => {
     const valuesSpy = vi.fn((_rows: unknown) => ({
       onConflictDoNothing: () => ({
         returning: () => Promise.resolve([
-          { id: "svc-1", liturgicalDayId: "day-sun", serviceType: "SUNG_EUCHARIST" },
+          { id: "svc-1", liturgicalDayId: "day-sun", serviceType: "SUNG_EUCHARIST", presetId: "p1" },
         ]),
       }),
     }));
     vi.mocked(db.insert).mockReturnValue({ values: valuesSpy } as unknown as ReturnType<typeof db.insert>);
 
+    // The preset's role slots, snapshotted onto every created service.
+    vi.mocked(db.select).mockReturnValueOnce({
+      from: () => ({
+        where: () =>
+          Promise.resolve([
+            { presetId: "p1", catalogRoleId: "role-soprano", minCount: 1, maxCount: null, exclusive: false, displayOrder: 10 },
+          ]),
+      }),
+    } as unknown as ReturnType<typeof db.select>);
+
+    const roleSlotValues = vi.fn().mockResolvedValue(undefined);
     const slotValues = vi.fn().mockResolvedValue(undefined);
     const sectionValues = vi.fn().mockResolvedValue(undefined);
     const tx = {
       insert: vi.fn()
+        .mockReturnValueOnce({ values: roleSlotValues })
         .mockReturnValueOnce({ values: slotValues })
         .mockReturnValueOnce({ values: sectionValues }),
     };
@@ -82,10 +94,18 @@ describe("generateServicesForChurch — batched inserts", () => {
     const candidateRows = valuesSpy.mock.calls[0][0] as unknown[];
     expect(candidateRows).toHaveLength(1);
 
-    // One batched slots insert and one batched sections insert inside one tx.
+    // One batched role-slots, slots, and sections insert inside one tx.
     expect(db.transaction).toHaveBeenCalledTimes(1);
+    expect(roleSlotValues).toHaveBeenCalledTimes(1);
     expect(slotValues).toHaveBeenCalledTimes(1);
     expect(sectionValues).toHaveBeenCalledTimes(1);
+
+    // The preset's role slots are copied onto the created service so the
+    // rota/availability features work for generated services.
+    const roleSlotsInserted = roleSlotValues.mock.calls[0][0] as { serviceId: string; catalogRoleId: string }[];
+    expect(roleSlotsInserted).toEqual([
+      expect.objectContaining({ serviceId: "svc-1", catalogRoleId: "role-soprano" }),
+    ]);
 
     const slotsInserted = slotValues.mock.calls[0][0] as { id: string; slotType: string }[];
     const sectionsInserted = sectionValues.mock.calls[0][0] as { musicSlotId: string | null }[];

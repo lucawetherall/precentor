@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 
 describe("POST /api/churches/[churchId]/sheets", () => {
-  it("returns 403 for non-admins", async () => {
+  it("returns 403 for non-editors", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("no", { status: 403 }) } as never);
     expect((await POST(post({}), ctx)).status).toBe(403);
   });

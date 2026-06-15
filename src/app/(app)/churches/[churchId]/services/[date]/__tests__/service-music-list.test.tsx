@@ -3,6 +3,14 @@ import { describe, it, expect } from 'vitest'
 import { ServiceMusicList } from '../service-music-list'
 import type { PopulatedMusicSlot } from '@/types/service-views'
 
+// Settings-related fields are null for hymn/anthem/organ/free-text fixtures.
+const noSettings = {
+  massSettingName: null, massSettingComposer: null,
+  canticleSettingName: null, canticleSettingComposer: null,
+  canticleSettingCanticle: null,
+  responsesSettingName: null, responsesSettingComposer: null,
+} satisfies Partial<PopulatedMusicSlot>
+
 const hymnSlot: PopulatedMusicSlot = {
   id: '1', slotType: 'HYMN', positionOrder: 1,
   freeText: null, notes: null,
@@ -10,6 +18,7 @@ const hymnSlot: PopulatedMusicSlot = {
   hymnFirstLine: 'When I survey the wondrous cross',
   hymnTuneName: 'ROCKINGHAM',
   anthemTitle: null, anthemComposer: null, anthemVoicing: null,
+  ...noSettings,
 }
 
 const anthemSlot: PopulatedMusicSlot = {
@@ -17,6 +26,7 @@ const anthemSlot: PopulatedMusicSlot = {
   freeText: null, notes: null,
   hymnBook: null, hymnNumber: null, hymnFirstLine: null, hymnTuneName: null,
   anthemTitle: 'O vos omnes', anthemComposer: 'Victoria', anthemVoicing: 'SATB',
+  ...noSettings,
 }
 
 const emptySlot: PopulatedMusicSlot = {
@@ -24,6 +34,7 @@ const emptySlot: PopulatedMusicSlot = {
   freeText: null, notes: null,
   hymnBook: null, hymnNumber: null, hymnFirstLine: null, hymnTuneName: null,
   anthemTitle: null, anthemComposer: null, anthemVoicing: null,
+  ...noSettings,
 }
 
 const freeTextSlot: PopulatedMusicSlot = {
@@ -31,6 +42,7 @@ const freeTextSlot: PopulatedMusicSlot = {
   freeText: 'Nunc Dimittis (plainsong)', notes: null,
   hymnBook: null, hymnNumber: null, hymnFirstLine: null, hymnTuneName: null,
   anthemTitle: null, anthemComposer: null, anthemVoicing: null,
+  ...noSettings,
 }
 
 describe('ServiceMusicList', () => {

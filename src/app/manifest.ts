@@ -8,8 +8,9 @@ export default function manifest(): MetadataRoute.Manifest {
       "AI-powered liturgical music and service planning for Church of England parishes",
     start_url: "/dashboard",
     display: "standalone",
-    theme_color: "#8B4513",
-    background_color: "#FAF6F1",
+    // Keep in sync with --primary and --background in globals.css
+    theme_color: "#7E1818",
+    background_color: "#FBF8F2",
     icons: [
       {
         src: "/icon-192.png",

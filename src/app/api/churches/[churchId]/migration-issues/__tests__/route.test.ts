@@ -22,30 +22,30 @@ describe("GET /api/churches/[churchId]/migration-issues", () => {
     expect(res.status).toBe(403);
   });
 
-  it("returns counts and entries for admin", async () => {
+  // The route aggregates severity counts in SQL (.groupBy) and returns only
+  // `{ counts }`; the settings page fetches full entries via its own query.
+  it("returns severity counts for admin", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
-    const mockEntries = [
-      { id: "e1", phase: "B", churchId: "c1", severity: "WARN", code: "PRESET_TIME_AMBIGUOUS", details: {}, dismissedAt: null, createdAt: new Date() },
-      { id: "e2", phase: "B", churchId: "c1", severity: "ERROR", code: "ROTA_ENTRY_UNCLASSIFIED", details: {}, dismissedAt: null, createdAt: new Date() },
+    const aggregateRows = [
+      { severity: "WARN", count: 1 },
+      { severity: "ERROR", count: 1 },
     ];
     vi.mocked(db.select).mockReturnValue({
-      from: () => ({ where: () => Promise.resolve(mockEntries) }),
+      from: () => ({ where: () => ({ groupBy: () => Promise.resolve(aggregateRows) }) }),
     } as unknown as ReturnType<typeof db.select>);
     const res = await GET(new Request("http://x"), { params: Promise.resolve({ churchId: "c1" }) });
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.counts).toEqual({ INFO: 0, WARN: 1, ERROR: 1 });
-    expect(json.entries).toHaveLength(2);
   });
 
   it("returns zero counts when no issues", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "u1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
     vi.mocked(db.select).mockReturnValue({
-      from: () => ({ where: () => Promise.resolve([]) }),
+      from: () => ({ where: () => ({ groupBy: () => Promise.resolve([]) }) }),
     } as unknown as ReturnType<typeof db.select>);
     const res = await GET(new Request("http://x"), { params: Promise.resolve({ churchId: "c1" }) });
     const json = await res.json();
     expect(json.counts).toEqual({ INFO: 0, WARN: 0, ERROR: 0 });
-    expect(json.entries).toHaveLength(0);
   });
 });

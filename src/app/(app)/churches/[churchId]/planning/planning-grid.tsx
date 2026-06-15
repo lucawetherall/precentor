@@ -44,7 +44,9 @@ interface Props {
 
 export function PlanningGrid({ churchId, from, to, initialData }: Props) {
   const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState(false);
+  // Bumped by the Retry button to re-run the data fetch after a failure.
+  const [retryToken, setRetryToken] = useState(0);
   const [csvOpen, setCsvOpen] = useState(false);
   const [hasNoPatterns, setHasNoPatterns] = useState(initialData.patterns.length === 0);
 
@@ -60,7 +62,7 @@ export function PlanningGrid({ churchId, from, to, initialData }: Props) {
       return;
     }
     setLoading(true);
-    setFetchError(null);
+    setFetchError(false);
 
     fetch(`/api/churches/${churchId}/planning?from=${from}&to=${to}`)
       .then((res) => {
@@ -73,10 +75,11 @@ export function PlanningGrid({ churchId, from, to, initialData }: Props) {
         setLoading(false);
       })
       .catch((err: unknown) => {
-        setFetchError(err instanceof Error ? err.message : "Failed to load");
+        console.error("[planning-grid] Failed to load planning data", err);
+        setFetchError(true);
         setLoading(false);
       });
-  }, [churchId, from, to, dispatch]);
+  }, [churchId, from, to, retryToken, dispatch]);
 
   // Refetch the grid silently (no full-screen loading state) to resync optimistic
   // state with the server — used after a save conflict so stale rows and their
@@ -281,7 +284,12 @@ export function PlanningGrid({ churchId, from, to, initialData }: Props) {
         <div className="mb-4">
           <DateRangeControls from={from} to={to} />
         </div>
-        <p className="text-sm text-destructive">Error: {fetchError}</p>
+        <div role="alert" className="space-y-3">
+          <p className="text-sm text-destructive">Something went wrong loading the planner.</p>
+          <Button size="sm" variant="outline" onClick={() => setRetryToken((t) => t + 1)}>
+            Retry
+          </Button>
+        </div>
       </>
     );
   }
@@ -319,10 +327,10 @@ export function PlanningGrid({ churchId, from, to, initialData }: Props) {
         </div>
       )}
 
-      <div className="text-xs text-muted-foreground h-5 mb-2">
+      <div role="status" aria-live="polite" className="text-xs text-muted-foreground h-5 mb-2">
         {state.saveStatus === "saving" && "Saving…"}
         {state.saveStatus === "saved" && "Saved ✓"}
-        {state.saveStatus === "error" && <span className="text-destructive">Error saving</span>}
+        {state.saveStatus === "error" && <span role="alert" className="text-destructive">Error saving</span>}
       </div>
 
       {csvOpen && (

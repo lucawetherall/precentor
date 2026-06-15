@@ -6,6 +6,9 @@ import {
   musicSlots,
   hymns,
   anthems,
+  massSettings,
+  canticleSettings,
+  responsesSettings,
   availability,
   rotaEntries,
   serviceSections,
@@ -27,6 +30,13 @@ import { ServiceNav } from './service-nav'
 interface Props {
   params: Promise<{ churchId: string; date: string }>
   searchParams: Promise<{ mode?: string }>
+}
+
+/** "2026-03-29" → "29 March 2026"; anything unparseable comes back as typed. */
+function formatDisplayDate(date: string): string {
+  const parsed = new Date(`${date}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) return date
+  return parsed.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 export default async function ServiceDetailPage({ params, searchParams }: Props) {
@@ -79,7 +89,10 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
           .from(services)
           .where(
             and(eq(services.churchId, churchId), eq(services.liturgicalDayId, dayId))
-          ),
+          )
+          // Deterministic primary service on multi-service days — without an
+          // ORDER BY, which service the member view binds to is up to Postgres.
+          .orderBy(asc(services.time), asc(services.serviceType)),
       ])
 
       const service = dayServices[0] ?? null
@@ -126,10 +139,20 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
               anthemTitle: anthems.title,
               anthemComposer: anthems.composer,
               anthemVoicing: anthems.voicing,
+              massSettingName: massSettings.name,
+              massSettingComposer: massSettings.composer,
+              canticleSettingName: canticleSettings.name,
+              canticleSettingComposer: canticleSettings.composer,
+              canticleSettingCanticle: canticleSettings.canticle,
+              responsesSettingName: responsesSettings.name,
+              responsesSettingComposer: responsesSettings.composer,
             })
             .from(musicSlots)
             .leftJoin(hymns, eq(musicSlots.hymnId, hymns.id))
             .leftJoin(anthems, eq(musicSlots.anthemId, anthems.id))
+            .leftJoin(massSettings, eq(musicSlots.massSettingId, massSettings.id))
+            .leftJoin(canticleSettings, eq(musicSlots.canticleSettingId, canticleSettings.id))
+            .leftJoin(responsesSettings, eq(musicSlots.responsesSettingId, responsesSettings.id))
             .where(eq(musicSlots.serviceId, service.id))
             .orderBy(asc(musicSlots.positionOrder))
         : null
@@ -208,7 +231,9 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
         <ServiceNav churchId={churchId} adjacent={adjacent} />
-        <p className="text-muted-foreground">No liturgical data for {date}.</p>
+        <p className="text-muted-foreground">
+          There&apos;s nothing in the church calendar for {formatDisplayDate(date)}.
+        </p>
       </div>
     )
   }

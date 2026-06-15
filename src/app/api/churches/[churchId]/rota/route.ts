@@ -80,3 +80,39 @@ export async function POST(
   if ("atCapacity" in result) return apiError("Slot at capacity", 409, { code: ErrorCodes.SLOT_AT_CAPACITY });
   return apiSuccess({ success: true, warnings: result.warnings }, 201);
 }
+
+const rotaDeleteSchema = z.object({
+  userId: z.string().min(1, "userId is required"),
+  serviceId: z.string().min(1, "serviceId is required"),
+  catalogRoleId: z.string().min(1, "catalogRoleId is required"),
+});
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ churchId: string }> }
+) {
+  const { churchId } = await params;
+  const { error } = await requireChurchRole(churchId, "EDITOR");
+  if (error) return error;
+
+  const { data, error: bodyError } = await parseJsonBody(request, rotaDeleteSchema);
+  if (bodyError) return bodyError;
+  const { userId, serviceId, catalogRoleId } = data;
+
+  // Verify the service belongs to this church before deleting, so an editor of
+  // church A cannot clear church B's rota by guessing a serviceId.
+  const [svc] = await db.select({ id: services.id }).from(services)
+    .where(and(eq(services.id, serviceId), eq(services.churchId, churchId))).limit(1);
+  if (!svc) return apiError("Service not found", 404, { code: ErrorCodes.NOT_FOUND });
+
+  // Remove the live assignment. Quarantined rows are migration bookkeeping and
+  // are left untouched. Idempotent: deleting an already-empty assignment is fine.
+  await db.delete(rotaEntries).where(and(
+    eq(rotaEntries.serviceId, serviceId),
+    eq(rotaEntries.userId, userId),
+    eq(rotaEntries.catalogRoleId, catalogRoleId),
+    isNull(rotaEntries.quarantinedAt),
+  ));
+
+  return apiSuccess({ success: true });
+}

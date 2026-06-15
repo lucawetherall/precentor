@@ -13,13 +13,21 @@ vi.mock("@/lib/logger", () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-import { POST } from "../route";
+import { POST, DELETE } from "../route";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 
 function makeReq(body: unknown) {
   return new Request("http://x/api/churches/c1/rota", {
     method: "POST",
+    body: JSON.stringify(body),
+    headers: { "content-type": "application/json" },
+  });
+}
+
+function makeDelReq(body: unknown) {
+  return new Request("http://x/api/churches/c1/rota", {
+    method: "DELETE",
     body: JSON.stringify(body),
     headers: { "content-type": "application/json" },
   });
@@ -239,5 +247,52 @@ describe("POST rota", () => {
     expect(json.warnings).toHaveLength(1);
     expect(json.warnings[0].code).toBe("DUAL_ROLE");
     expect(json.warnings[0].allHeldSlots).toHaveLength(2);
+  });
+});
+
+describe("DELETE rota (unassign)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(requireChurchRole).mockResolvedValue({ user: { id: "editor1" }, error: null } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+  });
+
+  it("returns 403 for non-editors", async () => {
+    vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("Forbidden", { status: 403 }) } as unknown as Awaited<ReturnType<typeof requireChurchRole>>);
+    const res = await DELETE(makeDelReq({ userId: "u1", serviceId: "s1", catalogRoleId: "r1" }), {
+      params: Promise.resolve({ churchId: "c1" }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("returns 400 when catalogRoleId is missing", async () => {
+    const res = await DELETE(makeDelReq({ userId: "u1", serviceId: "s1" }), {
+      params: Promise.resolve({ churchId: "c1" }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 404 when the service does not belong to the church", async () => {
+    vi.mocked(db.select).mockReturnValueOnce({
+      from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }),
+    } as unknown as ReturnType<typeof db.select>);
+    const res = await DELETE(makeDelReq({ userId: "u1", serviceId: "other-svc", catalogRoleId: "r1" }), {
+      params: Promise.resolve({ churchId: "c1" }),
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 200 and deletes the assignment when the service belongs to the church", async () => {
+    vi.mocked(db.select).mockReturnValueOnce({
+      from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: "s1" }]) }) }),
+    } as unknown as ReturnType<typeof db.select>);
+    const whereMock = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(db.delete).mockReturnValue({ where: whereMock } as unknown as ReturnType<typeof db.delete>);
+    const res = await DELETE(makeDelReq({ userId: "u1", serviceId: "s1", catalogRoleId: "r1" }), {
+      params: Promise.resolve({ churchId: "c1" }),
+    });
+    expect(res.status).toBe(200);
+    expect(whereMock).toHaveBeenCalledOnce();
+    const json = await res.json();
+    expect(json.success).toBe(true);
   });
 });

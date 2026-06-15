@@ -1,4 +1,4 @@
-import { getDay, parseISO } from "date-fns";
+import { addDays, format, getDay, isAfter, parseISO } from "date-fns";
 import { db } from "@/lib/db";
 import {
   churchServicePatterns,
@@ -8,8 +8,10 @@ import {
   musicSlots,
   musicSlotTypeEnum,
   liturgicalDays,
+  presetRoleSlots,
+  serviceRoleSlots,
 } from "@/lib/db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import { resolveTemplateSections } from "@/lib/services/template-resolution";
 import { applySeasonalRules } from "@/lib/services/seasonal-rules";
 import type { InsertServiceSection } from "@/lib/services/seasonal-rules";
@@ -51,6 +53,47 @@ export async function generateServicesForChurch(
         lte(liturgicalDays.date, toDate),
       ),
     );
+
+  // 2b. Patterns can target weekdays, but the calendar seed covers Sundays and
+  //     major feasts only — a Wednesday-Evensong pattern would otherwise
+  //     generate nothing. Create minimal Feria placeholders for any
+  //     pattern-matching date with no calendar row (the same shape the
+  //     planning grid's ensureLiturgicalDay creates on demand).
+  const seenDates = new Set(days.map((d) => d.date));
+  const wantedDows = new Set(patterns.map((p) => p.dayOfWeek));
+  const missingDates: string[] = [];
+  const rangeEnd = parseISO(toDate);
+  for (let d = parseISO(fromDate); !isAfter(d, rangeEnd); d = addDays(d, 1)) {
+    if (!wantedDows.has(getDay(d))) continue;
+    const iso = format(d, "yyyy-MM-dd");
+    if (!seenDates.has(iso)) missingDates.push(iso);
+  }
+  if (missingDates.length > 0) {
+    const inserted = await db
+      .insert(liturgicalDays)
+      .values(
+        missingDates.map((date) => ({
+          date,
+          season: "ORDINARY" as const,
+          colour: "GREEN" as const,
+          cwName: "Feria",
+        })),
+      )
+      .onConflictDoNothing()
+      .returning();
+    days.push(...inserted);
+    // Rows lost to a concurrent insert land here — fetch them instead.
+    const insertedDates = new Set(inserted.map((d) => d.date));
+    const racedDates = missingDates.filter((d) => !insertedDates.has(d));
+    if (racedDates.length > 0) {
+      days.push(
+        ...(await db
+          .select()
+          .from(liturgicalDays)
+          .where(inArray(liturgicalDays.date, racedDates))),
+      );
+    }
+  }
 
   if (days.length === 0) return { created: 0 };
 
@@ -99,9 +142,48 @@ export async function generateServicesForChurch(
       id: services.id,
       liturgicalDayId: services.liturgicalDayId,
       serviceType: services.serviceType,
+      presetId: services.presetId,
     });
 
   if (insertedServices.length === 0) return { created: 0 };
+
+  // Snapshot each preset's role slots onto the created services — the same
+  // copy the manual create route performs. Without it the rota/availability
+  // feature is inert for generated services (the availability API requires a
+  // matching service_role_slots row).
+  const presetIds = [
+    ...new Set(
+      insertedServices
+        .map((s) => s.presetId)
+        .filter((id): id is string => typeof id === "string"),
+    ),
+  ];
+  const allRoleSlots: (typeof serviceRoleSlots.$inferInsert)[] = [];
+  if (presetIds.length > 0) {
+    const presetSlots = await db
+      .select()
+      .from(presetRoleSlots)
+      .where(inArray(presetRoleSlots.presetId, presetIds));
+    const slotsByPreset = new Map<string, typeof presetSlots>();
+    for (const slot of presetSlots) {
+      const group = slotsByPreset.get(slot.presetId) ?? [];
+      group.push(slot);
+      slotsByPreset.set(slot.presetId, group);
+    }
+    for (const svc of insertedServices) {
+      if (!svc.presetId) continue;
+      for (const slot of slotsByPreset.get(svc.presetId) ?? []) {
+        allRoleSlots.push({
+          serviceId: svc.id,
+          catalogRoleId: slot.catalogRoleId,
+          minCount: slot.minCount,
+          maxCount: slot.maxCount,
+          exclusive: slot.exclusive,
+          displayOrder: slot.displayOrder,
+        });
+      }
+    }
+  }
 
   // 5. Build the sections (and any music slots they own) for every created
   //    service, accumulating into two flat arrays. Music-slot ids are generated
@@ -150,15 +232,20 @@ export async function generateServicesForChurch(
     }
   }
 
-  // 6. Persist slots then sections (sections FK-reference slots) in one
-  //    transaction, so the whole generation run is atomic instead of one
-  //    transaction per service.
-  if (allSections.length > 0) {
+  // 6. Persist role slots, music slots, then sections (sections FK-reference
+  //    slots) in one transaction, so the whole generation run is atomic
+  //    instead of one transaction per service.
+  if (allSections.length > 0 || allRoleSlots.length > 0) {
     await db.transaction(async (tx) => {
+      if (allRoleSlots.length > 0) {
+        await tx.insert(serviceRoleSlots).values(allRoleSlots);
+      }
       if (allSlots.length > 0) {
         await tx.insert(musicSlots).values(allSlots);
       }
-      await tx.insert(serviceSections).values(allSections);
+      if (allSections.length > 0) {
+        await tx.insert(serviceSections).values(allSections);
+      }
     });
   }
 

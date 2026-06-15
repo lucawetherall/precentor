@@ -20,7 +20,9 @@ export async function GET(
 ) {
   const { churchId } = await params;
 
-  const { error } = await requireChurchRole(churchId, "ADMIN");
+  // Printable music list is a planning deliverable; a Director of Music (often
+  // an EDITOR) needs it, consistent with the Music List page gate (EDITOR).
+  const { error } = await requireChurchRole(churchId, "EDITOR");
   if (error) return error;
 
   const { searchParams } = new URL(request.url);

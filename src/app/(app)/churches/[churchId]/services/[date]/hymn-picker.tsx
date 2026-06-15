@@ -5,6 +5,7 @@ import { Search, X, Loader2 } from "lucide-react";
 import { useServiceEditor } from "./service-editor-context";
 import { VerseStepper } from "./verse-stepper";
 import { useToast } from "@/components/ui/toast";
+import { AiSuggestButton, type MusicSuggestion } from "./ai-suggest-button";
 
 interface HymnResult {
   id: string;
@@ -26,7 +27,7 @@ function formatHymn(hymn: { book: string; number: number; firstLine: string }) {
 }
 
 export function HymnPicker({ slotId, churchId }: HymnPickerProps) {
-  const { musicSlots, updateSlot } = useServiceEditor();
+  const { musicSlots, updateSlot, serviceId } = useServiceEditor();
   const { addToast } = useToast();
   const slot = musicSlots.get(slotId);
 
@@ -121,6 +122,47 @@ export function HymnPicker({ slotId, churchId }: HymnPickerProps) {
     await updateSlot(slotId, { hymnId: null });
   };
 
+  // Apply an AI suggestion by resolving it against the church's hymn books.
+  // The suggestion id is a hint like "NEH-30" / "AM 142"; resolve by book+number
+  // first, then by title, and apply the best match. If nothing matches, drop the
+  // title into the search box so the user can choose manually.
+  const applySuggestion = async (s: MusicSuggestion) => {
+    const ref = s.id.match(/\b(NEH|AM|A&M|AMNS)\s*[-–]?\s*(\d+)\b/i);
+    let candidates: HymnResult[] = [];
+    try {
+      if (ref) {
+        const book = ref[1].toUpperCase().startsWith("A") ? "AM" : "NEH";
+        const number = Number(ref[2]);
+        const res = await fetch(
+          `/api/search/hymns?q=${encodeURIComponent(String(number))}&book=${book}`,
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const items: HymnResult[] = Array.isArray(data) ? data : data.results ?? [];
+          candidates = items.filter((h) => h.number === number);
+        }
+      }
+      if (candidates.length === 0) {
+        const res = await fetch(`/api/search/hymns?q=${encodeURIComponent(s.title)}`);
+        if (res.ok) {
+          const data = await res.json();
+          candidates = Array.isArray(data) ? data : data.results ?? [];
+        }
+      }
+    } catch {
+      addToast("Couldn't load that suggestion — try searching manually.", "error");
+      return;
+    }
+
+    if (candidates.length > 0) {
+      await handleSelect(candidates[0]);
+      addToast(`Added ${formatHymn(candidates[0])}`, "success");
+    } else {
+      handleSearch(s.title);
+      addToast("That piece isn't in your hymn books — showing a search instead.", "info");
+    }
+  };
+
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -179,6 +221,13 @@ export function HymnPicker({ slotId, churchId }: HymnPickerProps) {
           {searching && (
             <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" strokeWidth={1.5} />
           )}
+          <span className="text-border" aria-hidden="true">·</span>
+          <AiSuggestButton
+            serviceId={serviceId}
+            slotType="HYMN"
+            pieceLabel="hymn"
+            onApply={applySuggestion}
+          />
         </div>
 
         {/* Results dropdown */}

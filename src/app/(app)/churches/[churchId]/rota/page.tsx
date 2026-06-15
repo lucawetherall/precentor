@@ -14,8 +14,9 @@ interface Props {
 
 export default async function RotaPage({ params }: Props) {
   const { churchId } = await params;
-  const { error } = await requireChurchRole(churchId, "MEMBER");
-  if (error) redirect("/churches");
+  const { user, membership, error } = await requireChurchRole(churchId, "MEMBER");
+  if (error || !user) redirect("/churches");
+  const canEditOthers = membership?.role === "EDITOR" || membership?.role === "ADMIN";
 
   const today = format(new Date(), "yyyy-MM-dd");
 
@@ -123,6 +124,8 @@ export default async function RotaPage({ params }: Props) {
         }))}
         availabilityData={availabilityData}
         rotaData={rotaData}
+        currentUserId={user.id}
+        canEditOthers={canEditOthers}
       />
     </div>
   );

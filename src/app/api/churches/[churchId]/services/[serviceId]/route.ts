@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { services } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { services, collects } from "@/lib/db/schema";
+import { eq, and, or, isNull } from "drizzle-orm";
 import { serviceUpdateSchema } from "@/lib/validation/schemas";
 import { parseJsonBody } from "@/lib/api/parse-body";
 
@@ -71,6 +71,26 @@ export async function PATCH(
   }
 
   try {
+    // Collects are church-scoped (NULL churchId = global). Reject ids that
+    // exist but belong to another church — otherwise any valid UUID would be
+    // accepted and leak across tenants. eucharisticPrayers and massSettings
+    // have no churchId column (global tables), so they need no such check.
+    if (typeof data.collectId === "string") {
+      const [collect] = await db
+        .select({ id: collects.id })
+        .from(collects)
+        .where(
+          and(
+            eq(collects.id, data.collectId),
+            or(isNull(collects.churchId), eq(collects.churchId, churchId)),
+          ),
+        )
+        .limit(1);
+      if (!collect) {
+        return NextResponse.json({ error: "Invalid collectId" }, { status: 400 });
+      }
+    }
+
     const result = await db
       .update(services)
       .set(updates)

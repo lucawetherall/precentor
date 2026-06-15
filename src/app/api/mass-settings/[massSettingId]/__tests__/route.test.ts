@@ -15,7 +15,8 @@ vi.mock("@/lib/db", () => {
 
 import { GET } from "../route";
 
-const ctx = { params: Promise.resolve({ massSettingId: "ms1" }) };
+// The route validates massSettingId is a UUID, so use a syntactically valid one.
+const ctx = { params: Promise.resolve({ massSettingId: "22222222-2222-4222-8222-222222222222" }) };
 
 beforeEach(() => {
   vi.clearAllMocks();

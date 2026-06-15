@@ -60,9 +60,9 @@ describe("POST /api/churches", () => {
     expect(generateServicesForChurch).toHaveBeenCalledOnce();
   });
 
-  it("skips service generation when explicit defaultServices are supplied", async () => {
+  it("also generates services when explicit defaultServices are supplied (preset path)", async () => {
     await POST(makePost({ name: "St Mary's", defaultServices: [{ type: "SUNG_EUCHARIST", time: "10:00" }] }));
-    expect(generateServicesForChurch).not.toHaveBeenCalled();
+    expect(generateServicesForChurch).toHaveBeenCalledOnce();
   });
 
   it("still returns 201 when best-effort service generation fails", async () => {

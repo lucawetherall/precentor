@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Users, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,12 @@ interface MemberRow {
 }
 
 const ROLES = ["MEMBER", "EDITOR", "ADMIN"] as const;
+
+const ROLE_LABELS: Record<string, string> = {
+  MEMBER: "Member",
+  EDITOR: "Editor",
+  ADMIN: "Admin",
+};
 
 export function MembersTable({
   initialMembers,
@@ -46,7 +53,7 @@ export function MembersTable({
         body: JSON.stringify({ [field]: value }),
       });
       if (res.ok) {
-        addToast("Role updated", "success");
+        addToast("Permission updated", "success");
       } else {
         setMembers((ms) => ms.map((m) => (m.id === memberId ? prev : m)));
         addToast("Failed to update member", "error");
@@ -88,14 +95,27 @@ export function MembersTable({
   }
 
   return (
-    <div className="mt-8 border border-border overflow-x-auto">
+    <div className="mt-8">
+      {isAdmin && (
+        <p className="mb-2 text-xs text-muted-foreground">
+          Assign musical roles in{" "}
+          <Link
+            href={`/churches/${churchId}/settings/institution`}
+            className="underline hover:no-underline"
+          >
+            Settings → Institution
+          </Link>
+          .
+        </p>
+      )}
+      <div className="border border-border overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-muted text-foreground">
             <th className="px-3 py-2 text-left font-body font-normal">Name</th>
             <th className="px-3 py-2 text-left font-body font-normal hidden sm:table-cell">Email</th>
-            <th className="px-3 py-2 text-left font-body font-normal">Role</th>
-            <th className="px-3 py-2 text-left font-body font-normal">Roles</th>
+            <th className="px-3 py-2 text-left font-body font-normal">Permission</th>
+            <th className="px-3 py-2 text-left font-body font-normal">Musical roles</th>
             {isAdmin && <th className="px-3 py-2 w-10" aria-label="Actions"></th>}
           </tr>
         </thead>
@@ -112,15 +132,15 @@ export function MembersTable({
                   <select
                     value={m.role}
                     onChange={(e) => updateMember(m.id, "role", e.target.value)}
-                    aria-label={`Role for ${m.userName || m.userEmail}`}
+                    aria-label={`Permission for ${m.userName || m.userEmail}`}
                     className="text-xs rounded-md border border-input px-1.5 py-1 bg-card shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {ROLES.map((r) => (
-                      <option key={r} value={r}>{r}</option>
+                      <option key={r} value={r}>{ROLE_LABELS[r] ?? r}</option>
                     ))}
                   </select>
                 ) : (
-                  <span className="text-xs">{m.role}</span>
+                  <span className="text-xs">{ROLE_LABELS[m.role] ?? m.role}</span>
                 )}
               </td>
               <td className="px-3 py-2">
@@ -130,7 +150,14 @@ export function MembersTable({
                       {r.name}{r.isPrimary ? " · primary" : ""}
                     </span>
                   ))}
-                  {(m.roles ?? []).length === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                  {(m.roles ?? []).length === 0 && (
+                    <span
+                      className="text-xs text-muted-foreground"
+                      title="No musical roles assigned yet"
+                    >
+                      —
+                    </span>
+                  )}
                 </div>
               </td>
               {isAdmin && (
@@ -167,6 +194,7 @@ export function MembersTable({
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

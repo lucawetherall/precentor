@@ -47,8 +47,10 @@ export async function POST(request: Request) {
 
     const { service, day } = serviceResult[0];
 
-    // Verify the user is a member of this church (auth check scoped to the resolved churchId)
-    const { error: authError } = await requireChurchRole(service.churchId, "MEMBER");
+    // Only editors can apply a music suggestion, so only editors may request
+    // (and bill) one — this also stops a plain member from draining the
+    // church's paid AI quota. Scoped to the churchId resolved from the service.
+    const { error: authError } = await requireChurchRole(service.churchId, "EDITOR");
     if (authError) return authError;
 
     // Enforce per-church daily quota before paying for the Gemini call.

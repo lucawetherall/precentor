@@ -10,6 +10,7 @@ import { apiError } from "@/lib/api-helpers";
 import { parseJsonBody } from "@/lib/api/parse-body";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendInvitation } from "@/lib/email/send";
+import { env } from "@/lib/env";
 
 export async function POST(
   request: Request,
@@ -66,8 +67,9 @@ export async function POST(
     let emailSendError: string | null = null;
     if (email && sendEmail) {
       try {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-        const inviteUrl = `${appUrl}/invite/${token}`;
+        // env proxy falls back to the production URL, so a missing var can
+        // never email out a localhost invite link.
+        const inviteUrl = `${env.NEXT_PUBLIC_APP_URL}/invite/${token}`;
         await sendInvitation(email, church?.name ?? "a church", user!.name ?? "An administrator", inviteUrl);
         await db
           .update(invites)

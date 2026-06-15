@@ -40,7 +40,7 @@ beforeEach(() => {
 });
 
 describe("GET /api/churches/[churchId]/services/[serviceId]/sheet", () => {
-  it("returns 403 for non-admins", async () => {
+  it("returns 403 for non-members", async () => {
     vi.mocked(requireChurchRole).mockResolvedValue({ error: new Response("no", { status: 403 }) } as never);
     expect((await GET(url(), ctx)).status).toBe(403);
   });

@@ -484,6 +484,11 @@ export function useServiceEditorReducer({
   }, [baseUrl]);
 
   return {
+    // Identifiers (handy for child controls that call church/service APIs,
+    // e.g. AI suggestions keyed on the service)
+    serviceId,
+    churchId,
+
     // State
     sections: state.sections,
     settings: state.settings,

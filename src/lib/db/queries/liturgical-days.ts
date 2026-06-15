@@ -19,17 +19,11 @@ export async function ensureLiturgicalDay(
   tx: DbOrTx,
   date: string
 ): Promise<EnsuredLiturgicalDay> {
-  const existing = await tx
-    .select({ id: liturgicalDays.id, date: liturgicalDays.date })
-    .from(liturgicalDays)
-    .where(eq(liturgicalDays.date, date))
-    .limit(1);
-
-  if (existing.length > 0) {
-    return { id: existing[0].id, date: existing[0].date, created: false };
-  }
-
-  const [row] = await tx
+  // `date` is unique, so insert with conflict handling instead of
+  // select-then-insert — two concurrent calls for the same date would
+  // otherwise both miss the select and one insert would blow up with a
+  // unique-violation (surfacing as a 500).
+  const inserted = await tx
     .insert(liturgicalDays)
     .values({
       date,
@@ -37,7 +31,24 @@ export async function ensureLiturgicalDay(
       colour: "GREEN",
       cwName: "Feria",
     })
+    .onConflictDoNothing({ target: liturgicalDays.date })
     .returning({ id: liturgicalDays.id, date: liturgicalDays.date });
 
-  return { id: row.id, date: row.date, created: true };
+  if (inserted.length > 0) {
+    return { id: inserted[0].id, date: inserted[0].date, created: true };
+  }
+
+  // Conflict: the row already existed (or a concurrent transaction won the
+  // race) — re-select it.
+  const [existing] = await tx
+    .select({ id: liturgicalDays.id, date: liturgicalDays.date })
+    .from(liturgicalDays)
+    .where(eq(liturgicalDays.date, date))
+    .limit(1);
+
+  if (!existing) {
+    throw new Error(`liturgical day ${date} not found after insert conflict`);
+  }
+
+  return { id: existing.id, date: existing.date, created: false };
 }

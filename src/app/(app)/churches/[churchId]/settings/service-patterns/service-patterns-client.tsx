@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { useConfirm } from "@/components/ui/use-confirm";
 
 const DAY_NAMES = [
@@ -44,31 +45,32 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const { addToast } = useToast();
   const confirm = useConfirm();
-
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 4000);
-  }
 
   async function handleToggleEnabled(pattern: ServicePattern) {
     const updated = { ...pattern, enabled: !pattern.enabled };
     setPatterns((prev) => prev.map((p) => (p.id === pattern.id ? updated : p)));
 
-    const res = await fetch(
-      `/api/churches/${churchId}/service-patterns/${pattern.id}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: !pattern.enabled }),
-      },
-    );
+    try {
+      const res = await fetch(
+        `/api/churches/${churchId}/service-patterns/${pattern.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled: !pattern.enabled }),
+        },
+      );
 
-    if (!res.ok) {
-      // Revert on error
+      if (!res.ok) {
+        // Revert on error
+        setPatterns((prev) => prev.map((p) => (p.id === pattern.id ? pattern : p)));
+        addToast("Failed to update pattern.", "error");
+      }
+    } catch {
+      // Network failure: revert the optimistic toggle so the UI matches the server.
       setPatterns((prev) => prev.map((p) => (p.id === pattern.id ? pattern : p)));
-      showToast("Failed to update pattern.");
+      addToast("Failed to update pattern.", "error");
     }
   }
 
@@ -95,10 +97,10 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
       if (res.ok) {
         setPatterns((prev) => prev.filter((p) => p.id !== patternId));
       } else {
-        showToast("Failed to delete pattern.");
+        addToast("Failed to delete pattern.", "error");
       }
     } catch {
-      showToast("Failed to delete pattern.");
+      addToast("Failed to delete pattern.", "error");
     } finally {
       setDeletingId(null);
     }
@@ -129,7 +131,7 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
       });
     } else {
       const data = await res.json().catch(() => ({}));
-      showToast((data as { error?: string }).error ?? "Failed to add pattern.");
+      addToast((data as { error?: string }).error ?? "Failed to add pattern.", "error");
     }
 
     setSaving(false);
@@ -148,9 +150,9 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
 
     if (res.ok) {
       const data: { created: number } = await res.json();
-      showToast(`Generated ${data.created} new service${data.created !== 1 ? "s" : ""}.`);
+      addToast(`Generated ${data.created} new service${data.created !== 1 ? "s" : ""}.`, "success");
     } else {
-      showToast("Failed to generate services.");
+      addToast("Failed to generate services.", "error");
     }
 
     setGenerating(false);
@@ -158,15 +160,6 @@ export function ServicePatternsClient({ churchId, initialPatterns }: Props) {
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div
-          role="status"
-          className="fixed bottom-4 right-4 z-50 bg-foreground text-background text-sm px-4 py-2 shadow"
-        >
-          {toast}
-        </div>
-      )}
-
       {/* Patterns list */}
       {patterns.length === 0 && !showAddForm ? (
         <div className="border border-border bg-card p-8 text-center">

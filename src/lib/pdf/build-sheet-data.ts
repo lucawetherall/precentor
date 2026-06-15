@@ -8,6 +8,10 @@ import {
   musicSlots,
   churches,
   hymns,
+  anthems,
+  massSettings,
+  canticleSettings,
+  responsesSettings,
   serviceSheetTemplates,
   serviceSections,
   liturgicalTexts,
@@ -29,6 +33,7 @@ import { DEFAULT_TEMPLATE_LAYOUT } from "@/types/service-sheet";
 import type { ServiceType, LiturgicalColour } from "@/types";
 import { MUSIC_SLOT_LABELS } from "@/types";
 import { resolveLectionaryTrack, filterReadingsByTrack } from "@/lib/lectionary/track";
+import { lectionaryForServiceType } from "@/lib/lectionary/for-service";
 import { readLectionaryTrack } from "@/lib/churches/settings";
 import { CW_EUCHARIST_ORDER_ONE } from "@/data/liturgy/cw-eucharist-order-one";
 import { BCP_EVENSONG } from "@/data/liturgy/bcp-evensong";
@@ -63,7 +68,8 @@ async function resolveDbSections(
   service: typeof services.$inferSelect,
   day: typeof liturgicalDays.$inferSelect,
   dayReadings: ReadingEntry[],
-  resolvedSlots: MusicSlotEntry[],
+  rawSlots: (typeof musicSlots.$inferSelect)[],
+  slotEntryById: Map<string, MusicSlotEntry>,
 ): Promise<ResolvedDbSection[] | null> {
   // Query service_sections with liturgical_texts join
   const rawSections = await db
@@ -79,26 +85,16 @@ async function resolveDbSections(
   // If no sections exist, signal fallback to template-based approach
   if (rawSections.length === 0) return null;
 
-  // Build a map of music slots by id for quick lookup
-  const slotById = new Map<string, MusicSlotEntry>();
-  // We need raw slot rows with their ids — fetch them separately
-  const rawSlotRows = await db
-    .select({ slot: musicSlots })
-    .from(musicSlots)
-    .where(eq(musicSlots.serviceId, serviceId));
-  // Build rawSlotById for O(1) lookup
-  const rawSlotById = new Map<string, typeof rawSlotRows[number]["slot"]>();
-  for (const row of rawSlotRows) {
-    rawSlotById.set(row.slot.id, row.slot);
-    // Find the already-resolved MusicSlotEntry by positionOrder
-    const resolved = resolvedSlots.find((s) => s.positionOrder === row.slot.positionOrder);
-    if (resolved) slotById.set(row.slot.id, resolved);
+  // Raw slot rows by id (already fetched alongside the resolved entries).
+  const rawSlotById = new Map<string, (typeof rawSlots)[number]>();
+  for (const slot of rawSlots) {
+    rawSlotById.set(slot.id, slot);
   }
 
   // Collect all hymnIds that need verses (upfront) and batch-fetch
   const hymnIdsNeedingVerses = new Set<string>();
-  for (const row of rawSlotRows) {
-    const { hymnId, verseCount, selectedVerses } = row.slot;
+  for (const slot of rawSlots) {
+    const { hymnId, verseCount, selectedVerses } = slot;
     if (hymnId && (verseCount || (selectedVerses as unknown[] | null)?.length)) {
       hymnIdsNeedingVerses.add(hymnId);
     }
@@ -197,7 +193,7 @@ async function resolveDbSections(
 
     // 4. Resolve music slot
     if (section.musicSlotId) {
-      musicSlot = slotById.get(section.musicSlotId);
+      musicSlot = slotEntryById.get(section.musicSlotId);
       const rawSlot = rawSlotById.get(section.musicSlotId);
 
       if (musicSlot?.hymn && rawSlot?.hymnId) {
@@ -241,6 +237,10 @@ interface FetchedServiceData {
   church: typeof churches.$inferSelect;
   dayReadings: ReadingEntry[];
   resolvedSlots: MusicSlotEntry[];
+  /** Raw music_slots rows (with ids) for section → slot resolution. */
+  rawSlots: (typeof musicSlots.$inferSelect)[];
+  /** Resolved entries keyed by slot id (positionOrder is not unique). */
+  slotEntryById: Map<string, MusicSlotEntry>;
   templateLayout: TemplateLayout;
   logoUrl?: string;
 }
@@ -265,17 +265,25 @@ async function fetchServiceData(
 
   const { service, day, church } = serviceResult[0];
 
-  // Fetch readings (with text for booklet mode), then collapse the Ordinary
-  // Time psalm to this service's track (per-service override → church default).
-  // Only the psalm is affected; OT/epistle/gospel are untagged and kept.
+  // Fetch the readings for the lectionary this service type follows (Evensong
+  // reads the Second Service lectionary; everything else the Principal), then
+  // collapse the Ordinary Time psalm to this service's track (per-service
+  // override → church default). Without the lectionary filter the sheet
+  // prints every lesson for the day — three lectionaries' worth.
   const allReadings = await db
     .select()
     .from(readings)
-    .where(eq(readings.liturgicalDayId, day.id));
+    .where(
+      and(
+        eq(readings.liturgicalDayId, day.id),
+        eq(readings.lectionary, lectionaryForServiceType(service.serviceType)),
+      ),
+    );
   const track = resolveLectionaryTrack(service.lectionaryTrack, readLectionaryTrack(church.settings));
   const dayReadings = filterReadingsByTrack(allReadings, track);
 
-  // Fetch music slots with full joins
+  // Fetch music slots with full joins — every library a slot can reference,
+  // not just hymns, so chosen anthems / settings don't print as "TBC".
   const slotsRaw = await db
     .select({
       slot: musicSlots,
@@ -285,13 +293,37 @@ async function fetchServiceData(
         firstLine: hymns.firstLine,
         tuneName: hymns.tuneName,
       },
+      anthem: {
+        title: anthems.title,
+        composer: anthems.composer,
+        voicing: anthems.voicing,
+      },
+      massSetting: {
+        name: massSettings.name,
+        composer: massSettings.composer,
+      },
+      canticleSetting: {
+        name: canticleSettings.name,
+        composer: canticleSettings.composer,
+        canticle: canticleSettings.canticle,
+      },
+      responsesSetting: {
+        name: responsesSettings.name,
+        composer: responsesSettings.composer,
+      },
     })
     .from(musicSlots)
     .leftJoin(hymns, eq(musicSlots.hymnId, hymns.id))
+    .leftJoin(anthems, eq(musicSlots.anthemId, anthems.id))
+    .leftJoin(massSettings, eq(musicSlots.massSettingId, massSettings.id))
+    .leftJoin(canticleSettings, eq(musicSlots.canticleSettingId, canticleSettings.id))
+    .leftJoin(responsesSettings, eq(musicSlots.responsesSettingId, responsesSettings.id))
     .where(eq(musicSlots.serviceId, serviceId))
     .orderBy(musicSlots.positionOrder);
 
-  // Build MusicSlotEntry array
+  // Build MusicSlotEntry array, keyed by slot id so sections can resolve their
+  // own slot exactly (positionOrder is not unique — Evensong canticles share it).
+  const slotEntryById = new Map<string, MusicSlotEntry>();
   const resolvedSlots: MusicSlotEntry[] = slotsRaw.map((s) => {
     const entry: MusicSlotEntry = {
       slotType: s.slot.slotType as MusicSlotEntry["slotType"],
@@ -299,7 +331,16 @@ async function fetchServiceData(
       label:
         (MUSIC_SLOT_LABELS as Record<string, string>)[s.slot.slotType] ||
         s.slot.slotType,
-      value: s.hymn?.firstLine || s.slot.freeText || "TBC",
+      value:
+        s.hymn?.firstLine ||
+        (s.anthem ? `${s.anthem.title} — ${s.anthem.composer}` : null) ||
+        (s.massSetting ? `${s.massSetting.name} — ${s.massSetting.composer}` : null) ||
+        (s.canticleSetting
+          ? `${s.canticleSetting.name ?? s.canticleSetting.canticle} — ${s.canticleSetting.composer}`
+          : null) ||
+        (s.responsesSetting ? `${s.responsesSetting.name} — ${s.responsesSetting.composer}` : null) ||
+        s.slot.freeText ||
+        "TBC",
       notes: s.slot.notes || undefined,
     };
     if (s.hymn) {
@@ -310,8 +351,36 @@ async function fetchServiceData(
         tuneName: s.hymn.tuneName,
       };
     }
+    if (s.anthem) {
+      entry.anthem = {
+        title: s.anthem.title,
+        composer: s.anthem.composer,
+        voicing: s.anthem.voicing ?? undefined,
+      };
+    }
+    if (s.massSetting) {
+      entry.massSetting = {
+        name: s.massSetting.name,
+        composer: s.massSetting.composer,
+      };
+    }
+    if (s.canticleSetting) {
+      entry.canticleSetting = {
+        name: s.canticleSetting.name ?? s.canticleSetting.canticle,
+        composer: s.canticleSetting.composer,
+        canticle: s.canticleSetting.canticle,
+      };
+    }
+    if (s.responsesSetting) {
+      entry.responsesSetting = {
+        name: s.responsesSetting.name,
+        composer: s.responsesSetting.composer,
+      };
+    }
+    slotEntryById.set(s.slot.id, entry);
     return entry;
   });
+  const rawSlots = slotsRaw.map((s) => s.slot);
 
   // Fetch church template layout and logo
   let templateLayout: TemplateLayout = { ...DEFAULT_TEMPLATE_LAYOUT };
@@ -345,6 +414,8 @@ async function fetchServiceData(
     church,
     dayReadings: readingEntries,
     resolvedSlots,
+    rawSlots,
+    slotEntryById,
     templateLayout,
     logoUrl,
   };
@@ -360,7 +431,7 @@ export async function buildBookletData(
   const fetched = await fetchServiceData(serviceId, churchId);
   if (!fetched) return null;
 
-  const { service, day, church, dayReadings, resolvedSlots, templateLayout, logoUrl } = fetched;
+  const { service, day, church, dayReadings, resolvedSlots, rawSlots, slotEntryById, templateLayout, logoUrl } = fetched;
   const layout = layoutOverride
     ? { ...templateLayout, ...layoutOverride }
     : templateLayout;
@@ -368,7 +439,7 @@ export async function buildBookletData(
   const overrides = (service.liturgicalOverrides as Record<string, string>) ?? {};
 
   // Try the DB-driven sections path first
-  const dbSections = await resolveDbSections(serviceId, service, day, dayReadings, resolvedSlots);
+  const dbSections = await resolveDbSections(serviceId, service, day, dayReadings, rawSlots, slotEntryById);
 
   return {
     mode: "booklet",

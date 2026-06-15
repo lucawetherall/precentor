@@ -1,8 +1,9 @@
 import type { LLMProvider } from "./types";
 import { GeminiProvider } from "./gemini";
+import { env } from "@/lib/env";
 
 export function createLLMProvider(): LLMProvider {
-  const provider = process.env.LLM_PROVIDER || "gemini";
+  const provider = env.LLM_PROVIDER;
 
   switch (provider) {
     case "gemini":

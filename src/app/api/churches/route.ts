@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { churches, churchMemberships, users, liturgicalDays, services, serviceTypeEnum } from "@/lib/db/schema";
+import { churches, churchMemberships, users, serviceTypeEnum } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { parseJsonBody } from "@/lib/api/parse-body";
 import { createDefaultChurchSetup } from "@/lib/churches/default-setup";
@@ -68,9 +68,8 @@ export async function POST(request: Request) {
     const slug = slugify(name) + "-" + Date.now().toString(36);
     const hasDefaults = !!defaultServices && defaultServices.length > 0;
 
-    // Wrap the church + membership + settings + services inserts in a single
-    // transaction so a partial failure (e.g. a service batch dies mid-insert)
-    // doesn't leave a church with no admin or no services visible.
+    // Wrap the church + membership + settings inserts in a single transaction
+    // so a partial failure doesn't leave a church with no admin or no presets.
     const church = await db.transaction(async (tx) => {
       const [created] = await tx.insert(churches).values({
         name,
@@ -87,52 +86,30 @@ export async function POST(request: Request) {
         role: "ADMIN",
       });
 
-      if (hasDefaults) {
-        const allDays = await tx
-          .select({ id: liturgicalDays.id })
-          .from(liturgicalDays);
-
-        const serviceValues = allDays.flatMap((day) =>
-          defaultServices!.map((svc) => ({
-            churchId: created.id,
-            liturgicalDayId: day.id,
-            serviceType: svc.type,
-            time: svc.time || null,
-            status: "DRAFT" as const,
-          }))
-        );
-
-        const CHUNK_SIZE = 500;
-        for (let i = 0; i < serviceValues.length; i += CHUNK_SIZE) {
-          const chunk = serviceValues.slice(i, i + CHUNK_SIZE);
-          await tx.insert(services).values(chunk).onConflictDoNothing();
-        }
-      } else {
-        // No explicit services supplied: seed the standard presets + a Sunday
-        // pattern so the church isn't empty. Services are generated from the
-        // pattern after this transaction commits (generate isn't tx-aware).
-        await createDefaultChurchSetup(tx, created.id);
-      }
+      // Seed the standard presets + Sunday patterns. When the admin ticked
+      // specific services, each becomes a preset + pattern so the generated
+      // services carry sections, music slots, and role slots — the old path
+      // that bulk-inserted bare service rows produced services with no
+      // running order and a dead rota.
+      await createDefaultChurchSetup(tx, created.id, hasDefaults ? defaultServices! : undefined);
 
       return created;
     });
 
-    // Fan the default Sunday pattern out into actual services for the rest of
-    // the current church year. Best-effort: a failure here must not fail church
+    // Fan the Sunday patterns out into actual services for the rest of the
+    // current church year. Best-effort: a failure here must not fail church
     // creation — the admin can re-generate from Settings → Service Patterns.
-    if (!hasDefaults) {
-      try {
-        // Cover all seeded liturgical days from today through the next church
-        // year so the new church starts with a full set of upcoming services.
-        const { endYear } = getChurchYear(new Date());
-        await generateServicesForChurch(
-          church.id,
-          format(new Date(), "yyyy-MM-dd"),
-          `${endYear + 1}-12-31`,
-        );
-      } catch (genErr) {
-        logger.error("Failed to generate default services for new church", genErr);
-      }
+    try {
+      // Cover all seeded liturgical days from today through the next church
+      // year so the new church starts with a full set of upcoming services.
+      const { endYear } = getChurchYear(new Date());
+      await generateServicesForChurch(
+        church.id,
+        format(new Date(), "yyyy-MM-dd"),
+        `${endYear + 1}-12-31`,
+      );
+    } catch (genErr) {
+      logger.error("Failed to generate default services for new church", genErr);
     }
 
     return NextResponse.json(church, { status: 201 });
