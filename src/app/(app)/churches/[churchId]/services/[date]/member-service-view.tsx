@@ -33,6 +33,8 @@ interface MemberServiceViewProps {
     colour: string
     season: string
     collect: string | null
+    /** Footnote when a transferred Festival / emphasis is kept on this service. */
+    note?: string | null
   }
   service: ServiceInfo | null
   readings: Reading[]
@@ -104,6 +106,9 @@ export function MemberServiceView({
               ` · ${SERVICE_TYPE_LABELS[service.serviceType as keyof typeof SERVICE_TYPE_LABELS] ?? service.serviceType}`}
             {service?.time && ` · ${service.time}`}
           </p>
+          {day.note && (
+            <p className="text-xs text-muted-foreground mt-1 italic">{day.note}</p>
+          )}
         </div>
       </div>
 

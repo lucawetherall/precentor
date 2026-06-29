@@ -256,6 +256,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
         day: { cwName: day!.cwName, colour: day!.colour, season: day!.season, collect: null, postCommunion: null },
         specialFeastKey: s.key,
       }).title,
+      note: s.note ?? null,
     }),
   )
 
@@ -328,6 +329,7 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
         colour: primaryIdentity.colour,
         season: primaryIdentity.season,
         collect: primaryIdentity.collect,
+        note: primaryIdentity.note,
       }}
       service={service}
       readings={memberReadings as Parameters<typeof MemberServiceView>[0]['readings']}

@@ -40,6 +40,7 @@ interface Service {
 export interface AvailableSpecial {
   key: string;
   name: string;
+  note: string | null;
 }
 
 export function ServicePlanner({

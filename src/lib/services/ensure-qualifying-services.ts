@@ -10,6 +10,15 @@ import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import { snapshotPresetOntoServices } from "@/lib/services/auto-generate";
 
 /**
+ * Days that are a calendar feast but have no Eucharist: Good Friday (the
+ * Liturgy of the Day / Celebration of the Lord's Passion) and Holy Saturday
+ * (the Easter Vigil). Pre-create these as a CUSTOM service — an empty running
+ * order the editor builds — instead of a sung Eucharist. (Ash Wednesday and
+ * Maundy Thursday are properly Eucharistic, so they keep the preset's type.)
+ */
+const NON_EUCHARIST_KEYS: ReadonlySet<string> = new Set(["good-friday", "easter-eve"]);
+
+/**
  * The preset a backfill service is created from. Carries everything the
  * `services_preset_when_active` check constraint and the row insert need.
  */
@@ -77,7 +86,7 @@ export async function ensureQualifyingServices(
   toDate: string,
 ): Promise<{ created: number }> {
   const days = await db
-    .select({ id: liturgicalDays.id, season: liturgicalDays.season })
+    .select({ id: liturgicalDays.id, season: liturgicalDays.season, icalUid: liturgicalDays.icalUid })
     .from(liturgicalDays)
     .where(and(gte(liturgicalDays.date, fromDate), lte(liturgicalDays.date, toDate)));
   if (days.length === 0) return { created: 0 };
@@ -104,7 +113,8 @@ export async function ensureQualifyingServices(
       missing.map((d) => ({
         churchId,
         liturgicalDayId: d.id,
-        serviceType: preset.serviceType,
+        // Good Friday / Holy Saturday have no Eucharist → CUSTOM placeholder.
+        serviceType: NON_EUCHARIST_KEYS.has(d.icalUid ?? "") ? "CUSTOM" : preset.serviceType,
         time: preset.defaultTime ?? null,
         presetId: preset.id,
         status: "DRAFT" as const,

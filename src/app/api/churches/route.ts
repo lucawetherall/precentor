@@ -100,19 +100,23 @@ export async function POST(request: Request) {
     // Fan the Sunday patterns out into actual services for the rest of the
     // current church year. Best-effort: a failure here must not fail church
     // creation — the admin can re-generate from Settings → Service Patterns.
+    // Cover all seeded liturgical days from today through the next church year
+    // so the new church starts with a full set of upcoming services.
+    const { endYear } = getChurchYear(new Date());
+    const today = format(new Date(), "yyyy-MM-dd");
+    const through = `${endYear + 1}-12-31`;
     try {
-      // Cover all seeded liturgical days from today through the next church
-      // year so the new church starts with a full set of upcoming services.
-      const { endYear } = getChurchYear(new Date());
-      const today = format(new Date(), "yyyy-MM-dd");
-      const through = `${endYear + 1}-12-31`;
       await generateServicesForChurch(church.id, today, through);
-      // Guarantee every Sunday / Principal Feast / Holy Day has a service even
-      // for a church with no Sunday pattern, so nothing reads "no service
-      // created yet". Idempotent and skips days the patterns already covered.
-      await ensureQualifyingServices(church.id, today, through);
     } catch (genErr) {
       logger.error("Failed to generate default services for new church", genErr);
+    }
+    // Separate best-effort pass so a generate failure doesn't suppress the
+    // safety net that guarantees every Sunday / Principal Feast / Holy Day has
+    // a service even for a church with no Sunday pattern. Idempotent.
+    try {
+      await ensureQualifyingServices(church.id, today, through);
+    } catch (ensureErr) {
+      logger.error("Failed to ensure qualifying services for new church", ensureErr);
     }
 
     return NextResponse.json(church, { status: 201 });

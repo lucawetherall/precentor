@@ -30,6 +30,7 @@ export function SpecialFeastChooser({ dayName, availableSpecials }: SpecialFeast
   if (availableSpecials.length === 0) return null;
 
   const current = settings.specialFeastKey;
+  const currentNote = current ? availableSpecials.find((s) => s.key === current)?.note : null;
 
   const handleChange = async (value: string) => {
     const next = value === "" ? null : value;
@@ -49,7 +50,7 @@ export function SpecialFeastChooser({ dayName, availableSpecials }: SpecialFeast
   };
 
   return (
-    <div className="flex items-center gap-2 text-xs">
+    <div className="flex flex-wrap items-center gap-2 text-xs">
       <span className="flex items-center gap-1 text-muted-foreground">
         <Star className="h-3 w-3" strokeWidth={1.5} />
         Special service:
@@ -78,6 +79,9 @@ export function SpecialFeastChooser({ dayName, availableSpecials }: SpecialFeast
         </span>
       )}
       {saveError && <span className="text-destructive flex-shrink-0">{saveError}</span>}
+      {currentNote && (
+        <span className="basis-full text-muted-foreground italic">{currentNote}</span>
+      )}
     </div>
   );
 }
