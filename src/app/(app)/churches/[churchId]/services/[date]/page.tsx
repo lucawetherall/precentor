@@ -334,7 +334,8 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
       service={service}
       readings={memberReadings as Parameters<typeof MemberServiceView>[0]['readings']}
       trackChoice={
-        trackChoiceAvailable && service
+        // A switched Festival's readings have no Continuous/Related split.
+        trackChoiceAvailable && service && !primarySpecialKey
           ? { active: resolvedTrack, usingDefault: !dayServices[0]?.lectionaryTrack }
           : null
       }
