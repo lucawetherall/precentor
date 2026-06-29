@@ -7,6 +7,10 @@ import {
 import { and, eq, gte, lte, inArray, asc, sql } from "drizzle-orm";
 import lectionaryData from "@/data/lectionary-coe.json";
 import { readLectionaryTrack, type LectionaryTrack } from "@/lib/churches/settings";
+import {
+  resolveEffectiveServiceIdentity,
+  synthesizeSpecialReadings,
+} from "@/lib/services/effective-service-identity";
 
 export interface PlanningDayProjection {
   id: string;
@@ -16,6 +20,8 @@ export interface PlanningDayProjection {
   colour: string;
   sundayKey: string | null;
   section: string | null;
+  /** Lectionary year (A/B/C) — needed to resolve transferred-Festival readings. */
+  lectionaryYear: string | null;
 }
 
 async function loadDays(from: string, to: string): Promise<PlanningDayProjection[]> {
@@ -27,6 +33,7 @@ async function loadDays(from: string, to: string): Promise<PlanningDayProjection
       season: liturgicalDays.season,
       colour: liturgicalDays.colour,
       icalUid: liturgicalDays.icalUid,
+      lectionaryYear: liturgicalDays.lectionaryYear,
     })
     .from(liturgicalDays)
     .where(and(gte(liturgicalDays.date, from), lte(liturgicalDays.date, to)))
@@ -44,6 +51,7 @@ async function loadDays(from: string, to: string): Promise<PlanningDayProjection
       colour: d.colour,
       sundayKey,
       section,
+      lectionaryYear: d.lectionaryYear,
     };
   });
 }
@@ -60,6 +68,7 @@ async function loadServices(churchId: string, dayIds: string[]) {
       status: services.status,
       notes: services.notes,
       lectionaryTrack: services.lectionaryTrack,
+      specialFeastKey: services.specialFeastKey,
       updatedAt: services.updatedAt,
     })
     .from(services)
@@ -138,9 +147,17 @@ async function loadPatterns(churchId: string) {
   `);
 }
 
+/** A planning service enriched with its effective Festival identity/readings. */
+export type PlanningService = Awaited<ReturnType<typeof loadServices>>[number] & {
+  /** Festival/alternate display name when a special is active, else null. */
+  specialName: string | null;
+  /** Effective readings synthesized for the active special, else null. */
+  specialReadings: (typeof readings.$inferSelect)[] | null;
+};
+
 export interface PlanningDataResponse {
   days: PlanningDayProjection[];
-  services: Awaited<ReturnType<typeof loadServices>>;
+  services: PlanningService[];
   slots: Awaited<ReturnType<typeof loadSlots>>;
   readings: Awaited<ReturnType<typeof loadReadings>>;
   patterns: Awaited<ReturnType<typeof loadPatterns>>;
@@ -168,5 +185,35 @@ export async function getPlanningData(
   ]);
   const serviceIds = serviceRows.map((s) => s.id);
   const slotRows = await loadSlots(serviceIds);
-  return { days, services: serviceRows, slots: slotRows, readings: readingRows, patterns, lectionaryTrackDefault };
+
+  // Resolve each service's effective Festival identity/readings server-side so
+  // the lectionary JSON never reaches the client. Non-special services pass
+  // through unchanged.
+  const dayById = new Map(days.map((d) => [d.id, d]));
+  const enrichedServices: PlanningService[] = serviceRows.map((s) => {
+    if (!s.specialFeastKey) return { ...s, specialName: null, specialReadings: null };
+    const day = dayById.get(s.liturgicalDayId);
+    const identity = resolveEffectiveServiceIdentity({
+      day: {
+        cwName: day?.cwName ?? "",
+        colour: day?.colour ?? "",
+        season: day?.season ?? "",
+        collect: null,
+        postCommunion: null,
+      },
+      specialFeastKey: s.specialFeastKey,
+    });
+    const synth = synthesizeSpecialReadings({
+      specialFeastKey: s.specialFeastKey,
+      lectionaryYear: day?.lectionaryYear ?? null,
+      liturgicalDayId: s.liturgicalDayId,
+    });
+    return {
+      ...s,
+      specialName: identity.isSpecial ? identity.title : null,
+      specialReadings: synth,
+    };
+  });
+
+  return { days, services: enrichedServices, slots: slotRows, readings: readingRows, patterns, lectionaryTrackDefault };
 }

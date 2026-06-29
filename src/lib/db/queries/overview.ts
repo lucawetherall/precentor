@@ -5,6 +5,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, gte, asc, inArray, sql } from "drizzle-orm";
 import { format } from "date-fns";
+import { resolveEffectiveServiceIdentity } from "@/lib/services/effective-service-identity";
 
 /** Get the next upcoming liturgical day with its services for a church */
 export async function getThisSunday(churchId: string) {
@@ -20,6 +21,7 @@ export async function getThisSunday(churchId: string) {
       serviceId: services.id,
       serviceType: services.serviceType,
       time: services.time,
+      specialFeastKey: services.specialFeastKey,
     })
     .from(liturgicalDays)
     .leftJoin(
@@ -44,12 +46,19 @@ export async function getThisSunday(churchId: string) {
       time: r.time,
     }));
 
+  // Reflect a transferred Festival kept on the primary service in the card.
+  const primarySpecialKey = rows.find((r) => r.dayId === firstDay.dayId && r.serviceId)?.specialFeastKey ?? null;
+  const identity = resolveEffectiveServiceIdentity({
+    day: { cwName: firstDay.cwName, colour: firstDay.colour, season: firstDay.season, collect: null, postCommunion: null },
+    specialFeastKey: primarySpecialKey,
+  });
+
   return {
     id: firstDay.dayId,
     date: firstDay.date,
-    cwName: firstDay.cwName,
-    colour: firstDay.colour,
-    season: firstDay.season,
+    cwName: identity.title,
+    colour: identity.colour as typeof firstDay.colour,
+    season: identity.season as typeof firstDay.season,
     services: dayServices,
   };
 }
@@ -217,7 +226,9 @@ export async function getUpcomingDaysWithServices(churchId: string, limit = 6) {
       date: liturgicalDays.date,
       cwName: liturgicalDays.cwName,
       colour: liturgicalDays.colour,
+      season: liturgicalDays.season,
       serviceId: services.id,
+      specialFeastKey: services.specialFeastKey,
     })
     .from(liturgicalDays)
     .leftJoin(services, and(eq(services.liturgicalDayId, liturgicalDays.id), eq(services.churchId, churchId)))
@@ -227,7 +238,14 @@ export async function getUpcomingDaysWithServices(churchId: string, limit = 6) {
 
   const dayMap = new Map<string, { id: string; date: string; cwName: string; colour: string; serviceIds: string[] }>();
   for (const row of rows) {
-    if (!dayMap.has(row.dayId)) dayMap.set(row.dayId, { id: row.dayId, date: row.date, cwName: row.cwName, colour: row.colour, serviceIds: [] });
+    if (!dayMap.has(row.dayId)) {
+      // The first (primary) service's special, if any, relabels the day.
+      const identity = resolveEffectiveServiceIdentity({
+        day: { cwName: row.cwName, colour: row.colour, season: row.season, collect: null, postCommunion: null },
+        specialFeastKey: row.specialFeastKey ?? null,
+      });
+      dayMap.set(row.dayId, { id: row.dayId, date: row.date, cwName: identity.title, colour: identity.colour, serviceIds: [] });
+    }
     if (row.serviceId) dayMap.get(row.dayId)!.serviceIds.push(row.serviceId);
   }
 

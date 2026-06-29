@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { parseJsonBody } from "@/lib/api/parse-body";
 import { createDefaultChurchSetup } from "@/lib/churches/default-setup";
 import { generateServicesForChurch } from "@/lib/services/auto-generate";
+import { ensureQualifyingServices } from "@/lib/services/ensure-qualifying-services";
 import { getChurchYear } from "@/lib/lectionary/calendar";
 import { format } from "date-fns";
 
@@ -103,11 +104,13 @@ export async function POST(request: Request) {
       // Cover all seeded liturgical days from today through the next church
       // year so the new church starts with a full set of upcoming services.
       const { endYear } = getChurchYear(new Date());
-      await generateServicesForChurch(
-        church.id,
-        format(new Date(), "yyyy-MM-dd"),
-        `${endYear + 1}-12-31`,
-      );
+      const today = format(new Date(), "yyyy-MM-dd");
+      const through = `${endYear + 1}-12-31`;
+      await generateServicesForChurch(church.id, today, through);
+      // Guarantee every Sunday / Principal Feast / Holy Day has a service even
+      // for a church with no Sunday pattern, so nothing reads "no service
+      // created yet". Idempotent and skips days the patterns already covered.
+      await ensureQualifyingServices(church.id, today, through);
     } catch (genErr) {
       logger.error("Failed to generate default services for new church", genErr);
     }

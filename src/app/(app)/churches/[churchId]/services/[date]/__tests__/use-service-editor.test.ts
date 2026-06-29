@@ -10,6 +10,7 @@ describe("reducer: SET_SETTINGS vs SNAPSHOT_AND_UPDATE_SETTINGS", () => {
     defaultMassSettingId: null,
     collectId: null,
     collectOverride: null,
+    specialFeastKey: null,
   };
 
   const baseState: ServiceEditorState = {
@@ -54,6 +55,7 @@ describe("reducer: SNAPSHOT_AND_UPDATE_SLOT", () => {
     defaultMassSettingId: null,
     collectId: null,
     collectOverride: null,
+    specialFeastKey: null,
   };
 
   it("updates existing slot and pushes to undo stack", () => {
@@ -101,6 +103,7 @@ describe("reducer: UNDO / REDO", () => {
     defaultMassSettingId: null,
     collectId: null,
     collectOverride: null,
+    specialFeastKey: null,
   };
 
   const baseState: ServiceEditorState = {
@@ -179,6 +182,7 @@ describe("reducer: SET_SAVE_STATUS and SET_SHEET_DATA", () => {
     defaultMassSettingId: null,
     collectId: null,
     collectOverride: null,
+    specialFeastKey: null,
   };
 
   const baseState: ServiceEditorState = {

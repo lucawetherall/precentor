@@ -23,6 +23,11 @@ import { readLectionaryTrack } from '@/lib/churches/settings'
 import { resolveLectionaryTrack, filterReadingsByTrack, hasTrackChoice } from '@/lib/lectionary/track'
 import type { AdjacentDayLinks, PopulatedMusicSlot } from '@/types/service-views'
 import { getAdjacentLiturgicalDays } from '@/lib/services/adjacent-liturgical-days'
+import {
+  resolveEffectiveServiceIdentity,
+  synthesizeSpecialReadings,
+} from '@/lib/services/effective-service-identity'
+import { availableSpecialsForSunday } from '@/lib/lectionary/transferable-festivals'
 import { MemberServiceView } from './member-service-view'
 import { ServicePlanner } from './service-planner'
 import { ServiceNav } from './service-nav'
@@ -242,6 +247,38 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
     id: string; serviceType: string; time: string | null;
   } | undefined) ?? null
 
+  // Transferred Festivals / alternate provisions a church may switch to on this
+  // Sunday, with display names resolved for the editor's chooser.
+  const availableSpecials = availableSpecialsForSunday(day.date, day.icalUid, day.season).map(
+    (s) => ({
+      key: s.key,
+      name: resolveEffectiveServiceIdentity({
+        day: { cwName: day!.cwName, colour: day!.colour, season: day!.season, collect: null, postCommunion: null },
+        specialFeastKey: s.key,
+      }).title,
+    }),
+  )
+
+  // Per-service effective readings: a service carrying a specialFeastKey shows
+  // the Festival's readings (synthesized from bundled data) instead of the
+  // shared day's. Resolved server-side so the lectionary JSON never ships to
+  // the client.
+  const dayLectionaryYear = day.lectionaryYear
+  const readingsByService: Record<string, typeof dayReadings> = {}
+  for (const svc of dayServices) {
+    const key = svc.specialFeastKey
+    if (key) {
+      const synth = synthesizeSpecialReadings({
+        specialFeastKey: key,
+        lectionaryYear: dayLectionaryYear,
+        liturgicalDayId: day.id,
+      })
+      readingsByService[svc.id] = (synth as typeof dayReadings) ?? dayReadings
+    } else {
+      readingsByService[svc.id] = dayReadings
+    }
+  }
+
   // Edit mode: existing planner (editors/admins only).
   // ServicePlanner renders its own ServiceNav internally (with "Back to service view"),
   // so no BackLink at this level — the nav lives next to the planner's prev/next.
@@ -252,29 +289,48 @@ export default async function ServiceDetailPage({ params, searchParams }: Props)
           churchId={churchId}
           liturgicalDayId={day.id}
           date={date}
+          dayName={day.cwName}
           existingServices={dayServices as Parameters<typeof ServicePlanner>[0]['existingServices']}
           editorSectionsMap={editorSectionsMap}
           editorSlotsMap={editorSlotsMap}
           readings={dayReadings}
+          readingsByService={readingsByService as Parameters<typeof ServicePlanner>[0]['readingsByService']}
+          availableSpecials={availableSpecials}
           adjacent={adjacent}
         />
       </div>
     )
   }
 
-  // Default view for all roles
+  // Default view for all roles. When the primary service keeps a transferred
+  // Festival, its title/colour/collect and readings come from the chokepoint.
+  const primarySpecialKey = (dayServices[0]?.specialFeastKey as string | null) ?? null
+  const primaryIdentity = resolveEffectiveServiceIdentity({
+    day: {
+      cwName: day.cwName,
+      colour: day.colour,
+      season: day.season,
+      collect: day.collect ?? null,
+      postCommunion: day.postCommunion ?? null,
+    },
+    specialFeastKey: primarySpecialKey,
+  })
+  const memberReadings = service
+    ? readingsByService[service.id] ?? dayReadings
+    : dayReadings
+
   return (
     <MemberServiceView
       churchId={churchId}
       day={{
-        cwName: day.cwName,
+        cwName: primaryIdentity.title,
         date: day.date,
-        colour: day.colour,
-        season: day.season,
-        collect: day.collect ?? null,
+        colour: primaryIdentity.colour,
+        season: primaryIdentity.season,
+        collect: primaryIdentity.collect,
       }}
       service={service}
-      readings={dayReadings as Parameters<typeof MemberServiceView>[0]['readings']}
+      readings={memberReadings as Parameters<typeof MemberServiceView>[0]['readings']}
       trackChoice={
         trackChoiceAvailable && service
           ? { active: resolvedTrack, usingDefault: !dayServices[0]?.lectionaryTrack }

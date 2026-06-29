@@ -34,25 +34,37 @@ interface Service {
   defaultMassSettingId: string | null;
   collectId: string | null;
   collectOverride: string | null;
+  specialFeastKey: string | null;
+}
+
+export interface AvailableSpecial {
+  key: string;
+  name: string;
 }
 
 export function ServicePlanner({
   churchId,
   liturgicalDayId,
   date,
+  dayName,
   existingServices,
   editorSectionsMap = {},
   editorSlotsMap = {},
   readings = [],
+  readingsByService = {},
+  availableSpecials = [],
   adjacent,
 }: {
   churchId: string;
   liturgicalDayId: string;
   date: string;
+  dayName: string;
   existingServices: Service[];
   editorSectionsMap?: Record<string, ServiceSection[]>;
   editorSlotsMap?: Record<string, MusicSlot[]>;
   readings?: Reading[];
+  readingsByService?: Record<string, Reading[]>;
+  availableSpecials?: AvailableSpecial[];
   adjacent: AdjacentDayLinks;
 }) {
   const [services, setServices] = useState<Service[]>(existingServices);
@@ -92,6 +104,7 @@ export function ServicePlanner({
           defaultMassSettingId: service.defaultMassSettingId ?? null,
           collectId: service.collectId ?? null,
           collectOverride: service.collectOverride ?? null,
+          specialFeastKey: service.specialFeastKey ?? null,
         };
         // Pull the template sections and slots that were auto-created on the
         // server so the editor opens fully populated rather than empty.
@@ -186,9 +199,12 @@ export function ServicePlanner({
         <NewServiceForm churchId={churchId} creating={creating} onCreate={handleCreateService} />
       </div>
 
-      {activeService && readings.length > 0 && (
-        <ReadingsPanel readings={readings} serviceType={activeService.serviceType} />
-      )}
+      {activeService && (() => {
+        const activeReadings = readingsByService[activeService.id] ?? readings;
+        return activeReadings.length > 0 ? (
+          <ReadingsPanel readings={activeReadings} serviceType={activeService.serviceType} />
+        ) : null;
+      })()}
 
       {activeService && (
         <ServiceEditorProvider
@@ -204,6 +220,7 @@ export function ServicePlanner({
             defaultMassSettingId: activeService.defaultMassSettingId,
             collectId: activeService.collectId,
             collectOverride: activeService.collectOverride,
+            specialFeastKey: activeService.specialFeastKey,
           }}
           initialSlots={fetchedSlotsMap[activeService.id] ?? editorSlotsMap[activeService.id] ?? []}
         >
@@ -253,7 +270,13 @@ export function ServicePlanner({
 
           {editorTab === "order" && <SectionEditor churchId={churchId} />}
 
-          {editorTab === "settings" && <ServiceSettings serviceType={activeService.serviceType} />}
+          {editorTab === "settings" && (
+            <ServiceSettings
+              serviceType={activeService.serviceType}
+              dayName={dayName}
+              availableSpecials={availableSpecials}
+            />
+          )}
 
           {editorTab === "preview" && (
             <div>

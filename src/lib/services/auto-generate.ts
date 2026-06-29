@@ -16,6 +16,140 @@ import { resolveTemplateSections } from "@/lib/services/template-resolution";
 import { applySeasonalRules } from "@/lib/services/seasonal-rules";
 import type { InsertServiceSection } from "@/lib/services/seasonal-rules";
 
+/** Minimal shape of a freshly-inserted service row a snapshot needs. */
+export interface SnapshotTargetService {
+  id: string;
+  liturgicalDayId: string;
+  serviceType: (typeof services.$inferSelect)["serviceType"];
+  presetId: string | null;
+}
+
+/**
+ * Copy a preset's role slots + template sections (and the music slots those
+ * sections own) onto a set of newly-created services. Idempotency is the
+ * caller's job — pass only services that were *just* inserted, so we never
+ * double-snapshot.
+ *
+ * Shared by `generateServicesForChurch` (pattern fan-out) and
+ * `ensureQualifyingServices` (qualifying-day backfill) so the section/slot/role
+ * fan-out lives in exactly one place.
+ */
+export async function snapshotPresetOntoServices(
+  churchId: string,
+  insertedServices: SnapshotTargetService[],
+  daysById: Map<string, { season: (typeof liturgicalDays.$inferSelect)["season"] }>,
+): Promise<void> {
+  if (insertedServices.length === 0) return;
+
+  // Snapshot each preset's role slots onto the created services — the same
+  // copy the manual create route performs. Without it the rota/availability
+  // feature is inert for generated services (the availability API requires a
+  // matching service_role_slots row).
+  const presetIds = [
+    ...new Set(
+      insertedServices
+        .map((s) => s.presetId)
+        .filter((id): id is string => typeof id === "string"),
+    ),
+  ];
+  const allRoleSlots: (typeof serviceRoleSlots.$inferInsert)[] = [];
+  if (presetIds.length > 0) {
+    const presetSlots = await db
+      .select()
+      .from(presetRoleSlots)
+      .where(inArray(presetRoleSlots.presetId, presetIds));
+    const slotsByPreset = new Map<string, typeof presetSlots>();
+    for (const slot of presetSlots) {
+      const group = slotsByPreset.get(slot.presetId) ?? [];
+      group.push(slot);
+      slotsByPreset.set(slot.presetId, group);
+    }
+    for (const svc of insertedServices) {
+      if (!svc.presetId) continue;
+      for (const slot of slotsByPreset.get(svc.presetId) ?? []) {
+        allRoleSlots.push({
+          serviceId: svc.id,
+          catalogRoleId: slot.catalogRoleId,
+          minCount: slot.minCount,
+          maxCount: slot.maxCount,
+          exclusive: slot.exclusive,
+          displayOrder: slot.displayOrder,
+        });
+      }
+    }
+  }
+
+  // Resolve template sections once per distinct service type (avoids N+1).
+  const templateCache = new Map<string, Awaited<ReturnType<typeof resolveTemplateSections>>>();
+  for (const svc of insertedServices) {
+    if (!templateCache.has(svc.serviceType)) {
+      templateCache.set(svc.serviceType, await resolveTemplateSections(churchId, svc.serviceType));
+    }
+  }
+
+  // Build the sections (and any music slots they own) for every created
+  // service. Music-slot ids are generated client-side so a section can
+  // reference its slot without a per-slot INSERT ... RETURNING round-trip.
+  const allSlots: (typeof musicSlots.$inferInsert)[] = [];
+  const allSections: (typeof serviceSections.$inferInsert)[] = [];
+
+  for (const svc of insertedServices) {
+    const day = daysById.get(svc.liturgicalDayId);
+    if (!day) continue;
+    const templateSectionsRaw = templateCache.get(svc.serviceType) ?? [];
+    if (templateSectionsRaw.length === 0) continue;
+
+    const mappedSections: InsertServiceSection[] = templateSectionsRaw.map(
+      (section, i) => ({
+        serviceId: svc.id,
+        sectionKey: section.sectionKey,
+        title: section.title,
+        majorSection: section.majorSection ?? null,
+        positionOrder: section.positionOrder ?? i,
+        liturgicalTextId: section.liturgicalTextId ?? null,
+        musicSlotType:
+          (section.musicSlotType as InsertServiceSection["musicSlotType"]) ??
+          null,
+        placeholderType: section.placeholderType ?? null,
+        visible: true,
+      }),
+    );
+
+    const finalSections = applySeasonalRules(mappedSections, day.season);
+
+    for (const section of finalSections) {
+      let musicSlotId: string | null = null;
+      if (section.musicSlotType) {
+        musicSlotId = crypto.randomUUID();
+        allSlots.push({
+          id: musicSlotId,
+          serviceId: svc.id,
+          slotType:
+            section.musicSlotType as (typeof musicSlotTypeEnum.enumValues)[number],
+          positionOrder: section.positionOrder,
+        });
+      }
+      allSections.push({ ...section, musicSlotId });
+    }
+  }
+
+  // Persist role slots, music slots, then sections (sections FK-reference
+  // slots) in one transaction, so the whole snapshot is atomic.
+  if (allSections.length > 0 || allRoleSlots.length > 0) {
+    await db.transaction(async (tx) => {
+      if (allRoleSlots.length > 0) {
+        await tx.insert(serviceRoleSlots).values(allRoleSlots);
+      }
+      if (allSlots.length > 0) {
+        await tx.insert(musicSlots).values(allSlots);
+      }
+      if (allSections.length > 0) {
+        await tx.insert(serviceSections).values(allSections);
+      }
+    });
+  }
+}
+
 export async function generateServicesForChurch(
   churchId: string,
   fromDate: string,
@@ -97,14 +231,6 @@ export async function generateServicesForChurch(
 
   if (days.length === 0) return { created: 0 };
 
-  // Build a cache: serviceType → resolved template sections (avoids N+1 per day)
-  const templateCache = new Map<string, Awaited<ReturnType<typeof resolveTemplateSections>>>();
-  for (const pattern of patterns) {
-    if (!templateCache.has(pattern.serviceType)) {
-      templateCache.set(pattern.serviceType, await resolveTemplateSections(churchId, pattern.serviceType));
-    }
-  }
-
   // 3. Build the candidate service rows (pattern × matching day) up front so
   //    they can be inserted in one batched statement rather than one round-trip
   //    per pair. Dedupe on the (liturgicalDayId, serviceType) unique key,
@@ -147,107 +273,9 @@ export async function generateServicesForChurch(
 
   if (insertedServices.length === 0) return { created: 0 };
 
-  // Snapshot each preset's role slots onto the created services — the same
-  // copy the manual create route performs. Without it the rota/availability
-  // feature is inert for generated services (the availability API requires a
-  // matching service_role_slots row).
-  const presetIds = [
-    ...new Set(
-      insertedServices
-        .map((s) => s.presetId)
-        .filter((id): id is string => typeof id === "string"),
-    ),
-  ];
-  const allRoleSlots: (typeof serviceRoleSlots.$inferInsert)[] = [];
-  if (presetIds.length > 0) {
-    const presetSlots = await db
-      .select()
-      .from(presetRoleSlots)
-      .where(inArray(presetRoleSlots.presetId, presetIds));
-    const slotsByPreset = new Map<string, typeof presetSlots>();
-    for (const slot of presetSlots) {
-      const group = slotsByPreset.get(slot.presetId) ?? [];
-      group.push(slot);
-      slotsByPreset.set(slot.presetId, group);
-    }
-    for (const svc of insertedServices) {
-      if (!svc.presetId) continue;
-      for (const slot of slotsByPreset.get(svc.presetId) ?? []) {
-        allRoleSlots.push({
-          serviceId: svc.id,
-          catalogRoleId: slot.catalogRoleId,
-          minCount: slot.minCount,
-          maxCount: slot.maxCount,
-          exclusive: slot.exclusive,
-          displayOrder: slot.displayOrder,
-        });
-      }
-    }
-  }
-
-  // 5. Build the sections (and any music slots they own) for every created
-  //    service, accumulating into two flat arrays. Music-slot ids are generated
-  //    client-side so a section can reference its slot without a per-slot
-  //    INSERT ... RETURNING round-trip.
-  const allSlots: (typeof musicSlots.$inferInsert)[] = [];
-  const allSections: (typeof serviceSections.$inferInsert)[] = [];
-
-  for (const svc of insertedServices) {
-    const day = daysById.get(svc.liturgicalDayId);
-    if (!day) continue;
-    const templateSectionsRaw = templateCache.get(svc.serviceType) ?? [];
-    if (templateSectionsRaw.length === 0) continue;
-
-    const mappedSections: InsertServiceSection[] = templateSectionsRaw.map(
-      (section, i) => ({
-        serviceId: svc.id,
-        sectionKey: section.sectionKey,
-        title: section.title,
-        majorSection: section.majorSection ?? null,
-        positionOrder: section.positionOrder ?? i,
-        liturgicalTextId: section.liturgicalTextId ?? null,
-        musicSlotType:
-          (section.musicSlotType as InsertServiceSection["musicSlotType"]) ??
-          null,
-        placeholderType: section.placeholderType ?? null,
-        visible: true,
-      }),
-    );
-
-    const finalSections = applySeasonalRules(mappedSections, day.season);
-
-    for (const section of finalSections) {
-      let musicSlotId: string | null = null;
-      if (section.musicSlotType) {
-        musicSlotId = crypto.randomUUID();
-        allSlots.push({
-          id: musicSlotId,
-          serviceId: svc.id,
-          slotType:
-            section.musicSlotType as (typeof musicSlotTypeEnum.enumValues)[number],
-          positionOrder: section.positionOrder,
-        });
-      }
-      allSections.push({ ...section, musicSlotId });
-    }
-  }
-
-  // 6. Persist role slots, music slots, then sections (sections FK-reference
-  //    slots) in one transaction, so the whole generation run is atomic
-  //    instead of one transaction per service.
-  if (allSections.length > 0 || allRoleSlots.length > 0) {
-    await db.transaction(async (tx) => {
-      if (allRoleSlots.length > 0) {
-        await tx.insert(serviceRoleSlots).values(allRoleSlots);
-      }
-      if (allSlots.length > 0) {
-        await tx.insert(musicSlots).values(allSlots);
-      }
-      if (allSections.length > 0) {
-        await tx.insert(serviceSections).values(allSections);
-      }
-    });
-  }
+  // 5. Snapshot preset role slots + template sections + music slots onto the
+  //    created services (shared with the qualifying-day backfill).
+  await snapshotPresetOntoServices(churchId, insertedServices, daysById);
 
   return { created: insertedServices.length };
 }

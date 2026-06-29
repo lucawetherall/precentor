@@ -76,6 +76,9 @@ export const serviceUpdateSchema = z.object({
   // Ordinary Time psalm track for this service; null clears the override and
   // falls back to the church default.
   lectionaryTrack: z.enum(["CONTINUOUS", "RELATED"]).nullable().optional(),
+  // Transferred Festival / alternate-provision key. Validated against the
+  // day's available specials in the route. Null reverts to the regular day.
+  specialFeastKey: z.string().max(200).nullable().optional(),
 }).strict();
 
 export const sectionCreateSchema = z.object({

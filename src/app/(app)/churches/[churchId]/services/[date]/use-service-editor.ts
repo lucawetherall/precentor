@@ -14,6 +14,7 @@ export interface ServiceSettings {
   defaultMassSettingId: string | null;
   collectId: string | null;
   collectOverride: string | null;
+  specialFeastKey: string | null;
 }
 
 export interface MusicSlot {

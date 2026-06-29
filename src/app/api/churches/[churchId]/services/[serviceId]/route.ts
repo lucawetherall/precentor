@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { requireChurchRole } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { services, collects } from "@/lib/db/schema";
+import { services, collects, liturgicalDays } from "@/lib/db/schema";
 import { eq, and, or, isNull } from "drizzle-orm";
 import { serviceUpdateSchema } from "@/lib/validation/schemas";
 import { parseJsonBody } from "@/lib/api/parse-body";
+import { availableSpecialsForSunday } from "@/lib/lectionary/transferable-festivals";
 
 export async function GET(
   _request: Request,
@@ -23,6 +24,7 @@ export async function GET(
         eucharisticPrayer: services.eucharisticPrayer,
         includeReadingText: services.includeReadingText,
         liturgicalOverrides: services.liturgicalOverrides,
+        specialFeastKey: services.specialFeastKey,
       })
       .from(services)
       .where(and(eq(services.id, serviceId), eq(services.churchId, churchId)))
@@ -65,6 +67,7 @@ export async function PATCH(
   if ("notes" in data) updates.notes = data.notes;
   if ("liturgicalOverrides" in data) updates.liturgicalOverrides = data.liturgicalOverrides;
   if ("lectionaryTrack" in data) updates.lectionaryTrack = data.lectionaryTrack;
+  if ("specialFeastKey" in data) updates.specialFeastKey = data.specialFeastKey;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
@@ -88,6 +91,33 @@ export async function PATCH(
         .limit(1);
       if (!collect) {
         return NextResponse.json({ error: "Invalid collectId" }, { status: 400 });
+      }
+    }
+
+    // A non-null special must be an actual transferred Festival / alternate
+    // provision available for THIS service's date — otherwise an EDITOR could
+    // set any string and swap in arbitrary readings. The service is already
+    // scoped by churchId, so the join is multi-tenant safe.
+    if (typeof data.specialFeastKey === "string") {
+      const [day] = await db
+        .select({
+          date: liturgicalDays.date,
+          sundayKey: liturgicalDays.icalUid,
+          season: liturgicalDays.season,
+        })
+        .from(services)
+        .innerJoin(liturgicalDays, eq(services.liturgicalDayId, liturgicalDays.id))
+        .where(and(eq(services.id, serviceId), eq(services.churchId, churchId)))
+        .limit(1);
+      if (!day) {
+        return NextResponse.json({ error: "Service not found" }, { status: 404 });
+      }
+      const available = availableSpecialsForSunday(day.date, day.sundayKey, day.season);
+      if (!available.some((s) => s.key === data.specialFeastKey)) {
+        return NextResponse.json(
+          { error: "Festival not available for this date" },
+          { status: 400 },
+        );
       }
     }
 

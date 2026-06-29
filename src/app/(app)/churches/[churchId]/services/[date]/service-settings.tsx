@@ -2,15 +2,21 @@
 
 import { useServiceEditor } from "./service-editor-context";
 import { EucharisticPrayerBrowser } from "./eucharistic-prayer-browser";
+import { SpecialFeastChooser } from "./special-feast-chooser";
+import type { AvailableSpecial } from "./service-planner";
 
 const EUCHARIST_TYPES = new Set(["SUNG_EUCHARIST", "SAID_EUCHARIST"]);
 
 interface ServiceSettingsProps {
   serviceType: string;
+  dayName: string;
+  availableSpecials: AvailableSpecial[];
 }
 
 export function ServiceSettings({
   serviceType,
+  dayName,
+  availableSpecials,
 }: ServiceSettingsProps) {
   const { settings, updateSettings, debouncedUpdateSettings } =
     useServiceEditor();
@@ -23,6 +29,15 @@ export function ServiceSettings({
       <h3 className="text-sm font-heading font-semibold mb-3">
         Service Sheet Settings
       </h3>
+
+      {availableSpecials.length > 0 && (
+        <div className="mb-4 pb-4 border-b border-border">
+          <SpecialFeastChooser dayName={dayName} availableSpecials={availableSpecials} />
+          <p className="mt-1 text-xs text-muted-foreground">
+            A Festival falling near this Sunday can be kept here instead — its title and readings replace the regular ones.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2 text-xs">
