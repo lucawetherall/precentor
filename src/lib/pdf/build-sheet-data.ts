@@ -41,6 +41,10 @@ import { EUCHARISTIC_PRAYERS } from "@/data/liturgy/eucharistic-prayers";
 import type { ServiceTemplate, LiturgicalSection, LiturgicalTextBlock } from "@/data/liturgy/types";
 import { resolveCollectText } from "@/lib/services/collect-resolution";
 import { selectVerses } from "@/lib/services/verse-selection";
+import {
+  resolveEffectiveServiceIdentity,
+  synthesizeSpecialReadings,
+} from "@/lib/services/effective-service-identity";
 
 // ─── Template resolution ─────────────────────────────────────────
 
@@ -263,22 +267,51 @@ async function fetchServiceData(
 
   if (serviceResult.length === 0) return null;
 
-  const { service, day, church } = serviceResult[0];
+  const { service, day: rawDay, church } = serviceResult[0];
+
+  // A service may keep a transferred Festival: its title, colour, collect and
+  // readings then come from the chokepoint instead of the shared day.
+  const identity = resolveEffectiveServiceIdentity({
+    day: {
+      cwName: rawDay.cwName,
+      colour: rawDay.colour,
+      season: rawDay.season,
+      collect: rawDay.collect ?? null,
+      postCommunion: rawDay.postCommunion ?? null,
+    },
+    specialFeastKey: service.specialFeastKey,
+  });
+  const day = {
+    ...rawDay,
+    cwName: identity.title,
+    colour: identity.colour as typeof rawDay.colour,
+    season: identity.season as typeof rawDay.season,
+    collect: identity.collect,
+    postCommunion: identity.postCommunion,
+  };
 
   // Fetch the readings for the lectionary this service type follows (Evensong
   // reads the Second Service lectionary; everything else the Principal), then
   // collapse the Ordinary Time psalm to this service's track (per-service
   // override → church default). Without the lectionary filter the sheet
   // prints every lesson for the day — three lectionaries' worth.
-  const allReadings = await db
-    .select()
-    .from(readings)
-    .where(
-      and(
-        eq(readings.liturgicalDayId, day.id),
-        eq(readings.lectionary, lectionaryForServiceType(service.serviceType)),
-      ),
-    );
+  const wantedLectionary = lectionaryForServiceType(service.serviceType);
+  const specialReadings = synthesizeSpecialReadings({
+    specialFeastKey: service.specialFeastKey,
+    lectionaryYear: rawDay.lectionaryYear,
+    liturgicalDayId: rawDay.id,
+  });
+  const allReadings: (typeof readings.$inferSelect)[] = specialReadings
+    ? specialReadings.filter((r) => r.lectionary === wantedLectionary)
+    : await db
+        .select()
+        .from(readings)
+        .where(
+          and(
+            eq(readings.liturgicalDayId, rawDay.id),
+            eq(readings.lectionary, wantedLectionary),
+          ),
+        );
   const track = resolveLectionaryTrack(service.lectionaryTrack, readLectionaryTrack(church.settings));
   const dayReadings = filterReadingsByTrack(allReadings, track);
 

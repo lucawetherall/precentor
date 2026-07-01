@@ -65,6 +65,7 @@ describe("ServicePlanner preset dropdown", () => {
         churchId="c1"
         liturgicalDayId="d1"
         date="2026-05-01"
+        dayName="The Fourth Sunday of Easter"
         existingServices={[]}
         adjacent={adjacent}
       />
@@ -93,6 +94,7 @@ describe("ServicePlanner preset dropdown", () => {
         churchId="c1"
         liturgicalDayId="d1"
         date="2026-05-01"
+        dayName="The Fourth Sunday of Easter"
         existingServices={[]}
         adjacent={adjacent}
       />

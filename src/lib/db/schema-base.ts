@@ -169,6 +169,12 @@ export const services = pgTable("services", {
   // default (church.settings.lectionaryTrack), which itself defaults to CONTINUOUS.
   lectionaryTrack: readingTrackEnum("lectionary_track"),
   sheetMode: text("sheet_mode").default("summary").notNull(),
+  // When set, this service keeps a transferred Festival (or same-Sunday
+  // alternate provision) instead of the shared liturgical day: its title,
+  // colour, collect and readings come from lectionary-coe.json[specialFeastKey]
+  // for the day's lectionary year. Null = the regular day. Per-service, so it
+  // never affects another church. See lib/services/effective-service-identity.
+  specialFeastKey: text("special_feast_key"),
   liturgicalOverrides: json("liturgical_overrides").default({}).$type<Record<string, string>>(),
   presetId: uuid("preset_id").references(() => churchServicePresets.id, { onDelete: "set null" }),
   defaultMassSettingId: uuid("default_mass_setting_id").references(() => massSettings.id),

@@ -19,6 +19,12 @@ export interface ApiService {
   notes: string | null;
   lectionaryTrack: string | null;
   updatedAt: string | Date;
+  /** Set when this service keeps a transferred Festival / alternate provision. */
+  specialFeastKey?: string | null;
+  /** Festival display name when a special is active. */
+  specialName?: string | null;
+  /** Effective readings for the active special (replace the day's readings). */
+  specialReadings?: ApiReading[] | null;
 }
 
 export interface ApiSlot {

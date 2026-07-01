@@ -6,18 +6,11 @@
  */
 
 import { db } from "@/lib/db";
-import { churches, services, liturgicalDays } from "@/lib/db/schema";
+import { churches, liturgicalDays } from "@/lib/db/schema";
 import { seedLectionaryData } from "@/lib/lectionary/mapper";
 import { getChurchYear } from "@/lib/lectionary/calendar";
-
-interface DefaultService {
-  type: "SUNG_EUCHARIST" | "CHORAL_EVENSONG" | "SAID_EUCHARIST" | "CHORAL_MATINS" | "FAMILY_SERVICE" | "COMPLINE";
-  time: string;
-}
-
-interface ChurchSettings {
-  defaultServices?: DefaultService[];
-}
+import { ensureQualifyingServices } from "@/lib/services/ensure-qualifying-services";
+import { min, max } from "drizzle-orm";
 
 async function main() {
   console.log("Seeding lectionary data...");
@@ -36,34 +29,21 @@ async function main() {
     churchYear = { startYear: churchYear.endYear, endYear: churchYear.endYear + 1 };
   }
 
-  console.log("Creating default services for churches...");
-  const allChurches = await db.select().from(churches);
-  const allDays = await db.select({ id: liturgicalDays.id }).from(liturgicalDays);
+  console.log("Ensuring every church has a service for each Sunday / feast...");
+  const allChurches = await db.select({ id: churches.id }).from(churches);
+  // Backfill across the whole seeded window. ensureQualifyingServices is
+  // idempotent and routes every row through a real preset, so it both fills new
+  // churches and rolls the window forward on re-seed — replacing the old
+  // bare-insert loop, which violated the services_preset_when_active check.
+  const [bounds] = await db
+    .select({ from: min(liturgicalDays.date), to: max(liturgicalDays.date) })
+    .from(liturgicalDays);
 
   let servicesCreated = 0;
-  for (const church of allChurches) {
-    const settings = church.settings as ChurchSettings | null;
-    const defaults = settings?.defaultServices;
-    if (!defaults || defaults.length === 0) continue;
-
-    for (const day of allDays) {
-      for (const svc of defaults) {
-        try {
-          await db
-            .insert(services)
-            .values({
-              churchId: church.id,
-              liturgicalDayId: day.id,
-              serviceType: svc.type,
-              time: svc.time,
-              status: "DRAFT",
-            })
-            .onConflictDoNothing();
-          servicesCreated++;
-        } catch {
-          // Skip duplicates silently
-        }
-      }
+  if (bounds?.from && bounds?.to) {
+    for (const church of allChurches) {
+      const { created } = await ensureQualifyingServices(church.id, bounds.from, bounds.to);
+      servicesCreated += created;
     }
   }
 

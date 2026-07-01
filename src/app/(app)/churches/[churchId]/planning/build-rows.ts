@@ -26,7 +26,12 @@ function buildRealRow(
 ): PlanningRow {
   const slots = slotsByService.get(svc.id) ?? [];
   const isEvensong = svc.serviceType === "CHORAL_EVENSONG";
-  const dayReadings = readingsByDay.get(svc.liturgicalDayId) ?? [];
+  // A service keeping a transferred Festival carries its own readings; otherwise
+  // use the shared day's.
+  const dayReadings =
+    svc.specialReadings && svc.specialReadings.length > 0
+      ? svc.specialReadings
+      : readingsByDay.get(svc.liturgicalDayId) ?? [];
 
   // Show only the active track's psalm (resolved per service). The OT reading,
   // epistle and gospel are untagged and always shown.
@@ -35,6 +40,11 @@ function buildRealRow(
     dayReadings.filter((r) => r.lectionary === "PRINCIPAL"),
     track,
   ).map((r) => ({ ref: r.reference, text: r.bookName ?? null }));
+
+  // Surface an active special so the grid shows which Sunday was switched.
+  const info = svc.specialName
+    ? cellText(svc.notes ? `★ ${svc.specialName} — ${svc.notes}` : `★ ${svc.specialName}`)
+    : cellText(svc.notes ?? "");
 
   return {
     kind: "real",
@@ -53,7 +63,7 @@ function buildRealRow(
       respAccl: deriveRespAccl(slots, isEvensong),
       anthem: deriveAnthem(slots),
       voluntary: deriveVoluntary(slots),
-      info: cellText(svc.notes ?? ""),
+      info,
     },
     readings,
   };

@@ -13,3 +13,4 @@ Deferred changes included in the single push:
 - Task 1.4 — nullable presetId on churchServicePatterns & services; nullable catalogRoleId + quarantinedAt on rotaEntries; partial index `rota_service_active_idx`.
 - Task 1.5 — migration_phase_state, migration_audit_log, quarantined_rota_entries tables + migration_phase and migration_severity enums.
 - Task 1.6 — additive index `perf_log_slot_idx` on `performance_logs(music_slot_id)`. Speeds up the cron unlogged-slot LEFT JOIN (`api/cron/log-performances`) and the FK lookup. Pure index add, safe to push.
+- Task 1.7 — additive nullable column `special_feast_key` (text) on `services`. Holds a transferred-Festival / alternate-provision lectionary key; null = the regular liturgical day. No FK, no index. Safe to push.

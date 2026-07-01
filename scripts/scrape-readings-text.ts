@@ -16,6 +16,11 @@ import * as cheerio from "cheerio";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+// The curated specials carry inline readings for feasts not in the bundled
+// lectionary JSON (Corpus Christi, All Souls, the Roman feasts, …). Its only
+// `@/…` imports are `import type`, which tsx erases at runtime, so this
+// standalone script stays runnable.
+import { TRANSFERABLE_SPECIALS } from "../src/data/transferable-festivals";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -102,10 +107,38 @@ function collectUniqueReferences(data: LectionaryData): string[] {
   return Array.from(seen).sort();
 }
 
+/**
+ * References from the curated transferable-specials registry (inline readings).
+ * `lectionaryKey`-based feasts reuse a bundled entry, so they're already
+ * covered by collectUniqueReferences().
+ */
+function collectSpecialReferences(): string[] {
+  const seen = new Set<string>();
+  for (const special of TRANSFERABLE_SPECIALS) {
+    if (!special.readings) continue;
+    const sets =
+      "principal" in special.readings
+        ? [special.readings]
+        : [special.readings.A, special.readings.B, special.readings.C];
+    for (const sr of sets) {
+      for (const service of ["principal", "second", "third"] as const) {
+        for (const reading of sr[service]) {
+          if (reading.reference) seen.add(reading.reference);
+        }
+      }
+    }
+  }
+  return Array.from(seen);
+}
+
 // ─── Fetching ─────────────────────────────────────────────────────
 
 async function fetchReading(reference: string): Promise<string> {
-  const url = `${OREMUS_BASE}${encodeURIComponent(reference)}`;
+  // Common Worship offers alternatives as "X or Y". Oremus can't fetch the
+  // compound string, so fetch the first option and store it under the full key
+  // (the lookup key stays the full reference shown on the sheet).
+  const passage = reference.includes(" or ") ? reference.split(" or ")[0].trim() : reference;
+  const url = `${OREMUS_BASE}${encodeURIComponent(passage)}`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`HTTP ${res.status} for reference "${reference}": ${res.statusText}`);
@@ -130,7 +163,9 @@ async function main() {
   const allSundays = Object.keys(data.sundays).length;
   console.log(`Loaded ${allSundays} sundays`);
 
-  const references = collectUniqueReferences(data);
+  const references = Array.from(
+    new Set([...collectUniqueReferences(data), ...collectSpecialReferences()]),
+  ).sort();
   console.log(`Found ${references.length} unique reading references`);
   console.log(`Estimated time: ~${Math.ceil((references.length * RATE_LIMIT_MS) / 60000)} minutes`);
   console.log("");

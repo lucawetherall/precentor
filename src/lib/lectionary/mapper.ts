@@ -36,24 +36,25 @@ interface SeedResult {
   churchYear: string;
 }
 
+/** A reading row without a liturgical-day binding (the shared columns). */
+export interface ReadingRowFields {
+  lectionary: LectionaryValue;
+  position: PositionValue;
+  track: "CONTINUOUS" | "RELATED" | null;
+  reference: string;
+  bookName: string | null;
+  readingText: string | null;
+  bibleVersion: string | null;
+}
+
 /**
- * Build reading rows from a ServiceReadings object,
- * looking up scripture text from bundled JSON.
+ * Build day-agnostic reading rows from a ServiceReadings object, looking up
+ * scripture text from bundled JSON. Reused by the seeder (which binds them to a
+ * liturgical day) and by the effective-readings resolver (which synthesizes
+ * render-only rows for a transferred Festival).
  */
-export function buildReadingRows(
-  yearReadings: ServiceReadings,
-  liturgicalDayId: string,
-) {
-  const rows: Array<{
-    liturgicalDayId: string;
-    lectionary: LectionaryValue;
-    position: PositionValue;
-    track: "CONTINUOUS" | "RELATED" | null;
-    reference: string;
-    bookName: string | null;
-    readingText: string | null;
-    bibleVersion: string | null;
-  }> = [];
+export function buildReadingRowFields(yearReadings: ServiceReadings): ReadingRowFields[] {
+  const rows: ReadingRowFields[] = [];
 
   const services: Array<[LectionaryValue, typeof yearReadings.principal]> = [
     ["PRINCIPAL", yearReadings.principal],
@@ -73,7 +74,6 @@ export function buildReadingRows(
 
       const text = textLookup[reading.reference];
       rows.push({
-        liturgicalDayId,
         lectionary,
         position: position as PositionValue,
         track: reading.track ?? null,
@@ -86,6 +86,16 @@ export function buildReadingRows(
   }
 
   return rows;
+}
+
+/**
+ * Build reading rows bound to a liturgical day, for seeding the readings table.
+ */
+export function buildReadingRows(
+  yearReadings: ServiceReadings,
+  liturgicalDayId: string,
+) {
+  return buildReadingRowFields(yearReadings).map((r) => ({ liturgicalDayId, ...r }));
 }
 
 /**
